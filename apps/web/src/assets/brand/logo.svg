@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 48" width="200" height="48" role="img" aria-label="胖胖實驗室">
+  <defs>
+    
+  </defs>
+  
+  <g>
+    <rect x="2" y="6" width="36" height="36" rx="10" fill="#1E3A5F"></rect>
+    <circle cx="20" cy="16" r="3.2" fill="#F0FDF4"></circle>
+    <circle cx="20" cy="24" r="3.2" fill="#FFFBEB"></circle>
+    <circle cx="20" cy="32" r="3.2" fill="#FEF2F2"></circle>
+  </g>
+  <text x="48" y="24" class="wordmark">胖胖實驗室</text>
+  <text x="48" y="38" class="sub">AI FINANCE · LAB</text>
+</svg>

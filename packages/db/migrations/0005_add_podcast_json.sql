@@ -1,0 +1,1 @@
+ALTER TABLE "daily_briefs" ADD COLUMN "podcast_json" jsonb;

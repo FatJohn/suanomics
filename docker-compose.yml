@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: suanomics-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: suanomics
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      # ★ 掛在 /var/lib/postgresql 而不是 .../data：PG18 的 PGDATA 是
+      #   /var/lib/postgresql/18/docker，宣告的 VOLUME 也跟著上移一層。掛錯層容器會
+      #   exit 1（實測，log 直接說要掛哪裡）——大聲失敗，不會靜默把資料寫進容器層。
+      - suanomics_pgdata:/var/lib/postgresql
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U postgres -d suanomics]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  suanomics_pgdata:

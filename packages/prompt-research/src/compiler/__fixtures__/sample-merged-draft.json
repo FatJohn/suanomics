@@ -1,0 +1,72 @@
+{
+  "generatedAt": "2026-04-25T00:00:00Z",
+  "sources": [
+    {
+      "kind": "skill-markdown",
+      "slug": "skill-financial-analyst",
+      "displayName": "Skill: Financial Analyst",
+      "pipeline": "light",
+      "config": {}
+    }
+  ],
+  "frames": [
+    {
+      "groupKey": "央行政策改變時",
+      "items": [
+        {
+          "id": "frame001",
+          "sourceSlug": "skill-financial-analyst",
+          "frame": {
+            "id": "frame001",
+            "name": "5-phase scoping workflow",
+            "description": "5 階段拆解政策衝擊範圍",
+            "whenToApply": "央行政策改變時",
+            "questions": [
+              "政策改變的 horizon 是 short-term 還是 structural？",
+              "哪些 sector 直接受衝擊？"
+            ]
+          }
+        },
+        {
+          "id": "frame002",
+          "sourceSlug": "skill-financial-analyst",
+          "frame": {
+            "id": "frame002",
+            "name": "ratio-check",
+            "description": "公司基本面比對",
+            "whenToApply": "公司財報發布",
+            "questions": ["過去 4 季 EPS 走勢？", "ROE 與同業比？"]
+          }
+        }
+      ]
+    }
+  ],
+  "vocabulary": [
+    {
+      "id": "vocab001",
+      "sourceSlug": "skill-financial-analyst",
+      "entry": {
+        "id": "vocab001",
+        "preferred": "配置比重提升",
+        "avoid": ["增持", "加碼"],
+        "reason": "投信投顧法"
+      }
+    }
+  ],
+  "redFlags": [
+    {
+      "id": "rflag001",
+      "sourceSlug": "skill-financial-analyst",
+      "entry": {
+        "id": "rflag001",
+        "rule": "個股 ticker + 方向性動詞 — 禁"
+      }
+    }
+  ],
+  "rawSourceRefs": [
+    {
+      "sourceSlug": "skill-financial-analyst",
+      "ref": { "url": "https://github.com/example/SKILL.md" }
+    }
+  ]
+}

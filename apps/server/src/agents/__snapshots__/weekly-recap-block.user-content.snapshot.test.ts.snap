@@ -1,0 +1,16 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildWeeklyRecapBlock — characterization baseline > renders full block: multiple storylines, every valence, every status (confirmed/refuted/open/dormant) 1`] = `
+"## 本週敘事線回顧
+- 【AI 去槓桿】論點：市場對 AI 資本支出回收的疑慮
+  2026-07-06（支持）：週一：疑慮升溫
+  2026-07-09（反向訊號）：週四：財報打臉
+  ※本週兌現（confirmed）
+- 【半導體庫存去化】論點：市場對 AI 資本支出回收的疑慮
+  2026-07-07（進展）：庫存持續下降
+  ※本週被證偽（refuted）
+- 【央行降息路徑】論點：市場對 AI 資本支出回收的疑慮
+  2026-07-08（支持）：市場預期不變
+- 【地緣風險溢價】論點：市場對 AI 資本支出回收的疑慮
+  2026-07-08（反向訊號）：風險溢價收斂"
+`;

@@ -1,0 +1,58 @@
+name: 回報 Bug
+description: 回報實際行為與預期不符的問題
+title: '[Bug] '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感謝回報。填寫前請注意：**不要在下面任何欄位貼上 API key、`.env` 內容或其他憑證**——即使只是截圖或片段也一樣。如果不小心貼出了真的憑證，請直接到對應服務後台撤銷、輪替該把 key，不要只是編輯這個 issue 把文字刪掉。
+  - type: textarea
+    id: reproduction-steps
+    attributes:
+      label: 重現步驟
+      description: 從乾淨環境開始，一步一步列出怎麼重現這個問題
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: 預期行為
+      description: 你原本預期會發生什麼
+    validations:
+      required: true
+  - type: textarea
+    id: actual-behavior
+    attributes:
+      label: 實際行為
+      description: 實際發生了什麼、跟預期差在哪裡
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: 環境
+      description: Node 版本、pnpm 版本、作業系統、使用的 LLM provider／model 設定（例如 `AI_PROVIDER`、`AGENT_MODELS` 用的是哪些值，不要貼真正的 API key）
+      placeholder: |
+        - Node:
+        - pnpm:
+        - OS:
+        - LLM provider / model:
+    validations:
+      required: true
+  - type: textarea
+    id: relevant-log
+    attributes:
+      label: 相關 log
+      description: 貼上相關的錯誤訊息或 log 片段（同樣請先確認裡面沒有 API key 或 `.env` 內容）
+      render: shell
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: 確認事項
+      options:
+        - label: 我已閱讀 [CONTRIBUTING.md 的「測試」一節](../blob/HEAD/CONTRIBUTING.md#測試)，理解本機沒有 Postgres 時哪些測試紅燈是預期行為
+          required: true

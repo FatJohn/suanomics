@@ -1,0 +1,234 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`analyst-tier1 user content snapshot > claims 開啟但 citableSeries 為空：不出現可引用序列段落 1`] = `
+"# 主新聞
+## 標題: 台積電法說釋出樂觀展望
+## 發布時間: 昨日
+## 內文:
+台積電法說會上調全年資本支出、看好 AI 需求持續強勁。
+
+# Decomposer 結果
+primaryEntity: {"name":"台積電","kind":"company"}
+topicTags: 半導體, AI
+cascadeHypotheses:
+  - industry: 半導體設備
+    mechanism: 資本支出上調帶動設備採購
+  - industry: 記憶體
+    mechanism: AI 伺服器需求外溢
+
+# 可引用來源（citations 只能用以下 url、quote ≤200 字、無法佐證的 chain 留空陣列、不要編造）
+- url: https://example.com/primary-news
+  title: 台積電法說釋出樂觀展望
+  summary: 主新聞本身（分析直接源於此則新聞的論點請引用這條）
+- url: https://known.example.com/1
+  title: 台積電法說重點整理
+  summary: 上修資本支出至 400 億美元
+- url: https://known.example.com/2
+  title: 外資喊買半導體設備股
+
+# 近 7 天類似新聞分析（prior context、僅供參考、不要當 citation）
+- 產業0: 機制描述0
+- 產業1: 機制描述1
+- 產業2: 機制描述2
+- 產業3: 機制描述3
+- 產業4: 機制描述4
+- 產業5: 機制描述5
+- 產業6: 機制描述6
+- 產業7: 機制描述7
+
+# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
+- 台股（加權指數）最近收盤：昨日（資料日 6/26）
+
+# 市場數據快照（主動解讀、不只當背景）
+- 對 primaryImpact 與每條 cascadeChain、檢查快照中是否有相關序列；有則引用並解讀：方向（加速 / 放緩 / 轉向）、以及與新聞敘事一致或矛盾
+- 數字與變化幅度照抄快照提供的值、不得自行推算未提供的數字
+- 數據與新聞論點矛盾時、明確點出（例：新聞稱需求強勁、但相關序列連三月放緩）
+- 無相關序列的主軸不要硬引用、不要為引用而引用
+- 台股加權指數：22,345 點（+1.2%）
+- 美元兌台幣：31.5"
+`;
+
+exports[`analyst-tier1 user content snapshot > newsUrl 非 http：不列入可引用來源 1`] = `
+"# 主新聞
+## 標題: 台積電法說釋出樂觀展望
+## 內文:
+台積電法說會上調全年資本支出、看好 AI 需求持續強勁。
+
+# Decomposer 結果
+primaryEntity: {"name":"台積電","kind":"company"}
+topicTags: 
+cascadeHypotheses:
+
+# 可引用來源（citations 只能用以下 url、quote ≤200 字、無法佐證的 chain 留空陣列、不要編造）
+- url: https://known.example.com/1
+  title: 台積電法說重點整理
+  summary: 上修資本支出至 400 億美元"
+`;
+
+exports[`analyst-tier1 user content snapshot > 完整輸入、claims 開啟（含可引用序列） 1`] = `
+"# 主新聞
+## 標題: 台積電法說釋出樂觀展望
+## 發布時間: 昨日
+## 內文:
+台積電法說會上調全年資本支出、看好 AI 需求持續強勁。
+
+# Decomposer 結果
+primaryEntity: {"name":"台積電","kind":"company"}
+topicTags: 半導體, AI
+cascadeHypotheses:
+  - industry: 半導體設備
+    mechanism: 資本支出上調帶動設備採購
+  - industry: 記憶體
+    mechanism: AI 伺服器需求外溢
+
+# 可引用來源（citations 只能用以下 url、quote ≤200 字、無法佐證的 chain 留空陣列、不要編造）
+- url: https://example.com/primary-news
+  title: 台積電法說釋出樂觀展望
+  summary: 主新聞本身（分析直接源於此則新聞的論點請引用這條）
+- url: https://known.example.com/1
+  title: 台積電法說重點整理
+  summary: 上修資本支出至 400 億美元
+- url: https://known.example.com/2
+  title: 外資喊買半導體設備股
+
+# 近 7 天類似新聞分析（prior context、僅供參考、不要當 citation）
+- 產業0: 機制描述0
+- 產業1: 機制描述1
+- 產業2: 機制描述2
+- 產業3: 機制描述3
+- 產業4: 機制描述4
+- 產業5: 機制描述5
+- 產業6: 機制描述6
+- 產業7: 機制描述7
+
+# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
+- 台股（加權指數）最近收盤：昨日（資料日 6/26）
+
+# 市場數據快照（主動解讀、不只當背景）
+- 對 primaryImpact 與每條 cascadeChain、檢查快照中是否有相關序列；有則引用並解讀：方向（加速 / 放緩 / 轉向）、以及與新聞敘事一致或矛盾
+- 數字與變化幅度照抄快照提供的值、不得自行推算未提供的數字
+- 數據與新聞論點矛盾時、明確點出（例：新聞稱需求強勁、但相關序列連三月放緩）
+- 無相關序列的主軸不要硬引用、不要為引用而引用
+- 台股加權指數：22,345 點（+1.2%）
+- 美元兌台幣：31.5
+
+# 可引用序列（series evidenceRef 只能用以下 seriesId + asOf、逐字照抄、不可自編）
+claim 句中只要出現上方「市場數據快照」的任何數字，**就必須**掛上對應的 series ref。
+那些數字不在任何新聞裡，掛 citation ref 或留空都是錯的。
+- seriesId: us-sox ｜ 費城半導體指數 ｜ asOf: 2026-06-26"
+`;
+
+exports[`analyst-tier1 user content snapshot > 完整輸入、claims 開啟（含可引用序列） 2`] = `
+"TEST_ANALYST_TIER1_SYSTEM_PROMPT
+
+# EvidenceClaim（額外輸出、與上面的分析並存）
+
+除既有欄位外，另輸出 \`claims\` 陣列：把你寫進 mechanism 的關鍵斷言拆成可逐條查證的單句。
+對**每條 cascadeChain 產 1–3 條**，優先涵蓋該 chain mechanism 句中的具名數字。
+
+每條 claim 四個欄位（其餘欄位由系統填、你不要產）：
+- \`kind\`：\`fact\`（已發生的事實斷言）／\`inference\`（推論）／\`scenario\`（條件情境）
+- \`claimType\`：\`named-number\`（句中有具名數字）／\`dated-event\`（句中有日期）／\`causal\`（因果推論）
+- \`claim\`：**單句**、可證偽。不要把整段 mechanism 塞成一條。
+- \`evidenceRefs\`：這句話的依據。兩種形狀，只能用其一：
+  - \`{ "kind": "citation", "url": "…" }\`——url 只能取自「可引用來源」清單
+  - \`{ "kind": "series", "seriesId": "…", "asOf": "YYYY-MM-DD" }\`——只能取自「可引用序列」清單
+
+硬性規則：
+1. 具名數字一律用**阿拉伯數字**（「兩成」「逾千億」無法與來源精確比對、寫成 20%、1000 億元）。
+2. 數字**逐字照抄**來源，不得換算單位、不得改小數位數。
+3. claim 句中**不得引用其他 claim 的編號**。
+4. \`kind: "fact"\` 的句子**不得**出現這些臆測詞：可能、預期、恐、若、料將、估計、有望、不排除、研判。
+5. \`kind: "scenario"\` **必須**出現至少一個條件詞：若、一旦、假設、倘、前提是。
+6. 找不到依據的斷言，\`evidenceRefs\` 留空陣列、**不要自編來源**——留空是合法且可稽核的狀態。
+7. **數字來自哪裡，就掛哪一種 ref**：來自新聞的掛 citation、來自「市場數據快照」的掛 series。
+   快照裡的數字（指數點位、殖利率、匯率、法人買賣超、期貨淨部位…）**不存在於任何新聞中**，
+   對它們掛 citation ref 或留空都是錯的。"
+`;
+
+exports[`analyst-tier1 user content snapshot > 完整輸入、claims 關閉 1`] = `
+"# 主新聞
+## 標題: 台積電法說釋出樂觀展望
+## 發布時間: 昨日
+## 內文:
+台積電法說會上調全年資本支出、看好 AI 需求持續強勁。
+
+# Decomposer 結果
+primaryEntity: {"name":"台積電","kind":"company"}
+topicTags: 半導體, AI
+cascadeHypotheses:
+  - industry: 半導體設備
+    mechanism: 資本支出上調帶動設備採購
+  - industry: 記憶體
+    mechanism: AI 伺服器需求外溢
+
+# 可引用來源（citations 只能用以下 url、quote ≤200 字、無法佐證的 chain 留空陣列、不要編造）
+- url: https://example.com/primary-news
+  title: 台積電法說釋出樂觀展望
+  summary: 主新聞本身（分析直接源於此則新聞的論點請引用這條）
+- url: https://known.example.com/1
+  title: 台積電法說重點整理
+  summary: 上修資本支出至 400 億美元
+- url: https://known.example.com/2
+  title: 外資喊買半導體設備股
+
+# 近 7 天類似新聞分析（prior context、僅供參考、不要當 citation）
+- 產業0: 機制描述0
+- 產業1: 機制描述1
+- 產業2: 機制描述2
+- 產業3: 機制描述3
+- 產業4: 機制描述4
+- 產業5: 機制描述5
+- 產業6: 機制描述6
+- 產業7: 機制描述7
+
+# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
+- 台股（加權指數）最近收盤：昨日（資料日 6/26）
+
+# 市場數據快照（主動解讀、不只當背景）
+- 對 primaryImpact 與每條 cascadeChain、檢查快照中是否有相關序列；有則引用並解讀：方向（加速 / 放緩 / 轉向）、以及與新聞敘事一致或矛盾
+- 數字與變化幅度照抄快照提供的值、不得自行推算未提供的數字
+- 數據與新聞論點矛盾時、明確點出（例：新聞稱需求強勁、但相關序列連三月放緩）
+- 無相關序列的主軸不要硬引用、不要為引用而引用
+- 台股加權指數：22,345 點（+1.2%）
+- 美元兌台幣：31.5"
+`;
+
+exports[`analyst-tier1 user content snapshot > 完整輸入、claims 關閉 2`] = `"TEST_ANALYST_TIER1_SYSTEM_PROMPT"`;
+
+exports[`analyst-tier1 user content snapshot > 幻覺 citation 觸發重試：第二次呼叫的 userContent 含 feedback 區塊 1`] = `
+"# 主新聞
+## 標題: 台股大盤走勢
+## 內文:
+台股今日開高走低。
+
+# Decomposer 結果
+primaryEntity: {"name":"台股","kind":"index"}
+topicTags: 
+cascadeHypotheses:
+
+# 可引用來源（citations 只能用以下 url、quote ≤200 字、無法佐證的 chain 留空陣列、不要編造）
+- url: https://known.example.com/1
+  title: r
+
+
+# 你上次輸出含未授權的 citation url（不在 retrieve 結果裡）：
+- https://invented.example.com/666
+請只用以下 url、若無相關來源請把 citations 留空陣列：
+- https://known.example.com/1"
+`;
+
+exports[`analyst-tier1 user content snapshot > 最小輸入：無 newsUrl／publishedAt／priorChains／marketSnapshot／marketCloseFraming、retrieved 為空 1`] = `
+"# 主新聞
+## 標題: 台股大盤走勢
+## 內文:
+台股今日開高走低。
+
+# Decomposer 結果
+primaryEntity: {"name":"台股","kind":"index"}
+topicTags: 
+cascadeHypotheses:
+
+# 可引用來源
+(無可引用 url、citations 一律留空陣列、不要編造)"
+`;

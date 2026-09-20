@@ -1,0 +1,45 @@
+FROM node:22-slim
+LABEL "language"="nodejs"
+LABEL "framework"="hono"
+WORKDIR /src
+RUN npm install -g pnpm@11
+
+# 容器被攻破時不是 root：node:22-slim 內建 `node` user（uid 1000），把 /src
+# 的擁有權交給它之後全程以它身分跑 install／build／執行期。之後所有 COPY 都要帶
+# --chown=node:node——COPY 不加 --chown 的話，複製進來的檔案不論當下的 USER 是誰
+# 都屬於 root，node 沒有寫入權限，install／build 的產物就寫不進去。
+RUN mkdir -p /src && chown node:node /src
+USER node
+WORKDIR /src
+
+# Layer 1: workspace manifests — Docker 層快取的命中關鍵
+# 只有 package.json / lockfile 改動才會 invalidate 後續 install layer
+COPY --chown=node:node pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY --chown=node:node apps/web/package.json apps/web/package.json
+COPY --chown=node:node apps/server/package.json apps/server/package.json
+COPY --chown=node:node packages/shared/package.json packages/shared/package.json
+COPY --chown=node:node packages/db/package.json packages/db/package.json
+COPY --chown=node:node packages/jobs/package.json packages/jobs/package.json
+COPY --chown=node:node packages/prompt-research/package.json packages/prompt-research/package.json
+RUN pnpm install --frozen-lockfile
+
+# Layer 2: source code（程式碼變動只 invalidate 此處之後、install 層保留）
+COPY --chown=node:node . .
+
+# Build (topological order: shared → db → jobs → prompt-research → server)
+# server 透過 @suanomics/prompt-research import pipeline runtime（runCompile /
+# dispatchSource / 等）、新 workspace 必須先 build。
+RUN pnpm --filter @suanomics/shared build \
+ && pnpm --filter @suanomics/db build \
+ && pnpm --filter @suanomics/jobs build \
+ && pnpm --filter @suanomics/prompt-research build \
+ && pnpm --filter server build
+# 檔案本來就屬於 node（COPY --chown 帶進來的），這裡只是加執行權限，USER node
+# 底下一樣能成功。
+RUN chmod +x /src/apps/server/scripts/entrypoint.sh
+
+# 執行期會寫入的路徑（apps/server/.prompt-research-out、apps/server/.audio-cache、
+# packages/prompts/_candidates）都在 /src 底下，屬於 node、node 可寫，不需要
+# 額外的 mkdir/chown。
+EXPOSE 3000
+CMD ["/src/apps/server/scripts/entrypoint.sh"]

@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`relative-time user content snapshot > 今日 1`] = `"今日"`;
+
+exports[`relative-time user content snapshot > 前日 1`] = `"前日"`;
+
+exports[`relative-time user content snapshot > 昨日 1`] = `"昨日"`;
+
+exports[`relative-time user content snapshot > 空字串（null / 非法 iso / 晚於報告日） 1`] = `""`;
+
+exports[`relative-time user content snapshot > 空字串（null / 非法 iso / 晚於報告日） 2`] = `""`;
+
+exports[`relative-time user content snapshot > 空字串（null / 非法 iso / 晚於報告日） 3`] = `""`;
+
+exports[`relative-time user content snapshot > 超過兩日 → N天前 1`] = `"5天前"`;

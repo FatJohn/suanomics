@@ -1,0 +1,30 @@
+name: 功能／改進提案
+description: 提議一個新功能或既有架構下的改進方向
+title: '[Feature] '
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解決的問題
+      description: 目前遇到什麼困難、或哪裡不方便
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 提議做法
+      description: 具體想怎麼做
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考慮過的替代方案
+      description: 有沒有考慮過其他做法、為什麼沒選它們
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: 確認事項
+      options:
+        - label: 我已閱讀 [ROADMAP.md 的「明確不做」一節](../blob/HEAD/ROADMAP.md#明確不做)，確認這個提案不在那個範圍內
+          required: true

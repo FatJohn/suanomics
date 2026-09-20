@@ -1,0 +1,26 @@
+{
+  "_source": "純手動維護。每筆日期都必須對得回下列一手官方頁面，不得憑印象或訓練資料填。FOMC: federalreserve.gov/monetarypolicy/fomccalendars.htm（決策日＝會議第二天；日期後帶 * 者為含 Summary of Economic Projections 的會議）。台灣央行: cbc.gov.tw 新聞稿「115年中央銀行理監事聯席會議預定日期」（114/12/18 發布、cp-302-189514-82841-1.html；每年 12 月公告次年四季、網址每年不同需重新搜尋）。CPI: bls.gov/schedule/news_release/cpi.htm。非農: bls.gov/schedule/news_release/empsit.htm（BLS 兩頁擋 curl 與一般 fetch，需真瀏覽器取得）。日期皆為美東 / 台灣當地公布日。",
+  "_coverage": "2026-08-21 依上述四個官方源重填、涵蓋至 2026-12-17。各源當時的已公布上限：FOMC 至 2027-12-08、央行至 2026-12-17（116 年未公告）、CPI 至 2026-12-10、非農至 2026-12-04。FOMC 2027 已公布但刻意不入種子——daysUntilCalendarExhausted 取最遠事件，塞了 2027 會讓 time-bomb 拖到 2027-11 才響，而其餘三源 2026-12 就見底，守門測試會變成假綠燈。下次觸發約 2026-11-17，屆時 BLS 2027 時程與央行 116 年日期應已公告。",
+  "events": [
+    { "date": "2026-06-17", "title": "FOMC 利率決策（含經濟預測）", "region": "US", "importance": "high" },
+    { "date": "2026-06-18", "title": "台灣央行理監事聯席會議", "region": "TW", "importance": "high" },
+    { "date": "2026-07-02", "title": "美國 6 月非農就業報告", "region": "US", "importance": "high" },
+    { "date": "2026-07-14", "title": "美國 6 月 CPI", "region": "US", "importance": "high" },
+    { "date": "2026-07-29", "title": "FOMC 利率決策", "region": "US", "importance": "high" },
+    { "date": "2026-08-07", "title": "美國 7 月非農就業報告", "region": "US", "importance": "high" },
+    { "date": "2026-08-12", "title": "美國 7 月 CPI", "region": "US", "importance": "high" },
+    { "date": "2026-09-04", "title": "美國 8 月非農就業報告", "region": "US", "importance": "high" },
+    { "date": "2026-09-11", "title": "美國 8 月 CPI", "region": "US", "importance": "high" },
+    { "date": "2026-09-16", "title": "FOMC 利率決策（含經濟預測）", "region": "US", "importance": "high" },
+    { "date": "2026-09-17", "title": "台灣央行理監事聯席會議", "region": "TW", "importance": "high" },
+    { "date": "2026-10-02", "title": "美國 9 月非農就業報告", "region": "US", "importance": "high" },
+    { "date": "2026-10-14", "title": "美國 9 月 CPI", "region": "US", "importance": "high" },
+    { "date": "2026-10-28", "title": "FOMC 利率決策", "region": "US", "importance": "high" },
+    { "date": "2026-11-06", "title": "美國 10 月非農就業報告", "region": "US", "importance": "high" },
+    { "date": "2026-11-10", "title": "美國 10 月 CPI", "region": "US", "importance": "high" },
+    { "date": "2026-12-04", "title": "美國 11 月非農就業報告", "region": "US", "importance": "high" },
+    { "date": "2026-12-09", "title": "FOMC 利率決策（含經濟預測）", "region": "US", "importance": "high" },
+    { "date": "2026-12-10", "title": "美國 11 月 CPI", "region": "US", "importance": "high" },
+    { "date": "2026-12-17", "title": "台灣央行理監事聯席會議", "region": "TW", "importance": "high" }
+  ]
+}

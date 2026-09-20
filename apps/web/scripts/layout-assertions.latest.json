@@ -1,0 +1,1767 @@
+{
+  "baseUrl": "http://localhost:5173",
+  "typeScale": [
+    42,
+    32,
+    26,
+    24,
+    20,
+    17,
+    15,
+    13,
+    11
+  ],
+  "instruments": [
+    {
+      "selector": ".chart-overlay",
+      "conditional": false
+    },
+    {
+      "selector": ".force-damp",
+      "conditional": true
+    },
+    {
+      "selector": ".force-push",
+      "conditional": true
+    },
+    {
+      "selector": ".chart-stations",
+      "conditional": false
+    }
+  ],
+  "totalAssertions": 76,
+  "failed": 0,
+  "skipped": [],
+  "runs": [
+    {
+      "viewport": "4K",
+      "width": 2560,
+      "height": 1440,
+      "layer": "report",
+      "url": "http://localhost:5173/",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "7 種字級，全部在表上：42 / 24 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (2560)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "viewpoints-collapsed-by-default",
+          "label": "正反兩面預設是收合的",
+          "pass": true,
+          "detail": ".vp-columns 未渲染（reka Collapsible 收合時不掛 DOM）"
+        },
+        {
+          "id": "footer-tail-clear-of-dock",
+          "label": "頁尾的 .footer-meta 沒有被播放器蓋住",
+          "pass": true,
+          "detail": ".footer-meta 底緣 1312 ≤ .dock 頂緣 1373（餘裕 61px）"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          42,
+          24,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 2560,
+        "documentClientWidth": 2560,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 838,
+            "top": 109,
+            "right": 1358,
+            "bottom": 543,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 1610,
+            "top": 138,
+            "right": 1722,
+            "bottom": 196,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 1588,
+            "top": 432,
+            "right": 1722,
+            "bottom": 490,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 838,
+            "top": 543,
+            "right": 1722,
+            "bottom": 646,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": null,
+        "collapsedProbe": {
+          "selector": ".vp-columns",
+          "visible": false,
+          "height": 0
+        },
+        "footerTail": {
+          "dock": {
+            "selector": ".dock",
+            "top": 1373,
+            "bottom": 1440
+          },
+          "meta": {
+            "selector": ".footer-meta",
+            "top": 1294,
+            "bottom": 1312
+          }
+        }
+      }
+    },
+    {
+      "viewport": "4K",
+      "width": 2560,
+      "height": 1440,
+      "layer": "report-viewpoints-open",
+      "url": "http://localhost:5173/",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "7 種字級，全部在表上：42 / 24 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (2560)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "expansion-took-effect",
+          "label": "展開真的生效",
+          "pass": true,
+          "detail": ".vp-columns 已渲染、高 170px"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          42,
+          24,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 2560,
+        "documentClientWidth": 2560,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 838,
+            "top": 109,
+            "right": 1358,
+            "bottom": 543,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 1610,
+            "top": 138,
+            "right": 1722,
+            "bottom": 196,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 1588,
+            "top": 432,
+            "right": 1722,
+            "bottom": 490,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 838,
+            "top": 543,
+            "right": 1722,
+            "bottom": 646,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": {
+          "selector": ".vp-columns",
+          "visible": true,
+          "height": 170
+        },
+        "collapsedProbe": null
+      }
+    },
+    {
+      "viewport": "4K",
+      "width": 2560,
+      "height": 1440,
+      "layer": "evidence",
+      "url": "http://localhost:5173/?view=evidence",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "6 種字級，全部在表上：42 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (2560)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "footer-tail-clear-of-dock",
+          "label": "頁尾的 .footer-meta 沒有被播放器蓋住",
+          "pass": true,
+          "detail": ".footer-meta 底緣 1312 ≤ .dock 頂緣 1373（餘裕 61px）"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          42,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 2560,
+        "documentClientWidth": 2560,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 838,
+            "top": 109,
+            "right": 1358,
+            "bottom": 543,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 1610,
+            "top": 138,
+            "right": 1722,
+            "bottom": 196,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 1588,
+            "top": 432,
+            "right": 1722,
+            "bottom": 490,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 838,
+            "top": 543,
+            "right": 1722,
+            "bottom": 646,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 794,
+              "right": 1766,
+              "top": 65,
+              "bottom": 672
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": null,
+        "collapsedProbe": null,
+        "footerTail": {
+          "dock": {
+            "selector": ".dock",
+            "top": 1373,
+            "bottom": 1440
+          },
+          "meta": {
+            "selector": ".footer-meta",
+            "top": 1293,
+            "bottom": 1312
+          }
+        }
+      }
+    },
+    {
+      "viewport": "desktop",
+      "width": 1280,
+      "height": 800,
+      "layer": "report",
+      "url": "http://localhost:5173/",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "7 種字級，全部在表上：42 / 24 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (1280)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "viewpoints-collapsed-by-default",
+          "label": "正反兩面預設是收合的",
+          "pass": true,
+          "detail": ".vp-columns 未渲染（reka Collapsible 收合時不掛 DOM）"
+        },
+        {
+          "id": "footer-tail-clear-of-dock",
+          "label": "頁尾的 .footer-meta 沒有被播放器蓋住",
+          "pass": true,
+          "detail": ".footer-meta 底緣 672 ≤ .dock 頂緣 733（餘裕 61px）"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          42,
+          24,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 1280,
+        "documentClientWidth": 1280,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 198,
+            "top": 109,
+            "right": 718,
+            "bottom": 543,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 970,
+            "top": 138,
+            "right": 1082,
+            "bottom": 196,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 948,
+            "top": 432,
+            "right": 1082,
+            "bottom": 490,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 198,
+            "top": 543,
+            "right": 1082,
+            "bottom": 646,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": 65,
+              "bottom": 672
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": null,
+        "collapsedProbe": {
+          "selector": ".vp-columns",
+          "visible": false,
+          "height": 0
+        },
+        "footerTail": {
+          "dock": {
+            "selector": ".dock",
+            "top": 733,
+            "bottom": 800
+          },
+          "meta": {
+            "selector": ".footer-meta",
+            "top": 654,
+            "bottom": 672
+          }
+        }
+      }
+    },
+    {
+      "viewport": "desktop",
+      "width": 1280,
+      "height": 800,
+      "layer": "report-viewpoints-open",
+      "url": "http://localhost:5173/",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "7 種字級，全部在表上：42 / 24 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (1280)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "expansion-took-effect",
+          "label": "展開真的生效",
+          "pass": true,
+          "detail": ".vp-columns 已渲染、高 170px"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          42,
+          24,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 1280,
+        "documentClientWidth": 1280,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 198,
+            "top": -311,
+            "right": 718,
+            "bottom": 123,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": -355,
+              "bottom": 252
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 970,
+            "top": -282,
+            "right": 1082,
+            "bottom": -224,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": -355,
+              "bottom": 252
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 948,
+            "top": 12,
+            "right": 1082,
+            "bottom": 70,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": -355,
+              "bottom": 252
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 198,
+            "top": 123,
+            "right": 1082,
+            "bottom": 226,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": -355,
+              "bottom": 252
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": {
+          "selector": ".vp-columns",
+          "visible": true,
+          "height": 170
+        },
+        "collapsedProbe": null
+      }
+    },
+    {
+      "viewport": "desktop",
+      "width": 1280,
+      "height": 800,
+      "layer": "evidence",
+      "url": "http://localhost:5173/?view=evidence",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "6 種字級，全部在表上：42 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (1280)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "footer-tail-clear-of-dock",
+          "label": "頁尾的 .footer-meta 沒有被播放器蓋住",
+          "pass": true,
+          "detail": ".footer-meta 底緣 672 ≤ .dock 頂緣 733（餘裕 61px）"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          42,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 1280,
+        "documentClientWidth": 1280,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 198,
+            "top": 109,
+            "right": 718,
+            "bottom": 543,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 970,
+            "top": 138,
+            "right": 1082,
+            "bottom": 196,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 948,
+            "top": 432,
+            "right": 1082,
+            "bottom": 490,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": 65,
+              "bottom": 672
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 198,
+            "top": 543,
+            "right": 1082,
+            "bottom": 646,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 154,
+              "right": 1126,
+              "top": 65,
+              "bottom": 672
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": null,
+        "collapsedProbe": null,
+        "footerTail": {
+          "dock": {
+            "selector": ".dock",
+            "top": 733,
+            "bottom": 800
+          },
+          "meta": {
+            "selector": ".footer-meta",
+            "top": 653,
+            "bottom": 672
+          }
+        }
+      }
+    },
+    {
+      "viewport": "narrow",
+      "width": 900,
+      "height": 900,
+      "layer": "report",
+      "url": "http://localhost:5173/",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "7 種字級，全部在表上：26 / 24 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (900)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "viewpoints-collapsed-by-default",
+          "label": "正反兩面預設是收合的",
+          "pass": true,
+          "detail": ".vp-columns 未渲染（reka Collapsible 收合時不掛 DOM）"
+        },
+        {
+          "id": "footer-tail-clear-of-dock",
+          "label": "頁尾的 .footer-meta 沒有被播放器蓋住",
+          "pass": true,
+          "detail": ".footer-meta 底緣 772 ≤ .dock 頂緣 833（餘裕 61px）"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          26,
+          24,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 900,
+        "documentClientWidth": 900,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 176,
+            "top": 81,
+            "right": 724,
+            "bottom": 336,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 176,
+            "top": 350,
+            "right": 446,
+            "bottom": 406,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 454,
+            "top": 350,
+            "right": 724,
+            "bottom": 406,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 176,
+            "top": 420,
+            "right": 724,
+            "bottom": 523,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": null,
+        "collapsedProbe": {
+          "selector": ".vp-columns",
+          "visible": false,
+          "height": 0
+        },
+        "footerTail": {
+          "dock": {
+            "selector": ".dock",
+            "top": 833,
+            "bottom": 900
+          },
+          "meta": {
+            "selector": ".footer-meta",
+            "top": 754,
+            "bottom": 772
+          }
+        }
+      }
+    },
+    {
+      "viewport": "narrow",
+      "width": 900,
+      "height": 900,
+      "layer": "report-viewpoints-open",
+      "url": "http://localhost:5173/",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "7 種字級，全部在表上：26 / 24 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (900)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "expansion-took-effect",
+          "label": "展開真的生效",
+          "pass": true,
+          "detail": ".vp-columns 已渲染、高 370px"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          26,
+          24,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 900,
+        "documentClientWidth": 900,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 176,
+            "top": 81,
+            "right": 724,
+            "bottom": 336,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 176,
+            "top": 350,
+            "right": 446,
+            "bottom": 406,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 454,
+            "top": 350,
+            "right": 724,
+            "bottom": 406,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 176,
+            "top": 420,
+            "right": 724,
+            "bottom": 523,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": {
+          "selector": ".vp-columns",
+          "visible": true,
+          "height": 370
+        },
+        "collapsedProbe": null
+      }
+    },
+    {
+      "viewport": "narrow",
+      "width": 900,
+      "height": 900,
+      "layer": "evidence",
+      "url": "http://localhost:5173/?view=evidence",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "5 種字級，全部在表上：26 / 20 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (900)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "footer-tail-clear-of-dock",
+          "label": "頁尾的 .footer-meta 沒有被播放器蓋住",
+          "pass": true,
+          "detail": ".footer-meta 底緣 772 ≤ .dock 頂緣 833（餘裕 61px）"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          26,
+          20,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 900,
+        "documentClientWidth": 900,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 176,
+            "top": 81,
+            "right": 724,
+            "bottom": 336,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 176,
+            "top": 350,
+            "right": 446,
+            "bottom": 406,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 454,
+            "top": 350,
+            "right": 724,
+            "bottom": 406,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 176,
+            "top": 420,
+            "right": 724,
+            "bottom": 523,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 144,
+              "right": 756,
+              "top": 65,
+              "bottom": 539
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": null,
+        "collapsedProbe": null,
+        "footerTail": {
+          "dock": {
+            "selector": ".dock",
+            "top": 833,
+            "bottom": 900
+          },
+          "meta": {
+            "selector": ".footer-meta",
+            "top": 754,
+            "bottom": 772
+          }
+        }
+      }
+    },
+    {
+      "viewport": "mobile",
+      "width": 390,
+      "height": 844,
+      "layer": "report",
+      "url": "http://localhost:5173/",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "7 種字級，全部在表上：26 / 24 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (390)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "viewpoints-collapsed-by-default",
+          "label": "正反兩面預設是收合的",
+          "pass": true,
+          "detail": ".vp-columns 未渲染（reka Collapsible 收合時不掛 DOM）"
+        },
+        {
+          "id": "footer-tail-clear-of-dock",
+          "label": "頁尾的 .footer-meta 沒有被播放器蓋住",
+          "pass": true,
+          "detail": ".footer-meta 底緣 700 ≤ .dock 頂緣 754（餘裕 54px）"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          26,
+          24,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 390,
+        "documentClientWidth": 390,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 16,
+            "top": 81,
+            "right": 374,
+            "bottom": 391,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 16,
+            "top": 405,
+            "right": 191,
+            "bottom": 461,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 199,
+            "top": 405,
+            "right": 374,
+            "bottom": 461,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 16,
+            "top": 475,
+            "right": 374,
+            "bottom": 578,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": null,
+        "collapsedProbe": {
+          "selector": ".vp-columns",
+          "visible": false,
+          "height": 0
+        },
+        "footerTail": {
+          "dock": {
+            "selector": ".dock",
+            "top": 754,
+            "bottom": 844
+          },
+          "meta": {
+            "selector": ".footer-meta",
+            "top": 659,
+            "bottom": 700
+          }
+        }
+      }
+    },
+    {
+      "viewport": "mobile",
+      "width": 390,
+      "height": 844,
+      "layer": "report-viewpoints-open",
+      "url": "http://localhost:5173/",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "7 種字級，全部在表上：26 / 24 / 20 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (390)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "expansion-took-effect",
+          "label": "展開真的生效",
+          "pass": true,
+          "detail": ".vp-columns 已渲染、高 453px"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          26,
+          24,
+          20,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 390,
+        "documentClientWidth": 390,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 16,
+            "top": 81,
+            "right": 374,
+            "bottom": 391,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 16,
+            "top": 405,
+            "right": 191,
+            "bottom": 461,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 199,
+            "top": 405,
+            "right": 374,
+            "bottom": 461,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 16,
+            "top": 475,
+            "right": 374,
+            "bottom": 578,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": {
+          "selector": ".vp-columns",
+          "visible": true,
+          "height": 453
+        },
+        "collapsedProbe": null
+      }
+    },
+    {
+      "viewport": "mobile",
+      "width": 390,
+      "height": 844,
+      "layer": "evidence",
+      "url": "http://localhost:5173/?view=evidence",
+      "assertions": [
+        {
+          "id": "type-scale",
+          "label": "字級全部落在級數表上",
+          "pass": true,
+          "detail": "5 種字級，全部在表上：26 / 17 / 15 / 13 / 11"
+        },
+        {
+          "id": "no-horizontal-overflow",
+          "label": "無水平溢出",
+          "pass": true,
+          "detail": "scrollWidth === clientWidth (390)，無元素越界"
+        },
+        {
+          "id": "instruments-present",
+          "label": "必在場的器械都在場",
+          "pass": true,
+          "detail": [
+            "4/4 在場"
+          ]
+        },
+        {
+          "id": "instruments-within-chart",
+          "label": "器械沒有被圖紙裁掉",
+          "pass": true,
+          "detail": "四個器械的四個邊都在裁切祖先框內"
+        },
+        {
+          "id": "instruments-no-collision",
+          "label": "圖上器械兩兩不相撞",
+          "pass": true,
+          "detail": "4/4 個器械在場，無交集"
+        },
+        {
+          "id": "footer-tail-clear-of-dock",
+          "label": "頁尾的 .footer-meta 沒有被播放器蓋住",
+          "pass": true,
+          "detail": ".footer-meta 底緣 700 ≤ .dock 頂緣 754（餘裕 54px）"
+        }
+      ],
+      "raw": {
+        "typeOffenders": [],
+        "observedSizes": [
+          26,
+          17,
+          15,
+          13,
+          11
+        ],
+        "documentScrollWidth": 390,
+        "documentClientWidth": 390,
+        "overflowOffenders": [],
+        "instrumentRects": [
+          {
+            "selector": ".chart-overlay",
+            "present": true,
+            "conditional": false,
+            "left": 16,
+            "top": 81,
+            "right": 374,
+            "bottom": 391,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".force-damp",
+            "present": true,
+            "conditional": true,
+            "left": 16,
+            "top": 405,
+            "right": 191,
+            "bottom": 461,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".force-push",
+            "present": true,
+            "conditional": true,
+            "left": 199,
+            "top": 405,
+            "right": 374,
+            "bottom": 461,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          },
+          {
+            "selector": ".chart-stations",
+            "present": true,
+            "conditional": false,
+            "left": 16,
+            "top": 475,
+            "right": 374,
+            "bottom": 578,
+            "clipper": {
+              "selector": "div.view-wrap > main.brief-landing > div.brief-stage > div.synoptic",
+              "left": 0,
+              "right": 390,
+              "top": 65,
+              "bottom": 594
+            }
+          }
+        ],
+        "collisions": [],
+        "clipped": [],
+        "expandProbe": null,
+        "collapsedProbe": null,
+        "footerTail": {
+          "dock": {
+            "selector": ".dock",
+            "top": 754,
+            "bottom": 844
+          },
+          "meta": {
+            "selector": ".footer-meta",
+            "top": 659,
+            "bottom": 700
+          }
+        }
+      }
+    }
+  ]
+}

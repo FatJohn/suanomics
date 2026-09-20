@@ -1,0 +1,116 @@
+name: ci
+
+# PR→main 與 push main 的完整驗證 gate（build + lint + type-check + test）。
+# 起真實 Postgres service、跑含 DB 連線的 repo 測試、不跳過。
+# 兩個 job：`ci`（build/lint/type-check/test）與 `docker`（兩個 image build 得過）。
+# 切成 public repo、設 branch protection 時，兩個都要列為 required status check。
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# 這個 workflow 只讀 repo 內容，不需要任何寫入權限。
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # 與 docker-compose.yml（本機）和 docker-compose.deploy.yml（部署參考）同一個大版本。
+        # 三邊要一起動：真 DB 測試刻意不 mock，它們跑在哪個版本就是這個專案唯一驗證過的版本。
+        # service container 不掛 volume，所以 PG18 改掉的 PGDATA 路徑在這裡沒有影響。
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CI: 'true'
+      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+      # 指向本 job 的 service container（GitHub 把 service port 映射到 localhost）
+      DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/postgres'
+      # 測試多為 mock LLM、設 dummy 避免讀 env 的初始化路徑炸
+      GEMINI_API_KEY: test-key
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # pnpm 版本由 package.json 的 packageManager 欄位自管（pnpm@11.8.0）
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Resolve pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # build 先於 type-check/test：@suanomics/shared 等 exports 指 dist、後續步驟依賴 dist
+      - name: Build
+        run: pnpm build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm type-check
+
+      # fresh Postgres 從空 DB 套用全部 migration（無 .env 時 db:migrate 吃 env var DATABASE_URL）
+      - name: DB migrate
+        run: pnpm --filter @suanomics/db run db:migrate
+
+      - name: Test
+        run: pnpm test
+
+  docker:
+    runs-on: ubuntu-latest
+
+    # 只驗證兩個 image build 得過，不需要 Postgres、不 push、不登入任何 registry。
+    # `ci` job 的 `pnpm build` 跑在 host 上，不會經過 Dockerfile 的 COPY 清單與
+    # workspace 建置順序；Dockerfile.server / Dockerfile.web 各自把要用到的
+    # package.json 逐一 COPY 進 image 再 install，新增 workspace 忘記加進清單、
+    # 或 .dockerignore 排掉了實際需要的檔案，host 上 `pnpm build` 照樣綠、
+    # 只有實際跑 docker build 才會被擋下來。
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Build server image
+        run: docker build -f Dockerfile.server -t suanomics-server:ci .
+
+      - name: Build web image
+        # VITE_API_URL 這個 ARG 沒有預設值：不傳時 Docker 會把它解析成空字串
+        # （不是 unset）。apps/web 的程式碼寫的是
+        # `import.meta.env.VITE_API_URL ?? 'http://localhost:3000'`，`??` 只在
+        # null/undefined 時才會 fallback，空字串會直接蓋掉這個預設值——build 仍會
+        # 成功，但跑出來的 image 會帶著空字串當 API base。這裡明傳一個佔位值只是
+        # 讓 build 這一步的行為貼近正式帶值時的樣子，不是部署用的值。
+        run: docker build -f Dockerfile.web --build-arg VITE_API_URL=http://localhost:3000 -t suanomics-web:ci .

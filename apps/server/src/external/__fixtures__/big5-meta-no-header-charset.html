@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<title>合成樣本首頁</title>
+<link rel="stylesheet" href="/static/site.css"/>
+<script src="/static/site.js"></script>
+<!-- 這段 padding 存在的理由：真實案例裡 charset meta 不在檔頭第一行，
+     而是被 title/link/script 推到幾百 bytes 之後。把 meta 放在偏移量
+     0 會讓「有沒有真的掃 sniff window」這件事驗不出來。 -->
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta http-equiv="Content-Type" content="text/html; charset=big5"/>
+</head>
+<body>
+<h1>合成樣本理財網</h1>
+<div class="news">
+<a href="/news/1">台股收盤上漲 電子股領漲</a>
+<a href="/news/2">美元指數走弱 新台幣升值</a>
+<a href="/news/3">原油價格震盪 能源類股波動加大</a>
+</div>
+<p>本頁為測試用合成樣本，內容為虛構，不對應任何真實網站。</p>
+</body>
+</html>

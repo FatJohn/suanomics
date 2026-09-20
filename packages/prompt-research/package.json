@@ -1,0 +1,33 @@
+{
+  "name": "@suanomics/prompt-research",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --passWithNoTests",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@google/genai": "^2.23.0",
+    "@suanomics/jobs": "workspace:*",
+    "@suanomics/shared": "workspace:*",
+    "fast-xml-parser": "^5.11.1",
+    "fastest-levenshtein": "^1.0.16",
+    "youtube-transcript-plus": "^2.0.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.1"
+  }
+}

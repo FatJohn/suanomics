@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>範例財經 Podcast</title>
+    <itunes:author>範例主持人</itunes:author>
+    <description>財經 podcast 範例</description>
+    <link>https://example.com/podcast</link>
+    <item>
+      <title>第三集：2026-05-21 盤勢解析</title>
+      <guid isPermaLink="false">ep-003</guid>
+      <pubDate>Wed, 21 May 2026 08:00:00 GMT</pubDate>
+      <link>https://example.com/podcast/ep-003</link>
+      <itunes:summary>第三集摘要</itunes:summary>
+      <itunes:duration>1:23:45</itunes:duration>
+      <enclosure url="https://example.com/ep-003.mp3" type="audio/mpeg" length="123456" />
+    </item>
+    <item>
+      <title>第一集：2026-05-19 盤勢解析</title>
+      <guid isPermaLink="false">ep-001</guid>
+      <pubDate>Mon, 19 May 2026 08:00:00 GMT</pubDate>
+      <link>https://example.com/podcast/ep-001</link>
+      <description>第一集摘要 &lt;p&gt;HTML 殘留&lt;/p&gt;</description>
+      <itunes:duration>45:30</itunes:duration>
+      <enclosure url="https://example.com/ep-001.mp3" type="audio/mpeg" length="56789" />
+    </item>
+    <item>
+      <title>第二集：2026-05-20 盤勢解析</title>
+      <guid isPermaLink="false">ep-002</guid>
+      <pubDate>Tue, 20 May 2026 08:00:00 GMT</pubDate>
+      <link>https://example.com/podcast/ep-002</link>
+      <content:encoded>第二集 content encoded</content:encoded>
+      <itunes:duration>3600</itunes:duration>
+      <enclosure url="https://example.com/ep-002.mp3" type="audio/mpeg" length="98765" />
+    </item>
+  </channel>
+</rss>

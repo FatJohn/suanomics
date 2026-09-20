@@ -1,0 +1,65 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`podcast-writer formatUserContent — characterization baseline > renders the full template with every optional block, both branches of every conditional 1`] = `
+"今天 2026-06-27、請依下列素材產出 podcast：
+
+## 1. Reading narrative（已生成、podcast 應有 differentiation 但內容可參考）
+intro: 今日科技板塊呈現結構性分化、AI 算力需求拉動上游設備鏈。
+outro: 科技與地緣風險併行、配置上需平衡。
+sections:
+  - AI 算力與半導體鏈: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB…
+
+## 2. Brief headline / summary / reasoning
+headline: 科技算力與地緣風險併行
+summary: 今日摘要
+reasoning: r1 → r2 → r3
+
+## 3. Cascade chains（多階傳導）
+  - [tier 1] 半導體 → 2330: MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM…
+  - [tier ?] 面板 → 2409: 短機制
+
+## 4. 可用 citations（共 1 條、citationUrls 必須是這個 subset）
+  - url: https://example.com/a | title: citation title one that is fairly long for clamp test purpo…
+
+## 5. News IDs（relatedNewsIds 必須是這個 subset、共 1 則）
+  - id=n1: news title one that is quite long so it may exceed the sixt…
+
+## 市場收盤時間框架
+- 台股（加權指數）最近收盤：昨日
+
+# 市場數據參考（僅供宏觀脈絡；引用數字時照抄、不得推算未提供的數字）
+## 今日市場數據
+- 加權指數：23,150 點（+0.8%）
+
+
+# 行事曆參考（前瞻素材；只可引用列出的事件與日期）
+## 本週財經行事曆
+- 2026-06-30：FOMC 利率決策
+
+# 敘事線參考（可自然回顧這些追蹤線的進展與先前論點；只可引用列出的內容、無進展的線不要硬提）
+## 追蹤中敘事線（今日有進展）
+- 範例線
+
+請輸出 podcast JSON、嚴格符合 schema、覆蓋全部 news。"
+`;
+
+exports[`podcast-writer formatUserContent — characterization baseline > renders the minimal template: no narrative, no cascadeChains, no optional blocks 1`] = `
+"今天 2026-01-05、請依下列素材產出 podcast：
+
+## 1. Reading narrative（已生成、podcast 應有 differentiation 但內容可參考）
+(narrative 為空、請從 brief 自行構建)
+
+## 2. Brief headline / summary / reasoning
+headline: h
+summary: s
+reasoning: r
+
+## 3. Cascade chains（多階傳導）
+(無 cascade chains)
+
+## 4. 可用 citations（共 0 條、citationUrls 必須是這個 subset）
+
+
+
+請輸出 podcast JSON、嚴格符合 schema、覆蓋全部 news。"
+`;

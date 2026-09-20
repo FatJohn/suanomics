@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Plain Feed</title>
+    <description>plain rss 2.0 feed</description>
+    <item>
+      <title>good ep</title>
+      <pubDate>Mon, 19 May 2026 00:00:00 GMT</pubDate>
+      <description>plain desc</description>
+      <enclosure url="https://example.com/good.mp3" type="audio/mpeg" length="100" />
+    </item>
+    <item>
+      <title>missing enclosure ep</title>
+      <pubDate>Tue, 20 May 2026 00:00:00 GMT</pubDate>
+      <description>no enclosure here</description>
+    </item>
+  </channel>
+</rss>

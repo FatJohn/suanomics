@@ -1,0 +1,65 @@
+{
+  "name": "@suanomics/db",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema": {
+      "types": "./dist/schema.d.ts",
+      "import": "./dist/schema.js"
+    },
+    "./news-categories": {
+      "types": "./dist/news-categories.d.ts",
+      "import": "./dist/news-categories.js"
+    },
+    "./client": {
+      "types": "./dist/client.d.ts",
+      "import": "./dist/client.js"
+    },
+    "./seed": {
+      "types": "./dist/seed.d.ts",
+      "import": "./dist/seed.js"
+    },
+    "./seed-external-sources": {
+      "types": "./dist/seed-external-sources.d.ts",
+      "import": "./dist/seed-external-sources.js"
+    },
+    "./repos/*": {
+      "types": "./dist/repos/*.d.ts",
+      "import": "./dist/repos/*.js"
+    },
+    "./storage/*": {
+      "types": "./dist/storage/*.d.ts",
+      "import": "./dist/storage/*.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run --passWithNoTests",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=../../apps/server/.env src/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=../../apps/server/.env src/seed.ts",
+    "seed:external-sources": "tsx --env-file-if-exists=../../apps/server/.env src/seed-external-sources.ts"
+  },
+  "dependencies": {
+    "@suanomics/shared": "workspace:*",
+    "aws4fetch": "^1.0.20",
+    "drizzle-orm": "^0.45.2",
+    "postgres": "^3.4.9",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.1",
+    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.23.13",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.1"
+  }
+}

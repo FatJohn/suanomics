@@ -1,0 +1,6 @@
+# blank_issues_enabled: false 逼開 issue 的人挑對應的 template，不留空白 issue 那個選項。
+#
+# 安全問題的私下回報不需要在這裡另外設定：SECURITY.md 說明這個 repo 用 GitHub 的
+# private vulnerability reporting，只要維護者在 repo 設定裡打開這個功能，GitHub 就會
+# 自動在「開新 issue」的選單顯示對應入口，不必在這份 config 裡寫死網址。
+blank_issues_enabled: false

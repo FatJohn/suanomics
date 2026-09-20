@@ -1,0 +1,42 @@
+# commitlint（[STRUCTURAL]／[BEHAVIORAL] 標籤與 Conventional Commits 格式）只在本機
+# husky 的 commit-msg hook 執行，CI（.github/workflows/ci.yml）沒有跑它——Dependabot
+# 產生的 commit 沒有這兩個標籤不會讓 CI 變紅，只是不符合 CONTRIBUTING.md 描述的本機
+# commit 紀律（Dependabot 不受 husky hook 約束）。
+
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      timezone: Asia/Taipei
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # TypeScript 7 生態還沒跟上（vue-tsc／typescript-eslint 皆卡住），major 版先不自動升。
+      - dependency-name: typescript
+        update-types:
+          - version-update:semver-major
+      # pnpm-workspace.yaml 的 security override 把全樹 undici 釘在 7.x（cheerio、shadcn-vue 仍要求 7）。
+      # 只改 package.json 的 major PR 會讓 specifier 寫 8、lockfile 實際裝 7；要升 8 得連 override 一起處理。
+      - dependency-name: undici
+        update-types:
+          - version-update:semver-major
+    commit-message:
+      prefix: chore(deps)
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+    commit-message:
+      prefix: chore(deps)

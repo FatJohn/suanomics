@@ -1,0 +1,37 @@
+FROM node:22-slim AS build
+LABEL "language"="nodejs"
+LABEL "framework"="vite"
+WORKDIR /src
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+RUN npm install -g pnpm@11
+COPY . .
+RUN pnpm install --frozen-lockfile
+RUN pnpm --filter @suanomics/shared build
+RUN pnpm --filter web build
+
+# 通用 caddy image：先前用的是託管平台自帶的 static image，換掉之後這個 Dockerfile
+# 在任何能跑 docker 的地方都建得起來。代價是 SPA fallback 要自己給（見 Caddyfile）。
+#
+# build stage（上面那個 FROM ... AS build）不改 USER：它不會進最終 image，
+# 產物只透過下面的 COPY --from=build 帶過來，容器實際跑起來的是這一階段。
+FROM caddy:2-alpine
+COPY Caddyfile /etc/caddy/Caddyfile
+COPY --from=build /src/apps/web/dist /usr/share/caddy
+# 非 root 執行：建立專用的 app user。8080 是非特權 port，不必額外掛 setcap／
+# file capability 就能在會丟掉 capability 的平台上跑（見 Caddyfile 開頭註解）。
+#
+# Caddy 會往 XDG 的 config／data 目錄寫東西（autosave 設定、instance id）。基底 image
+# 把這兩個目錄指到 /config 與 /data；若基底把它們宣告成 VOLUME，build 階段對它們做的
+# chown 到了執行期不保證還在。所以不去動那兩個路徑，改把 XDG 目錄指到 app 自己的
+# home 底下——一定不是 volume、一定屬於 app。
+RUN addgroup -S app && adduser -S -G app app \
+ && mkdir -p /home/app/.config /home/app/.local/share \
+ && chown -R app:app /home/app /usr/share/caddy
+ENV XDG_CONFIG_HOME=/home/app/.config
+ENV XDG_DATA_HOME=/home/app/.local/share
+USER app
+# build 階段就以 app 身分載入一次設定：Caddyfile 寫壞，或 app 讀不到設定檔時，
+# image 直接 build 失敗，而不是等容器啟動才發現。
+RUN caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+EXPOSE 8080

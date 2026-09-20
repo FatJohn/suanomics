@@ -1,0 +1,9 @@
+{
+  "items": {
+    "data": [
+      { "newsId": 5001, "title": "鉅亨新聞一", "summary": "摘要一", "publishAt": 1745400000 },
+      { "newsId": 5002, "title": "鉅亨新聞二", "summary": "摘要二", "publishAt": 1745410000 },
+      { "newsId": 5003, "title": "鉅亨新聞三", "summary": "摘要三", "publishAt": 1745420000 }
+    ]
+  }
+}

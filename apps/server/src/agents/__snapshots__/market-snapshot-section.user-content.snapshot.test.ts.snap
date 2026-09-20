@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`market-snapshot-section user content snapshot > appendMarketSnapshotSection：有快照時附加完整區塊 1`] = `
+"# 既有內容
+
+# 市場數據快照（主動解讀、不只當背景）
+- 對 primaryImpact 與每條 cascadeChain、檢查快照中是否有相關序列；有則引用並解讀：方向（加速 / 放緩 / 轉向）、以及與新聞敘事一致或矛盾
+- 數字與變化幅度照抄快照提供的值、不得自行推算未提供的數字
+- 數據與新聞論點矛盾時、明確點出（例：新聞稱需求強勁、但相關序列連三月放緩）
+- 無相關序列的主軸不要硬引用、不要為引用而引用
+- 台股加權指數：22,345 點（+1.2%）
+- 美元兌台幣：31.5"
+`;
+
+exports[`market-snapshot-section user content snapshot > 讀者面標題文字（READER_SNAPSHOT_HEADING） 1`] = `"# 市場數據參考（僅供宏觀脈絡；引用數字時照抄、不得推算未提供的數字）"`;

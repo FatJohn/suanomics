@@ -1,0 +1,41 @@
+{
+  "name": "web",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run --passWithNoTests",
+    "layout:assert": "node scripts/layout-assertions.mjs",
+    "nav:assert": "node scripts/navigation-assertions.mjs",
+    "type-check": "vue-tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@iconify-json/lucide": "^1.2.133",
+    "@iconify/vue": "^5.0.1",
+    "@suanomics/shared": "workspace:*",
+    "markdown-it": "^15.0.2",
+    "pinia": "^4.0.3",
+    "reka-ui": "^2.10.4",
+    "shadcn-vue": "^2.8.2",
+    "vue": "^3.5.42",
+    "vue-router": "^5.3.1"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.1",
+    "@vitejs/plugin-vue": "^6.0.9",
+    "autoprefixer": "^10.6.1",
+    "playwright-core": "^1.63.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.3",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1",
+    "vue-tsc": "^3.3.11"
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "scripts/**/*.ts"
+      ],
+      "project": [
+        "scripts/**/*.ts"
+      ]
+    },
+    "packages/shared": {
+      "entry": [
+        "src/index.ts",
+        "src/**/*.{test,spec}.ts"
+      ],
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "packages/jobs": {
+      "entry": [
+        "src/index.ts",
+        "src/**/*.{test,spec}.ts"
+      ],
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "packages/prompt-research": {
+      "entry": [
+        "src/index.ts",
+        "src/sources/yt-transcript/index.ts",
+        "src/types.ts",
+        "src/**/*.{test,spec}.ts"
+      ],
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "packages/db": {
+      "entry": [
+        "src/index.ts",
+        "src/migrate.ts",
+        "src/seed-*.ts",
+        "src/**/*.{test,spec}.ts"
+      ],
+      "project": [
+        "src/**/*.ts"
+      ]
+    },
+    "apps/server": {
+      "entry": [
+        "src/index.ts",
+        "tools/cli/*.ts",
+        "src/**/*.{test,spec}.ts",
+        "tools/**/*.{test,spec}.ts"
+      ],
+      "project": [
+        "src/**/*.ts",
+        "tools/**/*.ts"
+      ]
+    },
+    "apps/web": {
+      "entry": [
+        "src/main.ts",
+        "vite.config.ts",
+        "src/**/*.{test,spec}.ts"
+      ],
+      "project": [
+        "src/**/*.{ts,vue}"
+      ]
+    }
+  },
+  "ignoreDependencies": [
+    "@iconify-json/lucide",
+    "shadcn-vue",
+    "tailwindcss"
+  ]
+}

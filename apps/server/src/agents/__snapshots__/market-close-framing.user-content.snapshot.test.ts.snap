@@ -1,0 +1,29 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`market-close-framing user content snapshot > taiexCloseDate 為 null → 空字串（degrade） 1`] = `""`;
+
+exports[`market-close-framing user content snapshot > 前一台北日 → 昨日、資料日去除前導 0 1`] = `
+"# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
+- 台股（加權指數）最近收盤：昨日（資料日 1/5）
+- 其他市場（美股、原物料等）：依各則新聞標注的「發布時間」判斷；境外市場新聞多於盤後當下發布、標籤可靠。"
+`;
+
+exports[`market-close-framing user content snapshot > 前五日 → N天前 1`] = `
+"# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
+- 台股（加權指數）最近收盤：5天前（資料日 6/22）
+- 其他市場（美股、原物料等）：依各則新聞標注的「發布時間」判斷；境外市場新聞多於盤後當下發布、標籤可靠。"
+`;
+
+exports[`market-close-framing user content snapshot > 前兩日 → 前日 1`] = `
+"# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
+- 台股（加權指數）最近收盤：前日（資料日 6/25）
+- 其他市場（美股、原物料等）：依各則新聞標注的「發布時間」判斷；境外市場新聞多於盤後當下發布、標籤可靠。"
+`;
+
+exports[`market-close-framing user content snapshot > 同台北日 → 今日 1`] = `
+"# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
+- 台股（加權指數）最近收盤：今日（資料日 6/27）
+- 其他市場（美股、原物料等）：依各則新聞標注的「發布時間」判斷；境外市場新聞多於盤後當下發布、標籤可靠。"
+`;
+
+exports[`market-close-framing user content snapshot > 收盤日晚於報告日（防禦）→ 空字串 1`] = `""`;

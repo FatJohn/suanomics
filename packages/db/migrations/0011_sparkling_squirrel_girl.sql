@@ -1,0 +1,1 @@
+ALTER TABLE "news_items" ADD COLUMN "category" text;

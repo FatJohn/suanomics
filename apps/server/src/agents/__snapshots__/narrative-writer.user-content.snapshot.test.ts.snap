@@ -1,0 +1,100 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`narrative-writer formatUserContent — characterization baseline > renders the full template with every optional block, both branches of every conditional 1`] = `
+"今天 2026-06-27、請依下列素材產 narrative：
+
+## 本日論點（thesis 脊椎、全文貫穿）
+AI 算力需求正把市場關注從單一龍頭擴散到整條供應鏈
+intro 以此立論、每個主題段用內容承接它（不要寫「這正印證了本日論點」這類宣告句）、outro 回到這條主線收尾。
+
+## 0. 當日主軸（narrative 組織骨幹）
+- 主軸一：AI 算力需求
+- 主軸二：地緣政治風險
+依這些主軸把相關新聞與 cascade 編織成 1-4 個主題段落、不要逐則新聞各寫一段。
+
+## 1. Synthesizer brief
+headline: 今日主要新聞標題
+summary: 今日摘要內容、涵蓋科技與地緣政治兩條主線
+
+## 市場收盤時間框架
+- 台股（加權指數）最近收盤：昨日
+
+# 市場數據參考（僅供宏觀脈絡；引用數字時照抄、不得推算未提供的數字）
+## 今日市場數據
+- 加權指數：23,150 點（+0.8%）
+
+## 本週敘事線回顧
+- 範例回顧
+
+## 2. 每則新聞 + analyst 結果（共 4 則）
+
+### News 1 (newsId=n1)
+Title: 台積電法說會
+發布時間：今日
+Text excerpt: BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB…
+Primary impact: 半導體供應鏈受惠
+Reasoning: 訂單能見度延展、上游設備跟進擴產
+Cascade chains:
+  - tier 1: 半導體 → 2330, 2454
+    mechanism: MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM…
+  - tier ?: 面板 → 2409
+    mechanism: 短機制敘述
+
+### News 2 (newsId=n2)
+Title: 短新聞標題
+Text excerpt: 短內文
+Primary impact: 地緣政治風險升溫
+Reasoning: 中東緊張推升油價
+
+### News 3 (newsId=n404)
+Primary impact: 找不到對應新聞
+Reasoning: 測試 news lookup miss
+
+### News 4 (newsId=(none))
+Primary impact: 沒有 newsId 的分析
+Reasoning: 測試 newsId undefined
+
+## 3. 可用 citations（共 2 條、citationUrls 必須是這個 subset）
+  - url: https://example.com/c1
+    title: citation title one
+    quote: QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ…
+  - url: https://example.com/c2
+    title: citation title two
+    quote: short quote
+
+## 4. 本日已核對的證據（claim ledger、共 1 條）
+[c1] (fact/named-number) claim c1 — 來源：https://example.com/c1
+
+
+# 行事曆參考（前瞻素材；只可引用列出的事件與日期）
+## 本週財經行事曆
+- 2026-06-30：FOMC 利率決策
+
+# 敘事線參考（依「跨日連續性」節處理：只在真有延續的主線講今日相對「先前」的 delta 與伏筆兌現；無延續勿硬提、稀疏日冷開場）
+## 追蹤中敘事線（今日有進展）
+- 範例線
+
+# 主管機關公告（一手素材；只可引用列出的機關、日期與內容，不可據此推論未列出的數字或政策）
+## 主管機關公告
+- 範例公告
+
+請輸出 narrative JSON。"
+`;
+
+exports[`narrative-writer formatUserContent — characterization baseline > renders the minimal template: no optional blocks, no mainThemes fallback, withLedger=false 1`] = `
+"今天 2026-01-05、請依下列素材產 narrative：
+
+## 0. 當日主軸（narrative 組織骨幹）
+（未提供）請自行從下列選稿歸納 1-4 個當日主軸、依主軸組織主題段落、不要逐則新聞各寫一段。
+
+## 1. Synthesizer brief
+headline: h
+summary: s
+
+## 2. 每則新聞 + analyst 結果（共 0 則）
+
+## 3. 可用 citations（共 0 條、citationUrls 必須是這個 subset）
+
+
+請輸出 narrative JSON。"
+`;

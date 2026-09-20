@@ -1,0 +1,379 @@
+/* Synoptic Chart：讀者面不再是「浮在桌面上的一張紙」，而是一張圖加圖下的閱讀欄。
+   本層只微調 DS token 的少數幾支（圖底與閱讀排版），其餘一律沿用全域 token——
+   舊版在這裡整組覆寫成另一套配色，是上一個世界的作法，已移除。 */
+.brief-landing {
+  --brief-heading-font: var(--font-display);
+  --brief-headline-size: 42px;
+  --brief-headline-leading: 1.24;
+  --brief-headline-mobile-size: 26px;
+  --brief-thesis-font: var(--font-display);
+  --brief-thesis-size: 17px;
+  --brief-body-font: var(--font-tc);
+  --brief-body-size: 17px;
+  --brief-body-leading: 1.85;
+  --brief-body-tracking: 0.012em;
+  /* 疊在圖上那些襯底區塊（主軸卡、觀測站讀數帶）的**內距**。它跟 --frame-pad 是兩件事：
+     frame-pad 決定「區塊的外框停在哪」，這一支決定「框裡的字距離框多遠」。兩個相鄰的
+     襯底區塊若各自寫死自己的值，字就會差幾個 px 對不齊——後來讀數帶第一格是
+     padding-left: 0，與主軸卡的 15px 差了 14px，看起來像掉出框外。 */
+  --chart-panel-pad: 15px;
+  /* --measure-frame / --frame-pad 定義在 main.css 的 :root（masthead 與 footer 站在
+     這個元素之外、要綁同一條量度）。圖紙一度是 1600，框收窄成 972 之後圖紙左右各多出
+     314px 的灰，使用者判定要跟著收。 */
+  flex: 1;
+  width: 100%;
+  /* 播放器的 reserve 不在這裡：它要保護的是**文件的最後一段**，而那是 footer、不是本元素
+     （footer 在 App.vue 是 .view-wrap 的兄弟節點）。留在這裡只會把 footer 往下推出一個空隙，
+     footer 自己的最後一行照樣被蓋住——見 main.css 的 --dock-reserve。 */
+  padding: 0;
+  background: var(--surface);
+}
+
+/* 圖紙：力場圖與貼著它的兩條帶站在這張紙上，寬度與框相同 */
+.brief-stage {
+  width: min(100%, var(--measure-frame));
+  margin-inline: auto;
+  background: var(--chart);
+}
+
+/* 器械與矩陣的量度。散文不走這個寬度，走 .brief-grid 的 58ch。
+   誰來套這個 class 有兩種寫法，兩種都是刻意的、不要統一：
+   - 一般元件自己不套，由 HomeView 用 <div class="brief-frame"> 包起來。
+   - 三條「帶」自己套在內層：BriefSynopticChart／BriefLayerTabs／BriefViewpointsSection。
+     它們的外層必須滿版（.layer-tabs 與 .vp-band 帶跨視窗底色、圖紙可以寬到 1600），
+     改由容器套 frame 會把那條底色一起收窄——看起來像「修好了不一致」，
+     實際是把三條帶的滿版效果拆掉。 */
+.brief-frame {
+  width: min(100%, var(--measure-frame));
+  margin-inline: auto;
+  padding-inline: var(--frame-pad);
+}
+
+.brief-read {
+  padding-bottom: 72px;
+  background: var(--surface);
+}
+
+/* ── 疊在力場圖上的標題組 ──
+   襯底是必要的、不是裝飾：文字會壓到鋒面線上。 */
+.chart-kicker {
+  margin: 0 0 10px;
+  font-family: var(--font-num);
+  font-size: var(--size-caption);
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--warm);
+}
+
+.chart-headline {
+  margin: 0;
+  font-family: var(--brief-heading-font);
+  font-size: var(--brief-headline-size);
+  line-height: var(--brief-headline-leading);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--fg-1);
+  text-wrap: balance;
+}
+
+.chart-thesis {
+  position: relative;
+  margin-top: 26px;
+  max-width: 580px;
+  padding: 13px var(--chart-panel-pad);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  border-top: 2px solid var(--cold);
+}
+
+/* 冷鋒記號：三角立在頂線上。與正反觀點的暖鋒半圓成對。 */
+.chart-thesis::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 0;
+  width: 48px;
+  height: 8px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='8' viewBox='0 0 48 8'%3E%3Cg fill='%231f6fb2'%3E%3Cpath d='M5 8 L11 0 L17 8 Z'/%3E%3Cpath d='M27 8 L33 0 L39 8 Z'/%3E%3C/g%3E%3C/svg%3E")
+    no-repeat;
+}
+
+.chart-thesis-label {
+  display: block;
+  font-family: var(--font-num);
+  font-size: var(--size-caption);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cold);
+}
+
+.chart-thesis p {
+  margin: 4px 0 0;
+  font-size: var(--brief-thesis-size);
+  line-height: 1.75;
+  font-weight: 700;
+  color: var(--fg-1);
+}
+
+@media (max-width: 1023px) {
+  .brief-landing {
+    --chart-panel-pad: 12px;
+  }
+  .chart-headline {
+    font-size: var(--brief-headline-mobile-size);
+  }
+  .chart-thesis {
+    margin-top: 16px;
+    padding: 10px var(--chart-panel-pad);
+  }
+  .chart-thesis p {
+    font-size: var(--size-small);
+  }
+}
+
+/* 閱讀對＝散文欄 + 側欄，站在跟圖上器械同一個框裡（--measure-frame）。
+   框寬本身就是從 58ch 推導的，所以主欄吃掉剩下的寬度之後恰好等於 58ch，
+   側欄靠框的右緣——於是主欄左緣＝大標左緣、側欄右緣＝讀數帶右緣，
+   桌機上整頁只剩一組左右邊界。
+   舊版是 1200 的 shell 配 1fr 主欄，內文卻鎖 58ch 靠左，右邊 232px 是無主的死空白；
+   中途也試過「58ch + 側欄整對置中」，那會讓文欄變成浮在空白中間、跟上面的圖一條邊
+   都不共用的窄帶。行長的取捨與實測數字見 DESIGN.md 的 Typography named rules。 */
+.brief-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 288px;
+  grid-template-areas: 'main sidebar';
+  gap: 48px;
+  align-items: start;
+  margin-top: 36px;
+}
+
+.brief-main {
+  grid-area: main;
+  min-width: 0;
+}
+
+.brief-grid > .sidebar {
+  grid-area: sidebar;
+}
+
+.masthead-home .ds-date-btn {
+  min-height: 44px;
+}
+
+.masthead-home .ds-picker {
+  width: 346px;
+}
+
+.masthead-home .ds-mnav,
+.masthead-home .ds-day {
+  width: 44px;
+  height: 44px;
+}
+
+.masthead-home .ds-day {
+  aspect-ratio: auto;
+}
+
+/* 第二層：佐證與來源。矩陣與格線走器械量度，不擠進散文的 58ch */
+.brief-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-top: 32px;
+}
+
+.brief-status {
+  min-height: 360px;
+  padding: 88px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--fg-3);
+  font-size: var(--size-small);
+}
+
+.brief-status strong {
+  color: var(--fg-1);
+  font-family: var(--font-display);
+  font-size: var(--size-h2);
+}
+
+.brief-loading {
+  font-family: var(--font-num);
+  font-size: var(--size-caption);
+  letter-spacing: 0.04em;
+}
+
+.loading-rule {
+  width: 64px;
+  height: 2px;
+  background: var(--warm);
+  animation: brief-loading 1.3s var(--ease-out) infinite alternate;
+}
+
+.brief-status-error span {
+  color: var(--fg-3);
+}
+
+.retry-button {
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 20px;
+  border: 1px solid var(--action);
+  border-radius: var(--radius-pill);
+  background: var(--action);
+  color: var(--action-fg);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.retry-button:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+.brief-empty p {
+  margin: 0;
+  color: var(--fg-3);
+}
+
+.brief-empty code {
+  padding: 2px 8px;
+  border: 1px solid var(--border-2);
+  border-radius: var(--radius-sm);
+  background: var(--bg-2);
+  color: var(--fg-1);
+  font-family: var(--font-num);
+  font-size: var(--size-caption);
+}
+
+.brief-empty-dev {
+  margin-top: 8px;
+  font-size: var(--size-small);
+}
+
+.brief-landing .link-inline {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@keyframes brief-loading {
+  from {
+    opacity: 0.35;
+    transform: scaleX(0.45);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+/* 1023 以下：側欄回到主欄上方，「548 + gutter + 側欄」那條算式就不再綁住框寬，
+   所以框直接收到剛好包住散文（548 + 左右 32）。整個帶因此改走窄版處理——圖也回到
+   正常流、讀數帶水平捲，等於「放大版的手機」而不是「縮小版的桌機」。
+   不這樣做的話：框留在視窗寬、散文仍鎖 58ch 靠左，右邊就是桌機剛消滅掉的死空白；
+   而只收框、圖仍走桌機那套疊放（標題組綁 --measure-frame 的固定寬），大標會被擠成 323px 寬。 */
+@media (max-width: 1023px) {
+  .brief-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'sidebar' 'main';
+    gap: 32px;
+  }
+}
+
+@media (max-width: 719px) {
+  .brief-landing {
+    padding: 0;
+    background: var(--surface);
+  }
+  .brief-read {
+    padding-bottom: 56px;
+  }
+  .brief-grid {
+    margin-top: 26px;
+    gap: 26px;
+  }
+  .brief-evidence {
+    margin-top: 26px;
+    gap: 22px;
+  }
+}
+
+@media (max-width: 419px) {
+  .masthead-home .ds-picker {
+    position: fixed;
+    top: calc(var(--header-h) + 8px);
+    right: 8px;
+    left: 8px;
+    width: auto;
+    max-width: 346px;
+    margin-left: auto;
+  }
+  .masthead-home .ds-grid {
+    overflow-x: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brief-landing *,
+  .brief-landing *::before,
+  .brief-landing *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+  .masthead-home .ds-nav,
+  .masthead-home .ds-date-btn,
+  .masthead-home .ds-caret,
+  .masthead-home .ds-mnav,
+  .masthead-home .ds-day.avail,
+  .masthead-home .ds-fade-enter-active,
+  .masthead-home .ds-fade-leave-active {
+    transition: none;
+  }
+}
+
+/* ── 頂端閱讀進度 ──
+   長文缺的不是可讀性、是「現在在哪、還有多少」。這條線就是那個路標。
+   用 transform 而不是 width：捲動時每一幀都會改它、只跑 compositor。 */
+.reading-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 40;
+  height: 3px;
+  background: var(--border-2);
+}
+.reading-progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--warm);
+  transform-origin: left center;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reading-progress-fill {
+    transition: transform 90ms linear;
+  }
+}
+
+/* 報告未發布時，盤面數字自己站一排 */
+.empty-stations {
+  width: 100%;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+}
+
+/* 佐證層結尾的免責聲明。合規要求它在場，但它不是這一層的內容——所以放最後、壓到最小 */
+.evidence-disclaimer {
+  margin: 0;
+  font-size: var(--size-caption);
+  line-height: 1.7;
+  color: var(--fg-muted);
+}

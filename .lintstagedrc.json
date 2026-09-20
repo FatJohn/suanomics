@@ -1,0 +1,4 @@
+{
+  "*.{ts,vue,tsx,js,mjs,cjs}": ["eslint --fix"],
+  "apps/web/**/*.html": ["eslint --fix"]
+}

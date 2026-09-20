@@ -1,0 +1,17 @@
+# apps/web 的靜態站設定（Dockerfile.web 第二階段用）。
+#
+# 為什麼 repo 裡要有這個檔：SPA 的路由在瀏覽器端，直接開 /brief/news/123 這種深連結時
+# 伺服器上沒有對應的檔案。少了下面那條 try_files，Caddy 會回 404，而首頁點進去卻正常——
+# 只有重新整理與外部連結會壞，是那種上線後才被讀者踩到的缺陷。
+#
+# 監聽 8080 而不是 80：容器改以非 root user 執行後，80 是特權 port（< 1024），
+# 非 root 綁不上去，除非額外掛 setcap／file capability——8080 不需要這些，
+# 在會丟掉 capability 的平台（例：某些 PaaS）上也能跑。對外仍照舊用 WEB_PORT
+# 對應（見 docker-compose.deploy.yml），讀者看到的網址不受影響。
+:8080 {
+	root * /usr/share/caddy
+	encode gzip
+	# SPA fallback：找不到實體檔案就交給 index.html，由 Vue Router 決定畫面。
+	try_files {path} /index.html
+	file_server
+}

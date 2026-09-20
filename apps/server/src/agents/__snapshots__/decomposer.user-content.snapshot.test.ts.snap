@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`decomposer userContent snapshot (characterization) > captures multi-line body with embedded blank lines 1`] = `
+"# 新聞標題
+美國CPI數據優於預期
+
+# 新聞內文
+第一段內容說明通膨降溫。
+
+第二段內容說明市場反應。
+第三行緊接著、不留空行。"
+`;
+
+exports[`decomposer userContent snapshot (characterization) > captures normal title + single-line body 1`] = `
+"# 新聞標題
+台積電法說會上修資本支出指引
+
+# 新聞內文
+公司預期明年資本支出將顯著成長。"
+`;

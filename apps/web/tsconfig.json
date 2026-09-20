@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+    "types": ["vite/client"]
+  },
+  "references": [
+    { "path": "./tsconfig.node.json" },
+    { "path": "../../packages/shared" }
+  ],
+  "include": ["src/**/*", "src/**/*.vue"]
+}

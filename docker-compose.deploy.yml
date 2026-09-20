@@ -1,0 +1,98 @@
+# 參考部署設定：任何能跑 docker compose 的主機都起得起來。
+#
+# 這個檔**不是** repo 根的 docker-compose.yml——那個只起本機開發用的 Postgres，
+# 兩個檔刻意分開，本機那份不會因為部署設定改動而被連累。
+#
+# 用法（完整說明見 docs/operations/deploy.md）：
+#   cp apps/server/.env.example apps/server/.env   # 填 GEMINI_API_KEY 等
+#   docker compose -f docker-compose.deploy.yml up -d --build
+#   curl localhost:3000/health && curl -I localhost:8080/
+#
+# ★★ server 只能有一個 instance，而且新舊容器不得並存。
+# 開機時的 failAllInflight() 掃的是整張 background_jobs、沒有時間窗，所以新容器會把
+# 舊容器**還在跑**的 job 標成 failed——若排程觸發方的輪詢邏輯只看到 failed 就判定失敗，
+# 會收到假告警；而且兩個容器的記憶體佇列互看不到，同一天的工作會跑兩份。
+# 這個檔能做的只有兩件事：宣告單一 replica，以及給足夠的收尾時間。**它擋不住 PaaS 的
+# rolling 更新**——多數 PaaS 預設就是 rolling，那是選主機時要主動關掉的東西。
+# `docker compose up` 自己的重建順序是先停再起，所以照這個檔跑不會踩到。
+
+# ★ 專案名寫死。compose 預設拿目錄名當專案名，於是這個檔與 docker-compose.yml 會落在
+#   同一個專案、同一個 `postgres` service —— 起這一份會把本機開發用的 Postgres 容器
+#   **recreate 掉**，連著換掉它掛的 volume（2026-09-05 實測踩到；舊 volume 還在、資料
+#   沒丟，但 `docker compose -f docker-compose.yml up -d` 才能救回來）。名字不同就不會撞。
+name: suanomics-deploy
+
+services:
+  postgres:
+    # 大版本跟 CI（.github/workflows/ci.yml）與本機 docker-compose.yml 對齊在 18，
+    # 所以那幾支刻意不 mock 的真 DB 測試跑在跟這裡同一個大版本上。三邊要一起動。
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-suanomics}
+    volumes:
+      # ★ 掛在 /var/lib/postgresql 而不是 .../data：PG18 的 PGDATA 是
+      #   /var/lib/postgresql/18/docker，宣告的 VOLUME 也跟著上移一層。掛錯層容器會
+      #   exit 1（實測，log 直接說要掛哪裡）——大聲失敗，不會靜默把資料寫進容器層。
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      # server 的 entrypoint 第一件事就是跑 migration，資料庫還沒 accept connections
+      # 就起來的話它會直接死掉、然後被 restart policy 反覆重啟。
+      test: [CMD-SHELL, 'pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-suanomics}']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    restart: unless-stopped
+    env_file:
+      # 沒有這個檔 compose 會直接報錯——刻意的，缺 GEMINI_API_KEY 之類的東西
+      # 應該在起容器之前就知道，不是等 startup-config 在容器裡 exit 1。
+      - apps/server/.env
+    environment:
+      # 這幾個一定要覆蓋 .env 裡的本機值：容器內連的是同一個 compose network 的 postgres，
+      # 不是 localhost。compose 的 environment 優先於 env_file。
+      NODE_ENV: production
+      PORT: '3000'
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-suanomics}
+      # CORS 白名單。缺了服務照起、但瀏覽器端全被擋（[DEGRADED]）。
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '${SERVER_PORT:-3000}:3000'
+    # SIGTERM 之後 server 先關 HTTP（等 httpServer.close 的 callback），**再**等執行中的
+    # job 最多 30 秒（index.ts 的 runner.stop({ timeoutMs: 30_000 })）。兩段是串起來的，
+    # 所以預算是「HTTP 收尾 + 30 秒」而不是 30 秒——寬限期到了會 SIGKILL，runner 的收尾
+    # 一秒都跑不到，那批 active row 就留給下次開機的 failAllInflight()。
+    # 45s 的依據：HTTP 那段實測是 0 秒（2026-09-05，連 idle keep-alive 連線也不會擋住
+    # close），而 job 端點一律回 202 不佔連線，所以留 15 秒餘裕給 HTTP 那段夠用。
+    # 之後若加了會長時間佔住連線的端點（SSE、串流回應、同步的長查詢），這個值要跟著調。
+    stop_grace_period: 45s
+    deploy:
+      replicas: 1
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+      args:
+        # 編進 bundle、改了要重 build（不是重啟）。這是讀者的瀏覽器會打的位址，
+        # 所以要填 server 的**公開** URL，不是 compose network 內的 http://server:3000。
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3000}
+    restart: unless-stopped
+    ports:
+      # 容器內部改聽 8080（非 root user 綁不上特權 port 80，見 Caddyfile 與
+      # Dockerfile.web 的註解）；對外的 WEB_PORT 維持不變，讀者看到的網址不受影響。
+      - '${WEB_PORT:-8080}:8080'
+    depends_on:
+      - server
+
+volumes:
+  pgdata:

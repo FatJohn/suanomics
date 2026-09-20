@@ -1,0 +1,17 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.github
+.env
+.env.*
+!.env.example
+**/*.tsbuildinfo
+apps/web/src/**/*.js
+apps/web/src/**/*.d.ts
+docs
+.claude
+# runtime artifact，進不了 image 也不該撐大 build context
+**/.audio-cache
+**/.eval-out
+*.log
