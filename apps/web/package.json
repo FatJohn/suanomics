@@ -21,7 +21,6 @@
     "markdown-it": "^15.0.2",
     "pinia": "^4.0.3",
     "reka-ui": "^2.10.4",
-    "shadcn-vue": "^2.8.2",
     "vue": "^3.5.42",
     "vue-router": "^5.3.1"
   },
