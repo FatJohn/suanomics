@@ -22,7 +22,7 @@ updates:
       - dependency-name: typescript
         update-types:
           - version-update:semver-major
-      # pnpm-workspace.yaml 的 security override 把全樹 undici 釘在 7.x（cheerio、shadcn-vue 仍要求 7）。
+      # pnpm-workspace.yaml 的 security override 把全樹 undici 釘在 7.x（cheerio 仍要求 7）。
       # 只改 package.json 的 major PR 會讓 specifier 寫 8、lockfile 實際裝 7；要升 8 得連 override 一起處理。
       - dependency-name: undici
         update-types:

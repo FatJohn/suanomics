@@ -125,7 +125,7 @@ pnpm --filter web layout:assert --url http://localhost:5174
 |------|------|
 | `@suanomics/shared` | type-only import：`MarketBrief` / `Podcast` / `CascadeChain` 等 schema 推回的 type |
 | `vue` 3 / `vue-router` 5 / `pinia` 3 | 前端核心 |
-| `reka-ui` + `shadcn-vue` | UI primitives |
+| `reka-ui` | UI primitives；`components/ui/` 由 shadcn-vue CLI 產生（CLI 不列為 dependency，要新增元件時跑 `pnpm dlx shadcn-vue@latest add <name>`） |
 | `tailwindcss` 4 + `@tailwindcss/vite` | CSS-first 主題（`@theme` directive） |
 | `markdown-it` | 訊息渲染 |
 | `@iconify-json/lucide` | icon set |

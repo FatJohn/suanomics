@@ -2,18 +2,6 @@ packages:
   - apps/*
   - packages/*
 
-auditConfig:
-  ignoreGhsas:
-    # decode-uri-component: DoS via exponential decoding of malformed percent-encoded input。
-    # 修補版本（0.4.1、0.5.0）只有 ESM default export；依賴鏈末端的 source-map-resolve@0.6.0
-    # 是 CJS、用 `require('decode-uri-component')` 直接當函式呼叫，換上修補版會變成執行期 TypeError。
-    # 鏈：stylus > css > source-map-resolve > decode-uri-component。stylus 由 apps/web 的
-    #     shadcn-vue > vue-metamorph > postcss-styl 帶入（另為 vite 的 optional peer）；stylus 只在
-    #     CSS→Stylus 轉換器（stylus/lib/convert/css.js）require `css`，`css` 只在輸出 source map 時
-    #     （css/lib/stringify/source-map-support.js）require source-map-resolve。repo 內沒有 .styl 檔，實際跑不到。
-    # 若之後 `css` 或 `source-map-resolve` 換版、或 repo 開始真的用 stylus，要重新評估此條。
-    - GHSA-vcc3-ghjq-m6fr
-
 overrides:
   # GHSA：@babel/core <=7.29.0 sourceMappingURL 任意讀檔、修補於 7.29.6；留在 babel 7 避免 major 8 不相容
   '@babel/core': ^7.29.6
