@@ -37,9 +37,9 @@
     "transcript": "tsx --env-file-if-exists=.env tools/cli/transcript.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.126.0",
+    "@anthropic-ai/sdk": "^0.128.0",
     "@breezystack/lamejs": "^1.2.7",
-    "@google/genai": "^2.23.0",
+    "@google/genai": "^2.24.0",
     "@hono/node-server": "^2.1.1",
     "@suanomics/db": "workspace:*",
     "@suanomics/jobs": "workspace:*",
@@ -47,9 +47,9 @@
     "@suanomics/shared": "workspace:*",
     "cheerio": "^1.2.0",
     "commander": "^15.0.0",
-    "drizzle-orm": "^0.45.2",
+    "drizzle-orm": "^0.45.3",
     "fast-xml-parser": "^5.11.1",
-    "hono": "^4.13.8",
+    "hono": "^4.13.9",
     "js-yaml": "^5.4.2",
     "postgres": "^3.4.9",
     "undici": "^7.29.1",
@@ -58,8 +58,8 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@types/node": "^26.6.1",
-    "tsx": "^4.23.13",
+    "@types/node": "^26.6.2",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "vitest": "^5.0.1"
   }
