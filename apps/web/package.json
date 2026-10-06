@@ -15,7 +15,7 @@
     "lint": "eslint ."
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.2.136",
+    "@iconify-json/lucide": "^1.2.138",
     "@iconify/vue": "^5.0.3",
     "@suanomics/shared": "workspace:*",
     "markdown-it": "^15.0.2",
@@ -26,15 +26,15 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
-    "@types/node": "^26.6.2",
+    "@types/node": "^26.6.3",
     "@vitejs/plugin-vue": "^6.0.9",
     "autoprefixer": "^10.6.1",
     "playwright-core": "^1.63.0",
     "postcss": "^8.5.28",
     "tailwindcss": "^4.3.3",
     "typescript": "~6.0.3",
-    "vite": "^8.3.1",
-    "vitest": "^5.0.1",
+    "vite": "^8.3.2",
+    "vitest": "^5.0.3",
     "vue-tsc": "^3.3.11"
   }
 }
