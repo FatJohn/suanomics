@@ -18,7 +18,7 @@
     "@iconify-json/lucide": "^1.2.141",
     "@iconify/vue": "^5.0.3",
     "@suanomics/shared": "workspace:*",
-    "markdown-it": "^15.0.2",
+    "markdown-it": "^15.0.3",
     "pinia": "^4.0.3",
     "reka-ui": "^2.11.0",
     "vue": "^3.5.43",
