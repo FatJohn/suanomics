@@ -37,7 +37,7 @@
     "transcript": "tsx --env-file-if-exists=.env tools/cli/transcript.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.132.1",
+    "@anthropic-ai/sdk": "^1.3.0",
     "@breezystack/lamejs": "^1.2.7",
     "@google/genai": "^2.30.0",
     "@hono/node-server": "^2.1.5",
