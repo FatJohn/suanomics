@@ -1,0 +1,11 @@
+{
+  "name": "suanomics",
+  "private": true,
+  "packageManager": "pnpm@11.8.0",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}

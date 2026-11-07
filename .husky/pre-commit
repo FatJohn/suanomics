@@ -1,0 +1,6 @@
+# 擋下 staged 內容裡的金鑰。gitleaks 是系統工具（brew install gitleaks），不經 npm。
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: 找不到 gitleaks，請先安裝（macOS：brew install gitleaks）" >&2
+  exit 1
+fi
+gitleaks git --pre-commit --staged --redact --verbose

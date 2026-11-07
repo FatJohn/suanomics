@@ -1,0 +1,10 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# 環境變數檔：任何 .env* 都不進 git，只有只列 key 名的 .env.example 例外
+.env*
+!.env.example
+
+# macOS
+.DS_Store
