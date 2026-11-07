@@ -79,8 +79,8 @@ judge 刻意用不同家族的模型，避免同家族評自己的輸出。syste
 | 類型 | 來源 | 用法 |
 |---|---|---|
 | 官方機構新聞稿 | 央行、金管會、行政院、總統府、外交部、TWSE、聯準會、EIA、白宮、美國國務院等 RSS | 標題、正文、連結 |
-| 發行商自有 feed | cnyes、udn、yahoo-stock 等公開 RSS；沒有 RSS 的台灣媒體經 RSSHub 產生 | 標題、連結；正文依該站條款 |
-| 國際通訊社 | BBC、Al Jazeera、NHK World 的 RSS | 只取標題與連結 |
+| 發行商自有 feed | cnyes、yahoo-stock 等公開 RSS；聯合報系條款禁止 AI 用途，v1 不用；v1 沒有需要 RSSHub 的來源，日後需要時在 Actions job 內自架 | 標題、連結；正文依該站條款 |
+| 國際通訊社 | BBC、Al Jazeera 的 RSS；NHK World 沒有官方英文新聞 RSS，用法未決 | 只取標題與連結 |
 | 科技產業 | TechNews 科技新報 RSS | 標題、正文、連結 |
 | 結構化資料 | TWSE OpenAPI（新聞列表、MI_INDEX、外資持股、融資融券）、公開資訊觀測站重大訊息（TWSE／TPEx OpenAPI）、FRED、EIA、台美經濟日曆 | 數字與事件 |
 
