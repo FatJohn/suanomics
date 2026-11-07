@@ -18,4 +18,4 @@ v0 架構是 Hono 常駐 process 兼 in-memory job runner 加 Postgres，每個�
 - 線上即時分析（`/brief/analyze`：讀者貼文章、後端即時算、前端輪詢 job）取消，降為維護者本機的 CLI。
 - `@suanomics/jobs` 的 in-memory queue、retry、payload dedupe 在批次 CLI 裡沒有用處，由順序執行的 orchestrator 取代。
 - 原本在 Postgres 的跨日狀態（storylines、market data 歷史、近日 brief 摘要、news 候選池）仍要有持久層，見 [持久狀態放 Neon Postgres、沿用 drizzle](0003-neon-postgres.md)。
-- 有一個 spike 要先做：Actions runner 的 IP 抓 TWSE、FRED 與各新聞站會不會被擋。
+- Actions runner 的 IP 會不會被資料源擋，已由 spike #16 實測（2026-11-07，[結果](../spikes/16-actions-ip.md)）：v1 預定的 16 個 endpoint 在 Actions 上全部可達，沒有 403、429、連線失敗或逾時，ingest 可以全部跑在 Actions。只量了單一 runner、單一時間點，出口 IP 每次 run 可能不同，ingest 要逐來源記錄狀態碼、連續失敗時告警。TPEx 日收盤 JSON 在 runner 上要 22 秒，單一請求逾時至少設 60 秒。FRED、EIA 帶 key 的請求要等 #20 之後才實測。
