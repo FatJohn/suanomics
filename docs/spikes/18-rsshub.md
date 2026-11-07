@@ -5,7 +5,7 @@
 - Workflow run：<https://github.com/FatJohn/suanomics/actions/runs/42384356524>，commit `692de5cd3d7e7bf28457d13d0908cd2cafba3a77`
 - Runner：`ubuntu-latest`，Linux 7.0.0-1017-azure x86_64、4 vCPU、15983 MiB RAM（run log 的 `runner:` 行）
 - 探測腳本：[`spikes/18/probe.sh`](../../spikes/18/probe.sh)；每個 URL 5 次、間隔 1.2 秒、UA `Mozilla/5.0 (compatible; feed-probe/1.0)`、不帶任何 secrets
-- 下表數字都可在 run log 的 `STAT`／`TIMING`／`MEMORY` 行核對
+- 「(1) 公開 instance」「(2) Job 內自架」兩節的量測數字都可在 run log 的 `STAT`／`TIMING`／`MEMORY` 行核對；公開 RSS 表與 Docker Hub 的 image 資訊是另外查的，不在 run log 裡
 
 ## 結論
 
@@ -67,8 +67,8 @@ Image：`diygod/rsshub@sha256:3e1607718bc059815e95110f45636c87305befa9863b61f662
 
 | 媒體 | 條款連結 | 是否允許抓標題與連結 |
 |---|---|---|
-| 經濟日報／聯合新聞網（聯合線上） | [著作權聲明](https://udn.com/page/topic/495)、[服務條款](https://member.udn.com/member/rule.jsp)、[robots.txt](https://money.udn.com/robots.txt) | 未明文允許：條款禁止未經授權「下載、轉貼或以他法重製」內容，並另立一段「未經事前書面同意，禁止任何人使用本報系內容開發任何軟體或程式，包括但不限於訓練大型語言模型（LLMs）、機器學習或人工智慧（AI）」；robots.txt 註解也寫明 LLM／AI 用途與商業用途不被允許。suanomics 會把標題餵給 LLM，用之前要先判斷或取得授權 |
-| 鉅亨網 | [隱私權政策 & 使用者條款](https://www.cnyes.com/cnyes_about/cnyes_sos05.html) | 未明文允許：第七條「智慧財產權」規定非經事前書面授權不得重製、改作、編輯、公開傳輸或散布內容；條款對象寫的是「訂閱戶」，沒有針對 RSS 的另行規定 |
+| 經濟日報／聯合新聞網（聯合線上） | [著作權聲明](https://udn.com/page/topic/495)、[服務條款](https://member.udn.com/member/rule.jsp)、[robots.txt](https://money.udn.com/robots.txt) | 未明文允許：條款禁止未經授權「下載、轉貼或以他法重製」內容，並另立一段「未經我們事前書面同意，禁止任何人使用本報系內容開發任何軟體或程式，包括但不限於訓練大型語言模型（LLMs）、機器學習或人工智慧（AI）」；robots.txt 註解也寫明 LLM／AI 用途與商業用途不被允許。suanomics 會把標題餵給 LLM，用之前要先判斷或取得授權 |
+| 鉅亨網 | [隱私權政策 & 使用者條款](https://www.cnyes.com/cnyes_about/cnyes_sos05.html) | 未明文允許：第七條「智慧財產權」規定非經事前書面授權不得重製、改作、編輯、公開傳播或散布內容；條款對象寫的是「訂閱戶」，沒有針對 RSS 的另行規定 |
 | 工商時報 | unknown：官網對通用 UA 回 403 Cloudflare WAF，Wayback 2026-10-25 的首頁存檔也沒有條款連結；可查到的只有 [robots.txt](https://www.ctee.com.tw/robots.txt)，對 `ClaudeBot`、`anthropic-ai`、`GPTBot` 等具名 AI crawler 一律 `Disallow: /` | 無法判定；本 spike 不建議用 |
 
 本 spike 結論不使用任何 RSSHub route，上表是給之後 `docs/sources.md` 對三家媒體的條款底稿。
