@@ -69,7 +69,7 @@ Synthesizer（綜合成報告主體）
 
 ## Quick Start
 
-**前置**：Node.js 22 LTS、pnpm（版本由 `packageManager` 欄位決定，用 corepack 即可）、Gemini API key、Docker（本機 Postgres）。
+**前置**：Node.js 26 LTS、pnpm（版本由 `packageManager` 欄位決定，用 corepack 即可；Node 26 沒有內建 corepack，先 `npm install -g corepack`）、Gemini API key、Docker（本機 Postgres）。
 
 ```bash
 # 1. Clone + install

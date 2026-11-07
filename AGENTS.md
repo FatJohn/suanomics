@@ -65,7 +65,7 @@ pnpm --filter server run fixtures:check
 | 資料層 | Postgres（drizzle-orm） | `packages/db`；async job 由 `packages/jobs` 的 in-process runner 執行、狀態只在 `background_jobs`；podcast 音檔在 Cloudflare R2（S3 相容）|
 | 部署 | 未定 | 參考設定 `docker-compose.deploy.yml`（`Dockerfile.server`／`Dockerfile.web`），單一 server 容器＋web 靜態站＋Postgres 18；必要 env 與「單 instance、stop-then-start」硬要求見 [docs/operations/deploy.md](docs/operations/deploy.md) |
 | Package manager | pnpm | 不用 npm / yarn / bun；版本由 root `package.json` 的 `packageManager` 欄位鎖定 |
-| Node 版本 | 22 LTS | CI 鎖 22 |
+| Node 版本 | 26 LTS | CI 鎖 26 |
 
 要換選型先開 issue 討論，不要自行換。
 

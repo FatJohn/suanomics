@@ -1,10 +1,10 @@
-FROM node:22-slim
+FROM node:26-slim
 LABEL "language"="nodejs"
 LABEL "framework"="hono"
 WORKDIR /src
 RUN npm install -g pnpm@11
 
-# 容器被攻破時不是 root：node:22-slim 內建 `node` user（uid 1000），把 /src
+# 容器被攻破時不是 root：node:26-slim 內建 `node` user（uid 1000），把 /src
 # 的擁有權交給它之後全程以它身分跑 install／build／執行期。之後所有 COPY 都要帶
 # --chown=node:node——COPY 不加 --chown 的話，複製進來的檔案不論當下的 USER 是誰
 # 都屬於 root，node 沒有寫入權限，install／build 的產物就寫不進去。
