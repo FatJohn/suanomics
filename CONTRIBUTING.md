@@ -6,8 +6,8 @@
 
 前置需求與完整 Quick Start 見 [README.md](README.md)。這裡只補充幾個容易踩到的細節。
 
-- **Node.js 22**（`.nvmrc` 鎖 `22`、`package.json` 的 `engines.node` 是 `>=22`）。
-- **pnpm 由 `packageManager` 欄位自管**——不要自己另外裝一個特定版本，跑 `corepack enable` 之後 `pnpm install` 就會自動抓到 root `package.json` 裡 `packageManager` 指定的版本。
+- **Node.js 26**（`.nvmrc` 鎖 `26`、`package.json` 的 `engines.node` 是 `>=26`）。
+- **pnpm 由 `packageManager` 欄位自管**——不要自己另外裝一個特定版本，先 `npm install -g corepack`（Node 25 起不再內建）、再跑 `corepack enable`，之後 `pnpm install` 就會自動抓到 root `package.json` 裡 `packageManager` 指定的版本。
 - **Postgres 18**，用 repo 內建的 `docker-compose.yml` 起本機資料庫：
 
   ```bash

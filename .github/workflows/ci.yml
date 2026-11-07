@@ -49,14 +49,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      - name: Setup Node 22
+      - name: Setup Node 26
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 26
 
-      # pnpm 版本由 package.json 的 packageManager 欄位自管（pnpm@11.8.0）
+      # pnpm 版本由 package.json 的 packageManager 欄位自管（pnpm@11.8.0）。
+      # Node 25 起不再內建 corepack，要先從 npm 裝。
       - name: Enable corepack
-        run: corepack enable
+        run: |
+          npm install -g corepack
+          corepack enable
 
       - name: Resolve pnpm store path
         id: pnpm-store

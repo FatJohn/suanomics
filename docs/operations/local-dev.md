@@ -2,8 +2,8 @@
 
 ## 需求
 
-- Node.js 22 LTS。
-- pnpm——版本由 root `package.json` 的 `packageManager` 欄位決定，用 corepack 即可。
+- Node.js 26 LTS。
+- pnpm——版本由 root `package.json` 的 `packageManager` 欄位決定，用 corepack 即可（Node 26 沒有內建 corepack，先 `npm install -g corepack` 再 `corepack enable`）。
 - 跑本機 Postgres 時需要 Docker。
 - Backend 環境變數放在 `apps/server/.env`。
 - Frontend 環境變數放在 `apps/web/.env`。

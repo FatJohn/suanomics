@@ -96,6 +96,9 @@ export default antfu(
       'no-debugger': 'error',
       'prefer-template': 'error',
       'pnpm/yaml-enforce-settings': 'off',
+      // @antfu/eslint-config 10 新增的排版規則；全 repo 套用會改動四千多處、
+      // 部分檔案還可能因此超過 max-lines 300，先關掉維持既有排版，要採用另開 PR。
+      'antfu/reasonable-newline': 'off',
     },
   },
   {
