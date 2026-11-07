@@ -3,15 +3,15 @@
 讀者：維護者、盤點 session（回寫 ADR 0002／0007 用）
 型別：說明
 
-**結論：Phase 1 的 ingest 可以全部跑在 Actions。** 16 個 endpoint 在 Actions ubuntu runner 上全部連得到，沒有 403、429、連線失敗或逾時；狀態碼與內容判定和本機對照組逐列相同。要另外處理的只有兩件與 IP 無關的事：NHK World 沒有找到官方的文字新聞 RSS（見〈未解項目〉），TPEx 日收盤 JSON 在 runner 上要 22 秒。
+**結論：Phase 1 的 ingest 可以全部跑在 Actions。** 16 個 endpoint 在 Actions ubuntu runner 上全部連得到，沒有 403、429、連線失敗或逾時；狀態碼與內容判定和本機對照組逐列相同。另外要處理兩件與 IP 無關的事：NHK World 沒有找到官方的文字新聞 RSS，TPEx 日收盤 JSON 在 runner 上要 22 秒；FRED、EIA 帶 key 的真實請求待 #20 後確認（三項見〈未解項目〉）。
 
 ## 量測條件
 
 | 項目 | Actions | 本機對照 |
 |---|---|---|
 | 量測時間（UTC） | 2026-11-07T15:03:54Z | 2026-11-07T15:02:50Z |
-| 環境 | GitHub-hosted `ubuntu-latest`（Linux ubuntu24 20261101.360.1） | macOS arm64，台灣家用網路 |
-| 腳本 commit | `fdd74ce8e061c5a2944a588112d9b8d5b6747be1` | `fc6bfb2` 上未 commit 的 `spikes/16/probe.sh`（與 fdd74ce 的差異只在 log 截斷用的 `tr` 加 `LC_ALL=C`，不影響表格欄位） |
+| 環境 | GitHub-hosted `ubuntu-latest`（Linux ubuntu24 20261101.360.1） | macOS arm64，台灣網路 |
+| 腳本 commit | `fdd74ce8e061c5a2944a588112d9b8d5b6747be1` | `fc6bfb2` 上未 commit 的 `spikes/16/probe.sh`；製作者記錄的差異只在 log 截斷用的 `tr` 加 `LC_ALL=C`，該版本未留副本，此差異未經第三方核對 |
 | Run | https://github.com/FatJohn/suanomics/actions/runs/42384531407 | — |
 
 做法：`spikes/16/probe.sh` 對每個 URL 用 curl 打 1 次（跟隨轉址、連線逾時 15 秒、總逾時 40 秒），請求間隔 2 秒，User-Agent `Mozilla/5.0 (compatible; suanomics-probe/0.1)`，不帶任何 key。內容判定：RSS 數 `<item` 標籤；JSON 用 Python `json.load`；需要 key 的端點（FRED、EIA）回 4xx 且帶該服務自己的錯誤 JSON 就判「網路可達、未被擋」。重跑：`bash spikes/16/probe.sh`。
@@ -39,7 +39,7 @@
 | 15 | NHK World news JSON | https://www3.nhk.or.jp/nhkworld/data/en/news/all.json | 200 | 是：JSON object（`data` 陣列） | 0.77 | 200 |
 | 16 | TechNews 科技新報 | https://technews.tw/feed/ | 200 | 是：`<item>` 40 | 0.79 | 200 |
 
-URL 的出處：TWSE 由 issue 指定；TPEx 路徑列在 `https://www.tpex.org.tw/openapi/swagger.json`；央行、行政院、中央社、cnyes 取自各自官網頁面的 RSS 連結（央行 `lp-302-1.html`、行政院 RSS 頁、中央社 `about/rss.aspx`、cnyes 頭條頁的 `application/rss+xml` link）；金管會取自其 RSS 頁 `main.jsp?websitelink=rss.jsp`；udn 的 `10846` 是經濟日報「要聞」分類編號；FRED、EIA 是兩者官方 API 的 series／data 端點。
+URL 的出處：TWSE 由 issue 指定；TPEx 路徑列在 `https://www.tpex.org.tw/openapi/swagger.json`；央行、行政院、中央社、cnyes 取自各自官網頁面的 RSS 連結（查找時的頁面原始輸出未留存；表中每個 URL 本身已由本機與 Actions 實跑確認回應正確）（央行 `lp-302-1.html`、行政院 RSS 頁、中央社 `about/rss.aspx`、cnyes 頭條頁的 `application/rss+xml` link）；金管會取自其 RSS 頁 `main.jsp?websitelink=rss.jsp`；udn 的 `10846` 是經濟日報「要聞」分類編號；FRED、EIA 是兩者官方 API 的 series／data 端點。
 
 ## 被擋的來源
 
@@ -53,7 +53,7 @@ URL 的出處：TWSE 由 issue 指定；TPEx 路徑列在 `https://www.tpex.org.
 
 | 項目 | 現況 | 建議 | 實測 |
 |---|---|---|---|
-| NHK World 文字新聞 RSS | NHK World 英文站是 JS 渲染，頁面沒有 RSS link；試過的 `nhkworld/en/news/rss.xml` 與 `nhkworld/data/en/news/rss.xml` 本機回 404。找到的兩個官方網域 endpoint：podcast RSS（只有 1 個 `<item>`，是廣播音檔）與 `all.json`（未公開文件化的站內 JSON） | 用 `all.json` 取標題與連結，或改走 RSSHub 的 NHK route，或放棄 NHK 只留 BBC、Al Jazeera；由 #18（RSSHub spike）或 ingest issue 決定 | `all.json` 已在 Actions 實測 200 且 parse 得過；RSSHub route 未實測 |
+| NHK World 文字新聞 RSS | NHK World 英文站是 JS 渲染，頁面沒有 RSS link；試過的 `nhkworld/en/news/rss.xml` 與 `nhkworld/data/en/news/rss.xml` 本機回 404（查找時的原始輸出未留存）。另有 NHK 日文 RSS `https://www3.nhk.or.jp/rss/news/cat0.xml`（本機 200），但不是 NHK World 英文版。找到的兩個官方網域 endpoint：podcast RSS（只有 1 個 `<item>`，是廣播音檔）與 `all.json`（未公開文件化的站內 JSON） | 用 `all.json` 取標題與連結，或改走 RSSHub 的 NHK route，或放棄 NHK 只留 BBC、Al Jazeera；由 #18（RSSHub spike）或 ingest issue 決定 | `all.json` 已在 Actions 實測 200 且 parse 得過；RSSHub route 未實測 |
 | TPEx 日收盤耗時 | Actions 22.24 秒、本機 0.78 秒，回應 5.3 MB | ingest 的單一請求逾時至少設 60 秒；若只需要指數，改查較小的 TPEx endpoint | 未實測 |
 | FRED／EIA 帶 key 的真實請求 | 本次依 #20 前不帶 key 的約束，只證明網路可達 | #20 完成、key 進 GitHub Environment 後，在 ingest issue 首次實跑時確認 200 | 未實測 |
 
