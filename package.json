@@ -1,0 +1,13 @@
+{
+  "name": "suanomics",
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@11.8.0",
+  "license": "Apache-2.0",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7"
+  }
+}
