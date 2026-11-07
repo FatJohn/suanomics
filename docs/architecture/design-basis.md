@@ -93,8 +93,8 @@ repo 是 public，金鑰防線分三層：
 | 層 | 措施 |
 |---|---|
 | 進不了 repo | GitHub secret scanning 與 push protection；gitleaks 在 husky pre-commit 與 CI 各跑一次；`.env*` 在 `.gitignore`，`.env.example` 只有 key 名 |
-| 拿不到 secrets | workflow `permissions: contents: read`；第三方 action 釘 commit SHA；不用 `pull_request_target`；secrets 放 GitHub Environment `production`，只有 `main` 可讀 |
-| 流出也有上限 | Anthropic Console workspace spend limit；Cloudflare API token 只給 Pages deploy 權限；Neon 用獨立 role；`main` 分支保護：必須走 PR、CI 綠、禁 force push |
+| 拿不到 secrets | workflow `permissions: contents: read`；第三方 action 釘 commit SHA；不用 `pull_request_target`；secrets 放 GitHub Environment `production`，只有 `main` 可讀（重寫期間 `rewrite` 也可讀，接回 `main` 時收回） |
+| 流出也有上限 | Anthropic Console workspace spend limit；Cloudflare API token 只給 Pages deploy 權限；Neon 用獨立 role；`main` 分支保護：必須走 PR、CI 綠、禁 force push（重寫期間 `rewrite` 套同樣的保護） |
 
 ## 不做的事
 
