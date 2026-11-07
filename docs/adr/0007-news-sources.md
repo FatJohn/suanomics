@@ -20,4 +20,4 @@ date: 2026-11-07
 - 結構化來源以 TWSE OpenAPI 為主；v1 加公開資訊觀測站重大訊息與台美經濟日曆。
 - RSSHub 已由 spike #18 實測（2026-11-07，[結果](../spikes/18-rsshub.md)）：v1 不用 RSSHub。原本預期要靠它的三家媒體裡，鉅亨網與經濟日報有自己的公開 RSS，工商時報 RSSHub 沒有 route、站方也沒有公開 feed。公開 instance `rsshub.app` 每次都回 403，站方公告只供測試、不供 production 使用。日後出現只能靠 RSSHub 的來源時，在 Actions job 內自架：image 釘 digest，pull 加啟動約 10 秒，記憶體峰值約 276 MiB；冷快取時每個 route 會對來源站扇出多個請求，pipeline 端要另訂上限。
 - v1 不用聯合報系（經濟日報、聯合新聞網）：其著作權聲明禁止未經事前書面同意以報系內容開發任何軟體或程式，包括 LLM、機器學習或 AI，robots.txt 也寫明不允許 LLM／AI 用途，而 pipeline 會把標題送進 LLM。取得書面同意後再評估加回。工商時報同樣不用：查不到條款頁，robots.txt 封鎖具名 AI crawler，也沒有公開 feed。
-- NHK World 未決：spike #16 沒找到官方英文新聞 RSS，只找到 podcast RSS 與未公開文件化的站內 JSON（`all.json`，Actions 實測可達）。改讀 JSON、改走 RSSHub、或只留 BBC 與 Al Jazeera，三者擇一，由 ingest issue（#24）定案。
+- NHK World 未決：spike #16 沒找到官方英文新聞 RSS，只找到 podcast RSS 與未公開文件化的站內 JSON（`all.json`，Actions 實測可達）。改讀 JSON、改走 RSSHub、或只留 BBC 與 Al Jazeera，三者擇一，由 ingest issue（#24）定案；若選讀 JSON，要連帶修改本 ADR「只收 RSS」的決策文字。
