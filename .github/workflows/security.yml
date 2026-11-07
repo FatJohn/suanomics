@@ -14,6 +14,8 @@ permissions:
   contents: read
 
 jobs:
+  # job id `gitleaks` 是 `rewrite` ruleset（id 26763831）的 required status check 名稱。
+  # 改名或刪掉這個 job 前，先改 ruleset，否則進 `rewrite` 的 PR 會一直等不到這個 check。
   gitleaks:
     runs-on: ubuntu-latest
     env:
