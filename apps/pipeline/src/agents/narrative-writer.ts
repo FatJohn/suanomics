@@ -1,5 +1,5 @@
 import type { EvidenceClaim, MarketBrief, MarketBriefCitation, Narrative } from '@suanomics/shared'
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import type { RetryReason } from './narrative-shared.js'
 import type { AnalystOutput, NewsItem } from './types.js'
 import process from 'node:process'
@@ -10,9 +10,9 @@ import {
   MarketBriefSchema,
 
 } from '@suanomics/shared'
-import { NARRATIVE_CLAIM_LEDGER_INSTRUCTION, NARRATIVE_GEMINI_SCHEMA, NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from '../prompts/narrative-writer.prompt.js'
+import { NARRATIVE_CLAIM_LEDGER_INSTRUCTION, NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from '../prompts/narrative-writer.prompt.js'
 import { NARRATIVE_WRITER_USER_TEXT } from '../prompts/narrative-writer.user-content.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
 import { READER_SNAPSHOT_HEADING } from './market-snapshot-section.js'
 import { checkNarrativeClaimBinding, warnClaimBindingIssues } from './narrative-claim-binding.js'
 import {
@@ -23,6 +23,7 @@ import {
 } from './narrative-shared.js'
 import { clampNarrativeStringFields, preNormalizeNarrativeRaw } from './narrative-writer.normalize.js'
 import { relativeDayLabel } from './relative-time.js'
+import { NarrativeWriterResponse } from './response-schemas.js'
 
 // narrative-writer retry reason 直接用 shared RetryReason、保留 alias
 // 為了讓 narrative-writer 內部 naming 不變、降低 diff 範圍
@@ -30,7 +31,7 @@ type NarrativeRetryReason = RetryReason
 
 // NarrativeWriter wrapper
 // 流程：
-//   1. callAgentLLM (timeout 60s、callAgentLLM 內部已含 Gemini network retry)
+//   1. callAgent（timeout 與 429／5xx／連線錯誤的 retry 都在 callAgent 內）
 //   2. Zod parse via MarketBriefSchema (含 superRefine citation subset)
 //   3. Sanitize forbidden + ticker-direction in-place（沿用 SAFE_REWRITE_MAP、不 retry）
 //   4. Clamp string fields（防 sanitize 撐爆 max 400/250）
@@ -145,11 +146,7 @@ export async function callNarrativeWriter(
   let firstFailReason: NarrativeRetryReason = null
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const raw = await callAgentLLM<unknown>({
-        agentName: 'narrative-writer',
-        systemPrompt,
-        userContent,
-        responseSchema: NARRATIVE_GEMINI_SCHEMA,
+      const raw = await callAgent('narrative-writer', { systemPrompt, userContent }, NarrativeWriterResponse, {
         // GOTCHA: exactOptionalPropertyTypes — conditional spread for optional fields
         ...(p.onCallRecord !== undefined ? { onCallRecord: p.onCallRecord } : {}),
       })
@@ -250,7 +247,7 @@ function emitAudit(
     return
   onCall({
     // 這一筆是純 audit signal、不是真的 LLM 呼叫，成本與 token 一律 0（真實用量由
-    // callAgentLLM 自己那筆 record 記）。
+    // callAgent 自己那筆 record 記）。
     agentName: 'narrative-writer',
     tokensIn: 0,
     tokensOut: 0,

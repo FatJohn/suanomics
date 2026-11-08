@@ -17,19 +17,6 @@ export const NET_READ_PROMPT = `你是台灣總經財經日報的總編審。給
 - 綜合後的淨讀（傾向哪邊、為什麼、但這是情境判斷、不是投資建議）。
 鐵律：必須同時反映兩面、不得偏廢一方變成單向背書、也不得空泛對沖（要具體到今日素材的實際論點）。不得出現任何買賣 / 進出場 / 目標價 / 明牌建議；亦不得使用「看多 / 看空 / 偏多 / 偏空 / 做多 / 做空 / 增持 / 減持 / 佈局」等方向性部位用語、改以情境條件與分析框架陳述。`
 
-// Gemini responseSchema（plain JSON schema、非 Zod）
-export const POINTS_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: { points: { type: 'array', items: { type: 'string' } } },
-  required: ['points'],
-}
-
-export const NET_READ_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: { netRead: { type: 'string' } },
-  required: ['netRead'],
-}
-
 export interface DebateMaterialArgs {
   thesis: string
   headline: string

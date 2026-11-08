@@ -1,16 +1,16 @@
 import type { CallAnalystTier1Params } from './analyst-tier1.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { callAnalystTier1 } from './analyst-tier1.js'
-import * as wrapper from './llm-wrapper.js'
+import * as wrapper from './call-agent.js'
 
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 // 系統 prompt 本體不在本切片範圍，替換成固定字串、讓 snapshot 只聚焦於本檔要搬的
 // user content 模板（標題、指示句、feedback 訊息）。
 vi.mock('../prompts/analyst-tier1.prompt.js', () => ({
   ANALYST_TIER1_SYSTEM_PROMPT: 'TEST_ANALYST_TIER1_SYSTEM_PROMPT',
 }))
 
-// `formatUserContent` 未 export，只能透過 mock callAgentLLM、從呼叫參數取出
+// `formatUserContent` 未 export，只能透過 mock callAgent、從呼叫參數取出
 // userContent／systemPrompt 做 snapshot（不為了測試改動 runner 的 export）。
 
 const VALID_LLM_OUT = { primaryImpact: 'x', cascadeChains: [], reasoning: 'r' }
@@ -53,32 +53,32 @@ describe('analyst-tier1 user content snapshot', () => {
   })
 
   it('完整輸入、claims 關閉', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier1(FULL_PARAMS)
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
     expect(call?.systemPrompt).toMatchSnapshot()
   })
 
   it('完整輸入、claims 開啟（含可引用序列）', async () => {
     process.env.ANALYST_CLAIMS_ENABLED = 'true'
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier1(FULL_PARAMS)
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
     expect(call?.systemPrompt).toMatchSnapshot()
   })
 
   it('claims 開啟但 citableSeries 為空：不出現可引用序列段落', async () => {
     process.env.ANALYST_CLAIMS_ENABLED = 'true'
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier1({ ...FULL_PARAMS, citableSeries: [] })
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
   })
 
   it('最小輸入：無 newsUrl／publishedAt／priorChains／marketSnapshot／marketCloseFraming、retrieved 為空', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier1({
       newsTitle: '台股大盤走勢',
       newsText: '台股今日開高走低。',
@@ -86,12 +86,12 @@ describe('analyst-tier1 user content snapshot', () => {
       decomposed: { primaryEntity: { name: '台股', kind: 'index' }, topicTags: [], cascadeHypotheses: [] },
       retrieved: [],
     })
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
   })
 
   it('newsUrl 非 http：不列入可引用來源', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier1({
       newsTitle: '台積電法說釋出樂觀展望',
       newsText: '台積電法說會上調全年資本支出、看好 AI 需求持續強勁。',
@@ -102,12 +102,12 @@ describe('analyst-tier1 user content snapshot', () => {
         { id: '1', url: 'https://known.example.com/1', title: '台積電法說重點整理', contentSummary: '上修資本支出至 400 億美元', entities: [], topicTags: [], fetchedAt: '2026-06-26' },
       ],
     })
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
   })
 
   it('幻覺 citation 觸發重試：第二次呼叫的 userContent 含 feedback 區塊', async () => {
-    vi.mocked(wrapper.callAgentLLM)
+    vi.mocked(wrapper.callAgent)
       .mockResolvedValueOnce({
         primaryImpact: 'x',
         cascadeChains: [{
@@ -128,8 +128,8 @@ describe('analyst-tier1 user content snapshot', () => {
       retrieved: [{ id: '1', url: 'https://known.example.com/1', title: 'r', contentSummary: null, entities: [], topicTags: [], fetchedAt: '2026-06-26' }],
       maxFabricationRetries: 2,
     })
-    expect(vi.mocked(wrapper.callAgentLLM)).toHaveBeenCalledTimes(2)
-    const secondCall = vi.mocked(wrapper.callAgentLLM).mock.calls[1]?.[0]
+    expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(2)
+    const secondCall = vi.mocked(wrapper.callAgent).mock.calls[1]?.[1]
     expect(secondCall?.userContent).toMatchSnapshot()
   })
 })

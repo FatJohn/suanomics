@@ -1,11 +1,11 @@
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import { checkCompliance } from '@suanomics/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as wrapper from './llm-wrapper.js'
+import * as wrapper from './call-agent.js'
 import { buildMarketCloseFraming } from './market-close-framing.js'
 import { callSynthesizer, sanitizeSynthesizerOutput } from './synthesizer.js'
 
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 vi.mock('../prompts/synthesizer.prompt.js', () => ({
   SYNTHESIZER_SYSTEM_PROMPT: 'TEST_SYN',
 }))
@@ -32,13 +32,13 @@ describe('callSynthesizer', () => {
   })
 
   it('should return synthesizer output when compliance passes', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(validSynth)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     const out = await callSynthesizer({ analystOutputs: [], date: '2026-04-25' })
     expect(out.summary).toBe('sector level analysis')
   })
 
   it('should retry once with feedback when compliance violates', async () => {
-    vi.mocked(wrapper.callAgentLLM)
+    vi.mocked(wrapper.callAgent)
       .mockResolvedValueOnce({ ...validSynth, summary: 'TSMC 加碼' })
       .mockResolvedValueOnce(validSynth)
     vi.mocked(checkCompliance)
@@ -46,19 +46,19 @@ describe('callSynthesizer', () => {
       .mockReturnValueOnce(null)
     const out = await callSynthesizer({ analystOutputs: [], date: '2026-04-25' })
     expect(out.summary).toBe('sector level analysis')
-    expect(wrapper.callAgentLLM).toHaveBeenCalledTimes(2)
+    expect(wrapper.callAgent).toHaveBeenCalledTimes(2)
   })
 
   it('should sanitize and return best-effort after retries exhausted (no throw)', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ ...validSynth, summary: '做多 TSMC' })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ ...validSynth, summary: '做多 TSMC' })
     vi.mocked(checkCompliance).mockReturnValue({ violation: 'forbidden', matched: '做多' })
     const out = await callSynthesizer({ analystOutputs: [], date: '2026-04-25' })
     expect(out.summary).toBe('順向部位 TSMC') // sanitize fallback 改寫、不 throw
-    expect(wrapper.callAgentLLM).toHaveBeenCalledTimes(3)
+    expect(wrapper.callAgent).toHaveBeenCalledTimes(3)
   })
 
   it('emits synthForbiddenSanitized count when sanitize fallback runs', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ ...validSynth, summary: '做多' })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ ...validSynth, summary: '做多' })
     vi.mocked(checkCompliance).mockReturnValue({ violation: 'forbidden', matched: '做多' })
     const records: LlmCallRecord[] = []
     await callSynthesizer({ analystOutputs: [], date: '2026-04-25', onCallRecord: r => records.push(r) })
@@ -68,7 +68,7 @@ describe('callSynthesizer', () => {
 
   it('hard-cuts summary > 300 with no sentence boundary (fallback, no 「…」)', async () => {
     const longSummary = 'A'.repeat(500) // 無句界 → fallback 硬切到 300
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ ...validSynth, summary: longSummary })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ ...validSynth, summary: longSummary })
     const out = await callSynthesizer({ analystOutputs: [], date: '2026-04-25' })
     expect(out.summary.length).toBe(300)
     expect(out.summary.endsWith('…')).toBe(false)
@@ -76,7 +76,7 @@ describe('callSynthesizer', () => {
 
   it('truncates summary > 300 at sentence boundary without 「…」', async () => {
     const longSummary = '今日市場重點摘要。'.repeat(40) // 360 字、每句以。結尾
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ ...validSynth, summary: longSummary })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ ...validSynth, summary: longSummary })
     const out = await callSynthesizer({ analystOutputs: [], date: '2026-04-25' })
     expect(out.summary.length).toBeLessThanOrEqual(300)
     expect(out.summary.endsWith('。')).toBe(true)
@@ -84,23 +84,23 @@ describe('callSynthesizer', () => {
   })
 
   it('synthesizer user content includes market snapshot when provided', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(validSynth)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     await callSynthesizer({ analystOutputs: [], date: '2026-04-25', marketSnapshot: '## 今日市場數據\n- 加權指數：23,150 點' })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('## 今日市場數據')
     expect(args?.userContent).toContain('# 市場數據參考')
     expect(args?.userContent).toContain('照抄')
   })
 
   it('synthesizer user content omits market section when null', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(validSynth)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     await callSynthesizer({ analystOutputs: [], date: '2026-04-25', marketSnapshot: null })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('今日市場數據')
   })
 
   it('marks speculative chain industry line with [推測] and appends 語氣指示句', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(validSynth)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     const baseChain = {
       industry: '半導體',
       mechanism: '需求傳導',
@@ -118,13 +118,13 @@ describe('callSynthesizer', () => {
       }],
       date: '2026-06-13',
     })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('industry: 半導體 [推測]')
     expect(args?.userContent).toContain('標 [推測] 的傳導鏈無來源佐證、請以「若…則…」條件語氣呈現、不得作為 highlights 依據。')
   })
 
   it('omits [推測] marker and 指示句 when no speculative chain', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(validSynth)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     const baseChain = {
       industry: '半導體',
       mechanism: '需求傳導',
@@ -142,7 +142,7 @@ describe('callSynthesizer', () => {
       }],
       date: '2026-06-13',
     })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('[推測]')
     expect(args?.userContent).not.toContain('語氣呈現')
   })
@@ -154,45 +154,45 @@ describe('callSynthesizer', () => {
   })
 
   it('有 continuityHint 時注入 hint + 誠實指引到 user content', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(validSynth)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     await callSynthesizer({
       analystOutputs: [],
       date: '2026-06-24',
       continuityHint: '延續主線「能源通膨」（已追蹤 3 天）：原油庫存意外增加',
     })
-    const arg = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const arg = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(arg?.userContent).toContain('延續主線「能源通膨」（已追蹤 3 天）：原油庫存意外增加')
     expect(arg?.userContent).toContain('勿硬連')
   })
 
   it('無 continuityHint 時不注入連續段', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(validSynth)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     await callSynthesizer({ analystOutputs: [], date: '2026-06-24' })
-    const arg = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const arg = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(arg?.userContent).not.toContain('延續追蹤線')
   })
 
   it('注入市場收盤時間框架 block + 規則句', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(validSynth)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     await callSynthesizer({
       analystOutputs: [],
       date: '2026-06-27',
       marketCloseFraming: buildMarketCloseFraming('2026-06-26', '2026-06-27'),
     })
-    const uc = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]?.userContent ?? ''
+    const uc = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]?.userContent ?? ''
     expect(uc).toContain('市場收盤時間框架')
     expect(uc).toContain('台股')
   })
 
   it('should include violation type but NOT echo matched substring in retry user content (C1 防 echo)', async () => {
-    vi.mocked(wrapper.callAgentLLM)
+    vi.mocked(wrapper.callAgent)
       .mockResolvedValueOnce({ ...validSynth, summary: '非法字' })
       .mockResolvedValueOnce(validSynth)
     vi.mocked(checkCompliance)
       .mockReturnValueOnce({ violation: 'forbidden', matched: '非法字' })
       .mockReturnValueOnce(null)
     await callSynthesizer({ analystOutputs: [], date: '2026-04-25' })
-    const secondCall = vi.mocked(wrapper.callAgentLLM).mock.calls[1]?.[0]
+    const secondCall = vi.mocked(wrapper.callAgent).mock.calls[1]?.[1]
     // 違反類型必須回到 prompt（讓 LLM 知道哪一類失敗）
     expect(secondCall?.userContent).toContain('forbidden')
     expect(secondCall?.userContent).toMatch(/重寫整段/)

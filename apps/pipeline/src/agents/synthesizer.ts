@@ -1,13 +1,14 @@
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import type { AnalystOutput } from './types.js'
 import { AffectedIndustrySchema, checkCompliance, RelatedEtfSchema, RelationTypeSchema } from '@suanomics/shared'
 import { z } from 'zod'
 import { SYNTHESIZER_SYSTEM_PROMPT } from '../prompts/synthesizer.prompt.js'
 import { SYNTHESIZER_USER_TEXT } from '../prompts/synthesizer.user-content.js'
 import { truncateAtSentence, truncateString } from './_truncate.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
 import { READER_SNAPSHOT_HEADING } from './market-snapshot-section.js'
 import { rewriteText } from './narrative-shared.js'
+import { SynthesizerResponse } from './response-schemas.js'
 
 // Synthesizer 解耦：只產 prose（不產 citation url、不產 relatedNews url）。
 // relatedNews 改成以 newsId 引用 selected news、url 由組裝層 resolve。
@@ -50,55 +51,6 @@ export function sanitizeSynthesizerOutput(out: SynthesizerOutput): { sanitized: 
   return { sanitized, count: counter.count }
 }
 
-// hand-written Gemini schema：Synthesizer 解耦後只產 prose（無 citations / disclaimer）。
-// relatedNews 改成 newsId 引用、url 由組裝層（assembleDailyBrief）resolve。
-const RESPONSE_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: {
-    headline: { type: 'string' },
-    summary: { type: 'string' },
-    relatedNews: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          newsId: { type: 'string' },
-          relationType: { type: 'string', enum: ['cause', 'effect', 'context', 'contrast'] },
-          reasoning: { type: 'string' },
-        },
-        required: ['newsId', 'relationType', 'reasoning'],
-      },
-    },
-    affectedIndustries: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          direction: { type: 'string', enum: ['positive', 'negative', 'mixed', 'uncertain'] },
-          confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
-          reasoning: { type: 'string' },
-        },
-        required: ['name', 'direction', 'confidence', 'reasoning'],
-      },
-    },
-    relatedETFs: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          ticker: { type: 'string' },
-          name: { type: 'string' },
-          rationale: { type: 'string' },
-        },
-        required: ['ticker', 'name', 'rationale'],
-      },
-    },
-    reasoningChain: { type: 'array', items: { type: 'string' } },
-  },
-  required: ['headline', 'summary', 'relatedNews', 'affectedIndustries', 'relatedETFs', 'reasoningChain'],
-}
-
 export interface CallSynthesizerParams {
   analystOutputs: AnalystOutput[]
   date: string
@@ -124,11 +76,7 @@ export async function callSynthesizer(p: CallSynthesizerParams): Promise<Synthes
   while (attempts < maxRetries) {
     attempts++
     const userContent = feedback ? `${baseUserContent}\n\n${feedback}` : baseUserContent
-    const raw = await callAgentLLM<unknown>({
-      agentName: 'synthesizer',
-      systemPrompt: SYNTHESIZER_SYSTEM_PROMPT,
-      userContent,
-      responseSchema: RESPONSE_GEMINI_SCHEMA,
+    const raw = await callAgent('synthesizer', { systemPrompt: SYNTHESIZER_SYSTEM_PROMPT, userContent }, SynthesizerResponse, {
       ...(p.onCallRecord !== undefined ? { onCallRecord: p.onCallRecord } : {}),
     })
     const parsed = SynthesizerOutputSchema.parse(normalizeForSynthesizerSchema(raw))

@@ -1,14 +1,16 @@
 import type { SeriesAnchor } from '@suanomics/shared'
+import type { z } from 'zod'
 import type { CitableSeries } from '../ingest/market-data/snapshot.js'
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import type { AnalystOutput, CascadeChain, DecomposerOutput, RetrievedArticle } from './types.js'
 import { ANALYST_TIER1_SYSTEM_PROMPT } from '../prompts/analyst-tier1.prompt.js'
 import { ANALYST_TIER1_USER_TEXT } from '../prompts/analyst-tier1.user-content.js'
-import { CLAIMS_GEMINI_SCHEMA, CLAIMS_PROMPT_SECTION, claimsEnabled, normalizeClaims, renderCitableSeriesSection } from './analyst-claims.js'
+import { CLAIMS_PROMPT_SECTION, claimsEnabled, normalizeClaims, renderCitableSeriesSection } from './analyst-claims.js'
 import { normalizeForAnalystSchema } from './analyst-shared.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
 import { appendMarketSnapshotSection } from './market-snapshot-section.js'
 import { relativeDayLabel } from './relative-time.js'
+import { AnalystTier1Response, AnalystTier1WithClaimsResponse } from './response-schemas.js'
 import { AnalystOutputSchema } from './types.js'
 
 function isHttpUrl(s: string): boolean {
@@ -19,49 +21,6 @@ function isHttpUrl(s: string): boolean {
   catch {
     return false
   }
-}
-
-const RESPONSE_TIER1_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: {
-    newsId: { type: 'string' },
-    primaryImpact: { type: 'string' },
-    cascadeChains: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          industry: { type: 'string' },
-          mechanism: { type: 'string' },
-          affectedTickers: { type: 'array', items: { type: 'string' } },
-          direction: { type: 'string', enum: ['positive', 'neutral', 'negative'] },
-          citations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                url: { type: 'string' },
-                title: { type: 'string' },
-                quote: { type: 'string' },
-              },
-              required: ['url', 'title', 'quote'],
-            },
-            minItems: 0,
-            maxItems: 5,
-          },
-          // tier 1 Analyst 自提名 — 不放 required、避免 Gemini 對「沒下游」chain 硬掰
-          nextTierEntities: {
-            type: 'array',
-            items: { type: 'string' },
-            maxItems: 5,
-          },
-        },
-        required: ['industry', 'mechanism', 'affectedTickers', 'direction', 'citations'],
-      },
-    },
-    reasoning: { type: 'string' },
-  },
-  required: ['primaryImpact', 'cascadeChains', 'reasoning'],
 }
 
 export interface CallAnalystTier1Params {
@@ -102,12 +61,7 @@ export async function callAnalystTier1(p: CallAnalystTier1Params): Promise<Analy
   const systemPrompt = wantClaims
     ? `${ANALYST_TIER1_SYSTEM_PROMPT}\n\n${CLAIMS_PROMPT_SECTION}`
     : ANALYST_TIER1_SYSTEM_PROMPT
-  const responseSchema = wantClaims
-    ? {
-        ...RESPONSE_TIER1_GEMINI_SCHEMA,
-        properties: { ...RESPONSE_TIER1_GEMINI_SCHEMA.properties, claims: CLAIMS_GEMINI_SCHEMA },
-      }
-    : RESPONSE_TIER1_GEMINI_SCHEMA
+  const responseSchema: z.ZodType<unknown> = wantClaims ? AnalystTier1WithClaimsResponse : AnalystTier1Response
   let attempts = 0
   let feedback = ''
 
@@ -131,11 +85,7 @@ export async function callAnalystTier1(p: CallAnalystTier1Params): Promise<Analy
   while (attempts < maxRetries) {
     attempts++
     const userContent = feedback ? `${baseUserContent}\n\n${feedback}` : baseUserContent
-    const raw = await callAgentLLM<unknown>({
-      agentName: 'analyst-tier1',
-      systemPrompt,
-      userContent,
-      responseSchema,
+    const raw = await callAgent('analyst-tier1', { systemPrompt, userContent }, responseSchema, {
       // GOTCHA: use conditional spread for optional fields (exactOptionalPropertyTypes)
       ...(p.newsId !== undefined ? { newsId: p.newsId } : {}),
       onCallRecord: captureRecord,

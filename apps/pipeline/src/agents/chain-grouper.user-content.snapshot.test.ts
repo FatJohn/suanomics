@@ -1,22 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as wrapper from './call-agent.js'
 import { tagChainForceGroups } from './chain-grouper.js'
-import * as wrapper from './llm-wrapper.js'
 
 // Characterization test：在把 chain-grouper.ts 的 user content 字面值搬到
 // prompts/chain-grouper.user-content.ts 之前，先把目前送給 LLM 的 user content 逐位元組釘住。
-// `buildUserContent` 未 export，比照既有 chain-grouper.test.ts 的手法 mock callAgentLLM、
+// `buildUserContent` 未 export，比照既有 chain-grouper.test.ts 的手法 mock callAgent、
 // 從呼叫參數取出 userContent 做 snapshot。覆蓋單一/多個力場名與單一/多個產業標籤。
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 vi.mock('../prompts/chain-grouper.prompt.js', () => ({
   CHAIN_GROUPER_SYSTEM_PROMPT: 'TEST_CHAIN_GROUPER_PROMPT',
 }))
 
-const llm = vi.mocked(wrapper.callAgentLLM)
+const llm = vi.mocked(wrapper.callAgent)
 function chain(industry: string) {
   return { industry, mechanism: 'm', affectedTickers: [], direction: 'positive' as const, citations: [] }
 }
 function firstUserContent(): string {
-  return String(llm.mock.calls[0]?.[0]?.userContent ?? '')
+  return String(llm.mock.calls[0]?.[1]?.userContent ?? '')
 }
 
 describe('chain-grouper buildUserContent snapshot (characterization)', () => {

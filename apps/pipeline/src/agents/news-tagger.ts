@@ -1,29 +1,12 @@
 import { NEWS_TAGGER_SYSTEM_PROMPT } from '../prompts/news-tagger.prompt.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
 import { clampString } from './narrative-shared.js'
+import { NewsTaggerResponse } from './response-schemas.js'
 
 export interface TaggerItem { id: number, title: string, excerpt: string }
 export interface TaggedItem { id: number, tags: string[] }
 
 const MAX_TAGS = 6
-
-const RESPONSE_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: {
-    results: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'integer' },
-          tags: { type: 'array', items: { type: 'string' } },
-        },
-        required: ['id', 'tags'],
-      },
-    },
-  },
-  required: ['results'],
-}
 
 // 不信任 LLM：只留 input 集內 id、tags 轉小寫去空去重切上限；重複 id 取第一筆。
 export function normalizeTaggerResponse(raw: unknown, inputIds: readonly number[]): TaggedItem[] {
@@ -63,11 +46,6 @@ export async function callNewsTagger(items: readonly TaggerItem[]): Promise<Tagg
   const userContent = items
     .map(i => `[id=${i.id}] ${clampString(i.title, 120)} — ${clampString(i.excerpt, 150)}`)
     .join('\n')
-  const raw = await callAgentLLM<unknown>({
-    agentName: 'news-tagger',
-    systemPrompt: NEWS_TAGGER_SYSTEM_PROMPT,
-    userContent,
-    responseSchema: RESPONSE_GEMINI_SCHEMA,
-  })
+  const raw = await callAgent('news-tagger', { systemPrompt: NEWS_TAGGER_SYSTEM_PROMPT, userContent }, NewsTaggerResponse)
   return normalizeTaggerResponse(raw, items.map(i => i.id))
 }

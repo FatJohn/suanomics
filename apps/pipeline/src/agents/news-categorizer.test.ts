@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { callNewsCategorizer, normalizeCategorizerResponse } from './news-categorizer.js'
 
-vi.mock('./llm-wrapper.js', () => ({ callAgentLLM: vi.fn() }))
-const { callAgentLLM } = await import('./llm-wrapper.js')
+vi.mock('./call-agent.js', () => ({ callAgent: vi.fn() }))
+const { callAgent } = await import('./call-agent.js')
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -35,10 +35,10 @@ describe('normalizeCategorizerResponse', () => {
 
 describe('callNewsCategorizer', () => {
   it('calls the news-categorizer agent and normalizes the result', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValue({ results: [{ id: 10, category: 'tech-semi' }] })
+    vi.mocked(callAgent).mockResolvedValue({ results: [{ id: 10, category: 'tech-semi' }] })
     const out = await callNewsCategorizer([{ id: 10, title: '台積電法說', excerpt: 'CoWoS 擴產' }])
-    expect(vi.mocked(callAgentLLM).mock.calls[0]?.[0]?.agentName).toBe('news-categorizer')
-    expect(vi.mocked(callAgentLLM).mock.calls[0]?.[0]?.userContent).toContain('[id=10] 台積電法說 — CoWoS 擴產')
+    expect(vi.mocked(callAgent).mock.calls[0]?.[0]).toBe('news-categorizer')
+    expect(vi.mocked(callAgent).mock.calls[0]?.[1]?.userContent).toContain('[id=10] 台積電法說 — CoWoS 擴產')
     expect(out).toEqual([{ id: 10, category: 'tech-semi' }])
   })
 })

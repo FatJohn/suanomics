@@ -19,7 +19,9 @@ export function normalizeForAnalystSchema(raw: unknown): unknown {
         return chain
       return {
         ...chain,
-        citations: chain.citations.map((cit) => {
+        // Anthropic 的 structured output 不強制 maxItems，超量時截斷，不讓整份分析失敗。
+        ...(Array.isArray(chain.nextTierEntities) ? { nextTierEntities: chain.nextTierEntities.slice(0, 5) } : {}),
+        citations: chain.citations.slice(0, 5).map((cit) => {
           if (!cit || typeof cit !== 'object')
             return cit
           const node = cit as Record<string, unknown>

@@ -1,18 +1,17 @@
 import type { CascadeChain, EvidenceClaim, Viewpoints } from '@suanomics/shared'
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import { checkCompliance, ViewpointsSchema } from '@suanomics/shared'
 import {
   buildDebateMaterial,
-  NET_READ_GEMINI_SCHEMA,
   NET_READ_PROMPT,
-  POINTS_GEMINI_SCHEMA,
   RISK_PROMPT,
   SUPPORT_PROMPT,
 } from '../prompts/viewpoints-debate.prompt.js'
 import { VIEWPOINTS_DEBATE_USER_TEXT } from '../prompts/viewpoints-debate.user-content.js'
 import { stripViolatingProse } from './_compliance-strip.js'
 import { hasGarbledChars } from './_garbled-text.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
+import { ViewpointsNetReadResponse, ViewpointsPointsResponse } from './response-schemas.js'
 
 export interface RunViewpointsDebateParams {
   thesis: string
@@ -49,27 +48,15 @@ export async function runViewpointsDebate(
     const opt = onCall ? { onCallRecord: onCall } : {}
 
     const [support, risk] = await Promise.all([
-      callAgentLLM<{ points: string[] }>({
-        agentName: 'viewpoints-debate',
-        systemPrompt: SUPPORT_PROMPT,
-        userContent: VIEWPOINTS_DEBATE_USER_TEXT.supportUserContent(material),
-        responseSchema: POINTS_GEMINI_SCHEMA,
+      callAgent('viewpoints-debate', { systemPrompt: SUPPORT_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.supportUserContent(material) }, ViewpointsPointsResponse, {
         ...opt,
       }),
-      callAgentLLM<{ points: string[] }>({
-        agentName: 'viewpoints-debate',
-        systemPrompt: RISK_PROMPT,
-        userContent: VIEWPOINTS_DEBATE_USER_TEXT.riskUserContent(material),
-        responseSchema: POINTS_GEMINI_SCHEMA,
+      callAgent('viewpoints-debate', { systemPrompt: RISK_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.riskUserContent(material) }, ViewpointsPointsResponse, {
         ...opt,
       }),
     ])
 
-    const netReadOut = await callAgentLLM<{ netRead: string }>({
-      agentName: 'viewpoints-debate',
-      systemPrompt: NET_READ_PROMPT,
-      userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(material, support.points, risk.points),
-      responseSchema: NET_READ_GEMINI_SCHEMA,
+    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(material, support.points, risk.points) }, ViewpointsNetReadResponse, {
       ...opt,
     })
 

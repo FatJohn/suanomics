@@ -77,34 +77,6 @@ export function renderCitableSeriesSection(lines: string[], citableSeries: reado
  */
 export const CLAIMS_PROMPT_SECTION = ANALYST_CLAIMS_USER_TEXT.claimsPromptSectionLines.join('\n')
 
-/** Gemini 的 JSON Schema 不支援 discriminated union，故 wire 格式攤平、required 只有 kind。 */
-export const CLAIMS_GEMINI_SCHEMA = {
-  type: 'array',
-  items: {
-    type: 'object',
-    properties: {
-      kind: { type: 'string', enum: ['fact', 'inference', 'scenario'] },
-      claimType: { type: 'string', enum: ['named-number', 'dated-event', 'causal'] },
-      claim: { type: 'string' },
-      evidenceRefs: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            kind: { type: 'string', enum: ['citation', 'series'] },
-            url: { type: 'string' },
-            seriesId: { type: 'string' },
-            asOf: { type: 'string' },
-          },
-          required: ['kind'],
-        },
-        maxItems: 5,
-      },
-    },
-    required: ['kind', 'claimType', 'claim', 'evidenceRefs'],
-  },
-}
-
 /**
  * 快照 block 對 monthly 序列印 `2026-05`（`dateLabel` 取 `slice(0,7)`），而可引用清單給
  * `2026-05-01`。模型照抄 block 那一側就會被 `EvidenceRefSchema` 的 `YYYY-MM-DD` 靜默丟掉

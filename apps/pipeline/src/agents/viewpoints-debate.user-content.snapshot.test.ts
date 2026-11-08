@@ -1,6 +1,6 @@
 import type { EvidenceClaim } from '@suanomics/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as wrapper from './llm-wrapper.js'
+import * as wrapper from './call-agent.js'
 import { runViewpointsDebate } from './viewpoints-debate.js'
 
 // Characterization test：在把 viewpoints-debate.ts 三段 inline user content 模板搬到
@@ -8,7 +8,7 @@ import { runViewpointsDebate } from './viewpoints-debate.js'
 // 逐位元組釘住（support / risk / net-read，各自的模板都以 `${material}` 起頭）。
 // 覆蓋：有/無 claimLedger、support/risk points 各為單點與多點（net-read 模板要把兩邊的
 // points 都以 `- ` 條列接進去）。
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 
 const PARAMS = {
   thesis: '今日主線由 AI 算力與利率拉鋸主導',
@@ -18,7 +18,7 @@ const PARAMS = {
   cascadeChains: [],
 }
 
-const llm = vi.mocked(wrapper.callAgentLLM)
+const llm = vi.mocked(wrapper.callAgent)
 function once(value: unknown) {
   llm.mockResolvedValueOnce(value as never)
 }
@@ -29,9 +29,9 @@ function mockDebate(support: string[], risk: string[], netRead: string) {
 }
 function callUserContents(): [string, string, string] {
   return [
-    String(llm.mock.calls[0]?.[0]?.userContent ?? ''),
-    String(llm.mock.calls[1]?.[0]?.userContent ?? ''),
-    String(llm.mock.calls[2]?.[0]?.userContent ?? ''),
+    String(llm.mock.calls[0]?.[1]?.userContent ?? ''),
+    String(llm.mock.calls[1]?.[1]?.userContent ?? ''),
+    String(llm.mock.calls[2]?.[1]?.userContent ?? ''),
   ]
 }
 
