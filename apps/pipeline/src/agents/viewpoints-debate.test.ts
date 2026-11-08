@@ -1,9 +1,10 @@
 import type { EvidenceClaim } from '@suanomics/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as wrapper from './llm-wrapper.js'
+import * as wrapper from './call-agent.js'
+import { DailyCostLimitExceededError } from './cost-gate.js'
 import { runViewpointsDebate } from './viewpoints-debate.js'
 
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 
 const PARAMS = {
   thesis: '今日主線由 AI 算力與利率拉鋸主導',
@@ -13,8 +14,8 @@ const PARAMS = {
   cascadeChains: [],
 }
 
-const llm = vi.mocked(wrapper.callAgentLLM)
-// callAgentLLM 為泛型、mock 回傳值以 as never 迴避 T 推導
+const llm = vi.mocked(wrapper.callAgent)
+// callAgent 為泛型、mock 回傳值以 as never 迴避 T 推導
 function once(value: unknown) {
   llm.mockResolvedValueOnce(value as never)
 }
@@ -52,10 +53,10 @@ describe('runViewpointsDebate', () => {
     }
     await runViewpointsDebate({ ...PARAMS, claimLedger: [claim] })
     const [support, risk] = llm.mock.calls
-    expect(support?.[0]?.userContent).toContain('[c18]')
-    expect(support?.[0]?.userContent).toContain('12,098')
-    expect(risk?.[0]?.userContent).toContain('[c18]')
-    expect(risk?.[0]?.userContent).toContain('12,098')
+    expect(support?.[1]?.userContent).toContain('[c18]')
+    expect(support?.[1]?.userContent).toContain('12,098')
+    expect(risk?.[1]?.userContent).toContain('[c18]')
+    expect(risk?.[1]?.userContent).toContain('12,098')
   })
 
   // 亂碼防線（2026-08-12 A/B 觀察到的真實產出、當時通過了 compliance gate 與 schema）
@@ -131,7 +132,12 @@ describe('runViewpointsDebate', () => {
   it('uses agentName viewpoints-debate for all three calls', async () => {
     mockDebate(['支持一', '支持二'], ['風險一', '風險二'], 'a'.repeat(130))
     await runViewpointsDebate(PARAMS)
-    const names = llm.mock.calls.map(c => (c[0] as { agentName: string }).agentName)
+    const names = llm.mock.calls.map(c => c[0])
     expect(names).toEqual(['viewpoints-debate', 'viewpoints-debate', 'viewpoints-debate'])
+  })
+
+  it('花費閘超限時往外丟，不降級成 null', async () => {
+    llm.mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    await expect(runViewpointsDebate(PARAMS)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
   })
 })

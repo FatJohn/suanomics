@@ -1,28 +1,11 @@
 import { ITEM_CATEGORIES } from '../db/news-categories.js'
 import { NEWS_CATEGORIZER_SYSTEM_PROMPT } from '../prompts/news-categorizer.prompt.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
 import { clampString } from './narrative-shared.js'
+import { NewsCategorizerResponse } from './response-schemas.js'
 
 export interface CategorizerItem { id: number, title: string, excerpt: string }
 export interface CategorizedItem { id: number, category: string }
-
-const RESPONSE_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: {
-    results: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          id: { type: 'integer' },
-          category: { type: 'string', enum: [...ITEM_CATEGORIES] },
-        },
-        required: ['id', 'category'],
-      },
-    },
-  },
-  required: ['results'],
-}
 
 // 不信任 LLM：只留 id 在輸入集、category 合法的；重複 id 取第一筆。
 export function normalizeCategorizerResponse(raw: unknown, inputIds: readonly number[]): CategorizedItem[] {
@@ -55,11 +38,6 @@ export async function callNewsCategorizer(items: readonly CategorizerItem[]): Pr
   const userContent = items
     .map(i => `[id=${i.id}] ${clampString(i.title, 120)} — ${clampString(i.excerpt, 150)}`)
     .join('\n')
-  const raw = await callAgentLLM<unknown>({
-    agentName: 'news-categorizer',
-    systemPrompt: NEWS_CATEGORIZER_SYSTEM_PROMPT,
-    userContent,
-    responseSchema: RESPONSE_GEMINI_SCHEMA,
-  })
+  const raw = await callAgent('news-categorizer', { systemPrompt: NEWS_CATEGORIZER_SYSTEM_PROMPT, userContent }, NewsCategorizerResponse)
   return normalizeCategorizerResponse(raw, items.map(i => i.id))
 }

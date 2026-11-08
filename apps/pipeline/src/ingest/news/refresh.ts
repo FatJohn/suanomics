@@ -1,4 +1,5 @@
 import process from 'node:process'
+import { CostGateError } from '../../agents/cost-gate.js'
 import {
   buildUpsertRows,
   getActiveSources,
@@ -190,6 +191,8 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
         await categorizeAndStore(toScrape.map(it => ({ id: it.id, title: it.title, contentText: it.contentText })))
       }
       catch (catErr) {
+        if (catErr instanceof CostGateError)
+          throw catErr
         console.warn(`[runNewsRefresh] ${src.slug} categorize failed (items stay null):`, catErr)
       }
 
@@ -198,10 +201,14 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
         await tagAndStore(toScrape.map(it => ({ id: it.id, title: it.title, contentText: it.contentText })))
       }
       catch (tagErr) {
+        if (tagErr instanceof CostGateError)
+          throw tagErr
         console.warn(`[runNewsRefresh] ${src.slug} tagging failed (items stay untagged):`, tagErr)
       }
     }
     catch (err) {
+      if (err instanceof CostGateError)
+        throw err
       sourcesFailed += 1
       // 已經有一筆就只補標記，不要再 push 第二筆。這樣「插入成功但抓正文途中
       // 失敗」那一列同時看得到真實的 inserted／計數與 failed。

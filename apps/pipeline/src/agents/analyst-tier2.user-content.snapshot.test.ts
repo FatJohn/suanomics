@@ -1,16 +1,16 @@
 import type { CallAnalystTier2Params } from './analyst-tier2.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { callAnalystTier2 } from './analyst-tier2.js'
-import * as wrapper from './llm-wrapper.js'
+import * as wrapper from './call-agent.js'
 
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 // 系統 prompt 本體不在本切片範圍，替換成固定字串、讓 snapshot 只聚焦於本檔要搬的
 // user content 模板（標題、指示句、feedback 訊息）。
 vi.mock('../prompts/analyst-tier2.prompt.js', () => ({
   ANALYST_TIER2_SYSTEM_PROMPT: 'TEST_ANALYST_TIER2_SYSTEM_PROMPT',
 }))
 
-// `formatTier2UserContent` 未 export，只能透過 mock callAgentLLM、從呼叫參數取出
+// `formatTier2UserContent` 未 export，只能透過 mock callAgent、從呼叫參數取出
 // userContent 做 snapshot（不為了測試改動 runner 的 export）。
 
 const VALID_LLM_OUT = { primaryImpact: 'x', cascadeChains: [], reasoning: 'r' }
@@ -38,15 +38,15 @@ describe('analyst-tier2 user content snapshot', () => {
   })
 
   it('完整輸入', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier2(FULL_PARAMS)
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
     expect(call?.systemPrompt).toMatchSnapshot()
   })
 
   it('retrieved 為空', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier2({
       newsTitle: '半導體設備廠訂單回溫',
       newsText: '設備廠訂單自本季起明顯回溫、法人看好本波庫存回補。',
@@ -58,12 +58,12 @@ describe('analyst-tier2 user content snapshot', () => {
       },
       retrieved: [],
     })
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
   })
 
   it('無 marketSnapshot：不附加快照段落', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier2({
       newsTitle: '半導體設備廠訂單回溫',
       newsText: '設備廠訂單自本季起明顯回溫、法人看好本波庫存回補。',
@@ -77,12 +77,12 @@ describe('analyst-tier2 user content snapshot', () => {
         { id: '1', url: 'https://known.example.com/1', title: '設備訂單回溫報導', contentSummary: '訂單能見度拉長至下半年', entities: [], topicTags: [], fetchedAt: '2026-06-26' },
       ],
     })
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
   })
 
   it('多個提名 partner 的 join 顯示', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_LLM_OUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_LLM_OUT)
     await callAnalystTier2({
       newsTitle: '記憶體現貨價格走揚',
       newsText: 'DRAM 現貨價格連三週上漲。',
@@ -94,12 +94,12 @@ describe('analyst-tier2 user content snapshot', () => {
       },
       retrieved: [],
     })
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(call?.userContent).toMatchSnapshot()
   })
 
   it('幻覺 citation 觸發重試：第二次呼叫的 userContent 含 feedback 區塊', async () => {
-    vi.mocked(wrapper.callAgentLLM)
+    vi.mocked(wrapper.callAgent)
       .mockResolvedValueOnce({
         primaryImpact: 'x',
         cascadeChains: [{
@@ -126,8 +126,8 @@ describe('analyst-tier2 user content snapshot', () => {
       ],
       maxFabricationRetries: 2,
     })
-    expect(vi.mocked(wrapper.callAgentLLM)).toHaveBeenCalledTimes(2)
-    const secondCall = vi.mocked(wrapper.callAgentLLM).mock.calls[1]?.[0]
+    expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(2)
+    const secondCall = vi.mocked(wrapper.callAgent).mock.calls[1]?.[1]
     expect(secondCall?.userContent).toMatchSnapshot()
   })
 })

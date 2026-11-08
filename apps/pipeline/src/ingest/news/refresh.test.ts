@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DailyCostLimitExceededError } from '../../agents/cost-gate.js'
 import { runNewsRefresh } from './refresh.js'
 
 vi.mock('../../db/repos/news-repo.js')
@@ -70,6 +71,18 @@ describe('runNewsRefresh 對 scrape 結果的分流', () => {
     expect(result.perSource[0]?.failed).toBe(false)
     // 失敗次數掛在 perSource 回傳給呼叫端（v0 由 job runner 寫進 metadata；v1 的落地處由 #25 決定）。
     expect(result.perSource[0]?.scrapeFailed).toBe(1)
+  })
+
+  it.each([
+    ['categorize', './categorize.js'],
+    ['tag', './tag.js'],
+  ] as const)('%s 碰到花費閘超限時中止整輪 refresh，不只跳過該來源', async (kind, path) => {
+    const { scraper } = await setupOneSourceWithTwoItems()
+    vi.mocked(scraper.scrapeArticle).mockResolvedValue({ ok: true, text: '這是一篇抓得到正文的新聞、長度足夠通過門檻的內容。' })
+    const mod = await import(path) as Record<string, unknown>
+    const fn = mod[kind === 'categorize' ? 'categorizeAndStore' : 'tagAndStore']
+    vi.mocked(fn as () => Promise<void>).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    await expect(runNewsRefresh()).rejects.toBeInstanceOf(DailyCostLimitExceededError)
   })
 
   it('解析失敗（parse_error）一樣只是單篇的事，不把整個來源標成失敗', async () => {

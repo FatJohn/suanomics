@@ -1,11 +1,12 @@
 import type { CascadeChain } from '@suanomics/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as wrapper from './call-agent.js'
 import { tagChainForceGroups } from './chain-grouper.js'
-import * as wrapper from './llm-wrapper.js'
+import { DailyCostLimitExceededError } from './cost-gate.js'
 
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 
-const llm = vi.mocked(wrapper.callAgentLLM)
+const llm = vi.mocked(wrapper.callAgent)
 function once(value: unknown) {
   llm.mockResolvedValueOnce(value as never)
 }
@@ -37,7 +38,7 @@ describe('tagChainForceGroups', () => {
     expect(out.map(c => c.forceGroup)).toEqual(['半導體與先進代工', '半導體與先進代工'])
     // 送出去的 user content 裡那個 label 只列一次（整行比對——力場名「半導體與先進代工」
     // 也以「- 半導體」開頭，用 includes 數會多算）
-    const sent = String(llm.mock.calls[0]?.[0]?.userContent ?? '')
+    const sent = String(llm.mock.calls[0]?.[1]?.userContent ?? '')
     expect(sent.split('\n').filter(l => l === '- 半導體')).toHaveLength(1)
   })
 
@@ -94,8 +95,13 @@ describe('tagChainForceGroups', () => {
 
     await tagChainForceGroups({ chains: [chain('半導體')], forceNames: FORCES })
 
-    const sent = String(llm.mock.calls[0]?.[0]?.userContent ?? '')
+    const sent = String(llm.mock.calls[0]?.[1]?.userContent ?? '')
     expect(sent).toContain('- 半導體與先進代工\n')
     expect(sent).not.toMatch(/半導體與先進代工[（(]/)
+  })
+
+  it('花費閘超限時往外丟，不當成分組失敗', async () => {
+    llm.mockRejectedValueOnce(new DailyCostLimitExceededError(1, 2))
+    await expect(tagChainForceGroups({ chains: [chain('銀行業')], forceNames: FORCES })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
   })
 })

@@ -8,7 +8,7 @@ export { clampString } from './_truncate.js'
 
 export type RetryReason
   = | 'zod-parse'
-    | 'gemini-api'
+    | 'llm-api'
     | 'timeout'
     | 'compliance-residual'
     | null
@@ -16,17 +16,18 @@ export type RetryReason
 export function classifyError(err: unknown): RetryReason {
   const e = err as Error
   const msg = e?.message ?? String(err)
-  if (e?.name === 'AbortError' || msg.toLowerCase().includes('timeout'))
+  if (e?.name === 'AbortError' || e?.name === 'TimeoutError' || msg.toLowerCase().includes('timeout'))
     return 'timeout'
   if (
     e?.name === 'ZodError'
+    || e?.name === 'AI_NoObjectGeneratedError'
     || msg.includes('Required')
     || msg.includes('unknown citation url')
     || msg.includes('parsed narrative is null')
   ) {
     return 'zod-parse'
   }
-  return 'gemini-api'
+  return 'llm-api'
 }
 
 // 全 pipeline 共用 forbidden 重寫表（synth / analyzer / narrative / podcast、投信投顧法合規）

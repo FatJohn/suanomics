@@ -1,19 +1,20 @@
 import type { EvidenceClaim, MarketBrief } from '@suanomics/shared'
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import type { AnalystOutput, NewsItem } from './types.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from '../prompts/narrative-writer.prompt.js'
-import { callAgentLLM } from './llm-wrapper.js'
+
+import { callAgent } from './call-agent.js'
+import { DailyCostLimitExceededError } from './cost-gate.js'
 import { buildMarketCloseFraming } from './market-close-framing.js'
 import { callNarrativeWriter } from './narrative-writer.js'
 
-// 在 import 被測檔案之前 mock callAgentLLM、避免真打 Gemini
-vi.mock('./llm-wrapper.js', async () => {
-  const actual = await vi.importActual<typeof import('./llm-wrapper.js')>('./llm-wrapper.js')
+// 在 import 被測檔案之前 mock callAgent、避免真打 Gemini
+vi.mock('./call-agent.js', async () => {
+  const actual = await vi.importActual<typeof import('./call-agent.js')>('./call-agent.js')
   return {
     ...actual,
-    callAgentLLM: vi.fn(),
+    callAgent: vi.fn(),
   }
 })
 
@@ -51,12 +52,12 @@ const VALID_NARRATIVE = {
 }
 
 beforeEach(() => {
-  vi.mocked(callAgentLLM).mockReset()
+  vi.mocked(callAgent).mockReset()
 })
 
 describe('callNarrativeWriter', () => {
   it('returns parsed narrative on first attempt success', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -67,11 +68,11 @@ describe('callNarrativeWriter', () => {
     expect(result.narrative).toBeTruthy()
     expect(result.narrative?.sections).toHaveLength(2)
     expect(result.audit.failed).toBe(false)
-    expect(callAgentLLM).toHaveBeenCalledTimes(1)
+    expect(callAgent).toHaveBeenCalledTimes(1)
   })
 
   it('retries once on Zod parse fail and returns null on second fail', async () => {
-    vi.mocked(callAgentLLM)
+    vi.mocked(callAgent)
       .mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: 'short' })
       .mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: 'short' })
     const result = await callNarrativeWriter({
@@ -84,11 +85,11 @@ describe('callNarrativeWriter', () => {
     expect(result.narrative).toBeNull()
     expect(result.audit.failed).toBe(true)
     expect(result.audit.retryReason).toBe('zod-parse')
-    expect(callAgentLLM).toHaveBeenCalledTimes(2)
+    expect(callAgent).toHaveBeenCalledTimes(2)
   })
 
   it('retries once on Zod fail and succeeds on second attempt', async () => {
-    vi.mocked(callAgentLLM)
+    vi.mocked(callAgent)
       .mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: 'short' })
       .mockResolvedValueOnce(VALID_NARRATIVE)
     const result = await callNarrativeWriter({
@@ -100,7 +101,7 @@ describe('callNarrativeWriter', () => {
     })
     expect(result.narrative).toBeTruthy()
     expect(result.audit.failed).toBe(false)
-    expect(callAgentLLM).toHaveBeenCalledTimes(2)
+    expect(callAgent).toHaveBeenCalledTimes(2)
   })
 
   it('sanitizes forbidden phrases in narrative bodies (in-place, no retry)', async () => {
@@ -112,7 +113,7 @@ describe('callNarrativeWriter', () => {
         { heading: '主題二', body: 'a'.repeat(300), relatedNewsIds: ['n2'], citationUrls: ['https://example.com/b'] },
       ],
     }
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(dirty)
+    vi.mocked(callAgent).mockResolvedValueOnce(dirty)
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -124,7 +125,7 @@ describe('callNarrativeWriter', () => {
     expect(result.narrative?.sections[0]?.body).not.toContain('看多')
     expect(result.narrative?.sections[0]?.body).toContain('動能延續')
     expect(result.audit.fabricationStripped).toBeGreaterThan(0)
-    expect(callAgentLLM).toHaveBeenCalledTimes(1)
+    expect(callAgent).toHaveBeenCalledTimes(1)
   })
 
   it('replaces unknown citation url with valid fallback (pre-clamp filter)', async () => {
@@ -136,7 +137,7 @@ describe('callNarrativeWriter', () => {
         { heading: '主題二', body: 'a'.repeat(300), relatedNewsIds: ['n2'], citationUrls: ['https://example.com/b'] },
       ],
     }
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(badCitation)
+    vi.mocked(callAgent).mockResolvedValueOnce(badCitation)
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -153,7 +154,7 @@ describe('callNarrativeWriter', () => {
   })
 
   it('returns null on Gemini API error (after retry)', async () => {
-    vi.mocked(callAgentLLM)
+    vi.mocked(callAgent)
       .mockRejectedValueOnce(new Error('500 Internal Server Error'))
       .mockRejectedValueOnce(new Error('500 Internal Server Error'))
     const result = await callNarrativeWriter({
@@ -165,12 +166,12 @@ describe('callNarrativeWriter', () => {
     })
     expect(result.narrative).toBeNull()
     expect(result.audit.failed).toBe(true)
-    expect(result.audit.retryReason).toBe('gemini-api')
+    expect(result.audit.retryReason).toBe('llm-api')
   })
 
   it('emits LlmCallRecord with narrativeFailed=true and retryReason on null result', async () => {
     const onCall = vi.fn()
-    vi.mocked(callAgentLLM).mockRejectedValue(new Error('500'))
+    vi.mocked(callAgent).mockRejectedValue(new Error('500'))
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -183,7 +184,7 @@ describe('callNarrativeWriter', () => {
     // 最後一筆 record 應該被 wrapper 標記 narrativeFailed
     const lastCall = onCall.mock.calls.at(-1)?.[0] as LlmCallRecord | undefined
     expect(lastCall?.narrativeFailed).toBe(true)
-    expect(lastCall?.narrativeRetryReason).toBe('gemini-api')
+    expect(lastCall?.narrativeRetryReason).toBe('llm-api')
   })
 
   it('drops hallucinated relatedNewsIds not in input news (preNormalize)', async () => {
@@ -194,7 +195,7 @@ describe('callNarrativeWriter', () => {
         { heading: '主題二', body: 'a'.repeat(300), relatedNewsIds: ['n2'], citationUrls: ['https://example.com/b'] },
       ],
     }
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(withBadRel)
+    vi.mocked(callAgent).mockResolvedValueOnce(withBadRel)
     const result = await callNarrativeWriter({ brief: FAKE_BRIEF, analystOutputs: FAKE_ANALYSTS, news: FAKE_NEWS, citations: FAKE_BRIEF.citations, briefDate: '2026-06-27' })
     expect(result.narrative?.sections[0]?.relatedNewsIds).toEqual(['n1']) // n-hallucinated 不在 FAKE_NEWS、被 drop
   })
@@ -207,14 +208,14 @@ describe('callNarrativeWriter', () => {
         { heading: '主題二', body: 'a'.repeat(300), relatedNewsIds: ['n2'], citationUrls: ['https://example.com/b'] },
       ],
     }
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(longHeading)
+    vi.mocked(callAgent).mockResolvedValueOnce(longHeading)
     const result = await callNarrativeWriter({ brief: FAKE_BRIEF, analystOutputs: FAKE_ANALYSTS, news: FAKE_NEWS, citations: FAKE_BRIEF.citations, briefDate: '2026-06-27' })
     expect((result.narrative?.sections[0]?.heading.length ?? 0)).toBeLessThanOrEqual(40)
   })
 
   it('truncates overlong body at sentence boundary without 「…」', async () => {
     const longBody = '這是一段完整的論述句子。'.repeat(80) // 960 字、每句以。結尾
-    vi.mocked(callAgentLLM).mockResolvedValueOnce({
+    vi.mocked(callAgent).mockResolvedValueOnce({
       ...VALID_NARRATIVE,
       sections: [
         { heading: '主題一', body: longBody, relatedNewsIds: ['n1'], citationUrls: ['https://example.com/a'] },
@@ -235,7 +236,7 @@ describe('callNarrativeWriter', () => {
 
   it('truncates overlong intro at sentence boundary without 「…」', async () => {
     const longIntro = '今日市場主線清楚。'.repeat(40) // 360 字 > 320
-    vi.mocked(callAgentLLM).mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: longIntro })
+    vi.mocked(callAgent).mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: longIntro })
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -255,7 +256,7 @@ describe('callNarrativeWriter compliance gate', () => {
   const FORBIDDEN_OUTRO = `一定會漲${'a'.repeat(120)}`
   it('degrades to null when narrative still violates compliance after retries', async () => {
     const bad = { ...VALID_NARRATIVE, outro: FORBIDDEN_OUTRO }
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(bad).mockResolvedValueOnce(bad)
+    vi.mocked(callAgent).mockResolvedValueOnce(bad).mockResolvedValueOnce(bad)
     const r = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -264,11 +265,11 @@ describe('callNarrativeWriter compliance gate', () => {
       briefDate: '2026-06-27',
     })
     expect(r.narrative).toBeNull()
-    expect(callAgentLLM).toHaveBeenCalledTimes(2)
+    expect(callAgent).toHaveBeenCalledTimes(2)
   })
   it('recovers when retry returns compliant narrative', async () => {
     const bad = { ...VALID_NARRATIVE, outro: FORBIDDEN_OUTRO }
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(bad).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(bad).mockResolvedValueOnce(VALID_NARRATIVE)
     const r = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -282,7 +283,7 @@ describe('callNarrativeWriter compliance gate', () => {
 
 describe('callNarrativeWriter calendar injection', () => {
   it('narrative user content includes econ calendar when provided', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -291,13 +292,13 @@ describe('callNarrativeWriter calendar injection', () => {
       briefDate: '2026-06-27',
       calendarBlock: '## 本週財經行事曆\n- 2026-06-17：FOMC 利率決策（US、high）',
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('# 行事曆參考（前瞻素材；只可引用列出的事件與日期）')
     expect(args?.userContent).toContain('## 本週財經行事曆')
   })
 
   it('narrative user content omits calendar section when null', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -306,14 +307,14 @@ describe('callNarrativeWriter calendar injection', () => {
       briefDate: '2026-06-27',
       calendarBlock: null,
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('行事曆參考')
   })
 })
 
 describe('callNarrativeWriter market snapshot injection', () => {
   it('narrative user content includes market snapshot when provided', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -322,14 +323,14 @@ describe('callNarrativeWriter market snapshot injection', () => {
       briefDate: '2026-06-27',
       marketSnapshot: '## 今日市場數據\n- 加權指數：23,150 點（+0.8%）',
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('# 市場數據參考')
     expect(args?.userContent).toContain('## 今日市場數據')
     expect(args?.userContent).toContain('23,150')
   })
 
   it('narrative user content omits market snapshot section when null', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -338,14 +339,14 @@ describe('callNarrativeWriter market snapshot injection', () => {
       briefDate: '2026-06-27',
       marketSnapshot: null,
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('市場數據參考')
   })
 })
 
 describe('callNarrativeWriter storyline injection', () => {
   it('narrative user content includes storyline block when provided', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -354,13 +355,13 @@ describe('callNarrativeWriter storyline injection', () => {
       briefDate: '2026-06-27',
       storylineBlock: '## 追蹤線\n- 半導體出口管制：本週新增禁令',
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('# 敘事線參考（依「跨日連續性」節處理：只在真有延續的主線講今日相對「先前」的 delta 與伏筆兌現；無延續勿硬提、稀疏日冷開場）')
     expect(args?.userContent).toContain('## 追蹤線')
   })
 
   it('narrative user content omits storyline section when null', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -369,46 +370,46 @@ describe('callNarrativeWriter storyline injection', () => {
       briefDate: '2026-06-27',
       storylineBlock: null,
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('敘事線參考')
   })
 })
 
 describe('callNarrativeWriter mainThemes injection', () => {
   it('user content includes mainThemes when provided', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({ brief: FAKE_BRIEF, analystOutputs: FAKE_ANALYSTS, news: FAKE_NEWS, citations: FAKE_BRIEF.citations, briefDate: '2026-06-27', mainThemes: ['Fed 政策轉向', '半導體景氣'] })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('當日主軸')
     expect(args?.userContent).toContain('Fed 政策轉向')
   })
   it('user content instructs self-derive when mainThemes absent', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({ brief: FAKE_BRIEF, analystOutputs: FAKE_ANALYSTS, news: FAKE_NEWS, citations: FAKE_BRIEF.citations, briefDate: '2026-06-27' })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('自行從下列選稿歸納')
   })
 })
 
 describe('callNarrativeWriter dailyThesis injection', () => {
   it('user content includes dailyThesis under 本日論點 when provided', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({ brief: FAKE_BRIEF, analystOutputs: FAKE_ANALYSTS, news: FAKE_NEWS, citations: FAKE_BRIEF.citations, briefDate: '2026-06-27', dailyThesis: 'AI 算力需求拉動封測鏈是今日主線' })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('本日論點')
     expect(args?.userContent).toContain('AI 算力需求拉動封測鏈是今日主線')
   })
   it('user content omits 本日論點 block when dailyThesis absent', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({ brief: FAKE_BRIEF, analystOutputs: FAKE_ANALYSTS, news: FAKE_NEWS, citations: FAKE_BRIEF.citations, briefDate: '2026-06-27' })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('本日論點')
   })
 })
 
 describe('callNarrativeWriter temporal framing', () => {
   it('每則新聞前注入發布相對時間 + header 用 briefDate（非 new Date）', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     const news = [{ id: 'n1', title: '台股大跌', url: 'https://example.com/a', text: '台股今日重挫', publishedAt: '2026-06-26T06:37:00Z' }]
     const analysts = [{ newsId: 'n1', primaryImpact: 'x', cascadeChains: [], reasoning: 'r', claims: [] }]
     await callNarrativeWriter({
@@ -418,12 +419,12 @@ describe('callNarrativeWriter temporal framing', () => {
       citations: FAKE_BRIEF.citations,
       briefDate: '2026-06-27',
     })
-    const uc = vi.mocked(callAgentLLM).mock.calls[0]?.[0]?.userContent ?? ''
+    const uc = vi.mocked(callAgent).mock.calls[0]?.[1]?.userContent ?? ''
     expect(uc).toContain('發布時間：昨日') // publishedAt 台北 6/26 對報告日 6/27
     expect(uc).toContain('今天 2026-06-27') // header 用 briefDate、非 wall-clock
   })
   it('注入市場收盤時間框架 block', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     const news = [{ id: 'n1', title: '台股大跌', url: 'https://example.com/a', text: '台股今日重挫', publishedAt: '2026-06-26T06:37:00Z' }]
     const analysts = [{ newsId: 'n1', primaryImpact: 'x', cascadeChains: [], reasoning: 'r', claims: [] }]
     await callNarrativeWriter({
@@ -434,7 +435,7 @@ describe('callNarrativeWriter temporal framing', () => {
       briefDate: '2026-06-27',
       marketCloseFraming: buildMarketCloseFraming('2026-06-26', '2026-06-27'),
     })
-    const uc = vi.mocked(callAgentLLM).mock.calls[0]?.[0]?.userContent ?? ''
+    const uc = vi.mocked(callAgent).mock.calls[0]?.[1]?.userContent ?? ''
     expect(uc).toContain('市場收盤時間框架')
     expect(uc).toContain('台股（加權指數）最近收盤：昨日')
   })
@@ -442,7 +443,7 @@ describe('callNarrativeWriter temporal framing', () => {
 
 describe('callNarrativeWriter weekend mode', () => {
   it('weekend 時 user content 含本週回顧、system prompt 用 weekend', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -452,13 +453,13 @@ describe('callNarrativeWriter weekend mode', () => {
       reportKind: 'weekend',
       weeklyRecapBlock: '## 本週敘事線回顧\n- 【AI 去槓桿】論點：疑慮\n  2026-07-08（支持）：升溫',
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('本週敘事線回顧')
     expect(args?.systemPrompt).toContain('下週前瞻') // 用 weekend prompt
   })
 
   it('weekday（預設）用日報 prompt、不含週末結構', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -466,7 +467,7 @@ describe('callNarrativeWriter weekend mode', () => {
       citations: FAKE_BRIEF.citations,
       briefDate: '2026-07-10',
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.systemPrompt).not.toContain('下週前瞻')
   })
 })
@@ -489,7 +490,7 @@ describe('callNarrativeWriter claimIds', () => {
   }
 
   it('keeps ledger ids and reports 0 stripped', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], ['c2']))
+    vi.mocked(callAgent).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], ['c2']))
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -504,7 +505,7 @@ describe('callNarrativeWriter claimIds', () => {
   })
 
   it('strips ids missing from the ledger and counts them in audit', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(narrativeWithClaimIds(['c1', 'c99'], ['c7']))
+    vi.mocked(callAgent).mockResolvedValueOnce(narrativeWithClaimIds(['c1', 'c99'], ['c7']))
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -519,7 +520,7 @@ describe('callNarrativeWriter claimIds', () => {
   })
 
   it('treats an absent ledger as empty（旗標關閉／當日無 claim 時全 strip、不整份失敗）', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], ['c2']))
+    vi.mocked(callAgent).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], ['c2']))
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -533,7 +534,7 @@ describe('callNarrativeWriter claimIds', () => {
   })
 
   it('defaults claimIds to [] when the model omits them', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -547,7 +548,7 @@ describe('callNarrativeWriter claimIds', () => {
   })
 
   it('reports 0 stripped on the degrade path', async () => {
-    vi.mocked(callAgentLLM)
+    vi.mocked(callAgent)
       .mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: 'short' })
       .mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: 'short' })
     const result = await callNarrativeWriter({
@@ -564,7 +565,7 @@ describe('callNarrativeWriter claimIds', () => {
 
   it('reports the successful attempt count, not an accumulation across retries', async () => {
     // retry 是 prod 常態，正是 claimIdsStripped 最容易被寫成跨 attempt 累加而沒人察覺的路徑
-    vi.mocked(callAgentLLM)
+    vi.mocked(callAgent)
       .mockResolvedValueOnce({ ...narrativeWithClaimIds(['x1', 'x2', 'x3'], ['x4']), intro: 'short' })
       .mockResolvedValueOnce(narrativeWithClaimIds(['c1', 'nope'], ['c2']))
     const result = await callNarrativeWriter({
@@ -576,13 +577,13 @@ describe('callNarrativeWriter claimIds', () => {
       claimLedger: LEDGER,
     })
     expect(result.narrative).toBeTruthy()
-    expect(callAgentLLM).toHaveBeenCalledTimes(2)
+    expect(callAgent).toHaveBeenCalledTimes(2)
     // 第一次 attempt strip 了 4 個、第二次 1 個 → 只回第二次的
     expect(result.audit.claimIdsStripped).toBe(1)
   })
 
   it('emits the strip count on the audit LlmCallRecord', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(narrativeWithClaimIds(['c1', 'nope'], ['c2']))
+    vi.mocked(callAgent).mockResolvedValueOnce(narrativeWithClaimIds(['c1', 'nope'], ['c2']))
     const records: LlmCallRecord[] = []
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
@@ -606,7 +607,7 @@ describe('callNarrativeWriter claimIds', () => {
         { ...VALID_NARRATIVE.sections[1], claimIds: ['c2'] },
       ],
     }
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(withNumbers)
+    vi.mocked(callAgent).mockResolvedValueOnce(withNumbers)
     const records: LlmCallRecord[] = []
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
@@ -651,7 +652,7 @@ describe('callNarrativeWriter citationUrls 反推', () => {
 
   it('由 claim 的 ref 覆蓋模型挑的 url，並回報反推的 section 數', async () => {
     // 模型 section 0 挑了 /a、section 1 挑了 /b；claim 說 section 0 的依據是 /b
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], []))
+    vi.mocked(callAgent).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], []))
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -667,7 +668,7 @@ describe('callNarrativeWriter citationUrls 反推', () => {
   })
 
   it('claim 的 url 不在 citations 時退回模型挑選並計數', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], []))
+    vi.mocked(callAgent).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], []))
     const result = await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -683,7 +684,7 @@ describe('callNarrativeWriter citationUrls 反推', () => {
   })
 
   it('degrade 時兩個計數都是 0', async () => {
-    vi.mocked(callAgentLLM)
+    vi.mocked(callAgent)
       .mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: 'short' })
       .mockResolvedValueOnce({ ...VALID_NARRATIVE, intro: 'short' })
     const result = await callNarrativeWriter({
@@ -700,7 +701,7 @@ describe('callNarrativeWriter citationUrls 反推', () => {
   })
 
   it('把兩個計數 emit 到 LlmCallRecord', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], ['c2']))
+    vi.mocked(callAgent).mockResolvedValueOnce(narrativeWithClaimIds(['c1'], ['c2']))
     const records: LlmCallRecord[] = []
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
@@ -737,7 +738,7 @@ describe('callNarrativeWriter claim ledger prompt', () => {
   })
 
   it('旗標未設時 systemPrompt 逐字不變、userContent 不含 ledger', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -746,7 +747,7 @@ describe('callNarrativeWriter claim ledger prompt', () => {
       briefDate: '2026-06-27',
       claimLedger: LEDGER,
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.systemPrompt).toBe(NARRATIVE_WRITER_SYSTEM_PROMPT)
     expect(args?.userContent).not.toContain('c1')
     expect(args?.userContent).not.toContain('已核對的證據')
@@ -754,8 +755,8 @@ describe('callNarrativeWriter claim ledger prompt', () => {
 
   it('只有字串 true 才算開（對齊 ANALYST_CLAIMS_ENABLED 慣例）', async () => {
     for (const v of ['1', 'yes', 'TRUE', '']) {
-      vi.mocked(callAgentLLM).mockReset()
-      vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+      vi.mocked(callAgent).mockReset()
+      vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
       process.env.NARRATIVE_LEDGER_ENABLED = v
       await callNarrativeWriter({
         brief: FAKE_BRIEF,
@@ -765,13 +766,13 @@ describe('callNarrativeWriter claim ledger prompt', () => {
         briefDate: '2026-06-27',
         claimLedger: LEDGER,
       })
-      expect(vi.mocked(callAgentLLM).mock.calls[0]?.[0]?.systemPrompt).toBe(NARRATIVE_WRITER_SYSTEM_PROMPT)
+      expect(vi.mocked(callAgent).mock.calls[0]?.[1]?.systemPrompt).toBe(NARRATIVE_WRITER_SYSTEM_PROMPT)
     }
   })
 
   it('旗標開時 ledger 進 userContent、systemPrompt 帶 claimIds 指示與 few-shot', async () => {
     process.env.NARRATIVE_LEDGER_ENABLED = 'true'
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -780,7 +781,7 @@ describe('callNarrativeWriter claim ledger prompt', () => {
       briefDate: '2026-06-27',
       claimLedger: LEDGER,
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('[c1] (fact/named-number) 費半收 11,430.35 點')
     expect(args?.systemPrompt).toContain('claimIds')
     // few-shot 必須跟著指示一起改：只改指示不動 few-shot 等於沒改（本 repo 踩過）。
@@ -793,7 +794,7 @@ describe('callNarrativeWriter claim ledger prompt', () => {
 
   it('旗標開但 ledger 為空時不進 prompt（不塞空殼）', async () => {
     process.env.NARRATIVE_LEDGER_ENABLED = 'true'
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -802,14 +803,14 @@ describe('callNarrativeWriter claim ledger prompt', () => {
       briefDate: '2026-06-27',
       claimLedger: [],
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.systemPrompt).toBe(NARRATIVE_WRITER_SYSTEM_PROMPT)
     expect(args?.userContent).not.toContain('已核對的證據')
   })
 
   it('旗標開但 claimLedger 未提供時不進 prompt', async () => {
     process.env.NARRATIVE_LEDGER_ENABLED = 'true'
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -817,12 +818,12 @@ describe('callNarrativeWriter claim ledger prompt', () => {
       citations: FAKE_BRIEF.citations,
       briefDate: '2026-06-27',
     })
-    expect(vi.mocked(callAgentLLM).mock.calls[0]?.[0]?.systemPrompt).toBe(NARRATIVE_WRITER_SYSTEM_PROMPT)
+    expect(vi.mocked(callAgent).mock.calls[0]?.[1]?.systemPrompt).toBe(NARRATIVE_WRITER_SYSTEM_PROMPT)
   })
 
   it('weekend prompt 也接得上 ledger 指示', async () => {
     process.env.NARRATIVE_LEDGER_ENABLED = 'true'
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
+    vi.mocked(callAgent).mockResolvedValueOnce(VALID_NARRATIVE)
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: FAKE_ANALYSTS,
@@ -832,8 +833,23 @@ describe('callNarrativeWriter claim ledger prompt', () => {
       reportKind: 'weekend',
       claimLedger: LEDGER,
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.systemPrompt.startsWith(NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT)).toBe(true)
     expect(args?.systemPrompt).toContain('claimIds')
+  })
+})
+
+describe('callNarrativeWriter 的花費閘', () => {
+  it('超限時往外丟且不再重試', async () => {
+    vi.mocked(callAgent).mockReset()
+    vi.mocked(callAgent).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    await expect(callNarrativeWriter({
+      brief: FAKE_BRIEF,
+      analystOutputs: FAKE_ANALYSTS,
+      news: FAKE_NEWS,
+      citations: FAKE_BRIEF.citations,
+      briefDate: '2026-06-27',
+    })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(callAgent).toHaveBeenCalledTimes(1)
   })
 })

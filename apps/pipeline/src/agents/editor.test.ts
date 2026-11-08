@@ -1,9 +1,9 @@
 import type { Storyline } from '../db/repos/storylines-repo.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as wrapper from './call-agent.js'
 import { callEditor, formatUserContent } from './editor.js'
-import * as wrapper from './llm-wrapper.js'
 
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 vi.mock('../prompts/editor.prompt.js', () => ({
   EDITOR_SYSTEM_PROMPT: 'TEST_EDITOR_PROMPT',
 }))
@@ -32,7 +32,7 @@ describe('callEditor', () => {
   })
 
   it('editor user content lists candidates, open storylines, recent briefs', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_OUTPUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     await callEditor({
       candidates: [{ id: 12, title: '台積電法說', excerpt: '上修全年資本支出', category: 'tw-equity-other' as const }],
@@ -40,8 +40,8 @@ describe('callEditor', () => {
       recentBriefs: [{ briefDate: '2026-06-11', headline: '昨日盤勢', summary: '市場觀望' }],
     })
 
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
-    expect(call?.agentName).toBe('editor')
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
+    expect(vi.mocked(wrapper.callAgent).mock.calls[0]?.[0]).toBe('editor')
     expect(call?.systemPrompt).toBe('TEST_EDITOR_PROMPT')
     const userContent = call?.userContent ?? ''
     // 候選帶 item 層分類標籤
@@ -52,7 +52,7 @@ describe('callEditor', () => {
   })
 
   it('renders the item-level category label', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_OUTPUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     await callEditor({
       candidates: [{ id: 1, title: '台積電法說', excerpt: 'CoWoS', category: 'tech-semi' }],
@@ -60,12 +60,12 @@ describe('callEditor', () => {
       recentBriefs: [],
     })
 
-    const userContent = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]?.userContent ?? ''
+    const userContent = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]?.userContent ?? ''
     expect(userContent).toContain('[1][科技半導體]')
   })
 
   it('clamps overlong candidate title and excerpt in user content', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_OUTPUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     const longTitle = '標'.repeat(200)
     const longExcerpt = '述'.repeat(300)
@@ -76,7 +76,7 @@ describe('callEditor', () => {
       recentBriefs: [],
     })
 
-    const call = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const call = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     const userContent = call?.userContent ?? ''
     const candidateLine = userContent.split('\n').find(l => l.startsWith('[12]')) ?? ''
 
@@ -90,7 +90,7 @@ describe('callEditor', () => {
   })
 
   it('editor returns zod-parsed output split into selection + storyline layers', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_OUTPUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     const result = await callEditor({
       candidates: [{ id: 12, title: '台積電法說', excerpt: 'x', category: 'tw-equity-other' as const }],
@@ -105,7 +105,7 @@ describe('callEditor', () => {
 
   // 選稿層不合 schema 時不再整包 throw，storyline 層照常回來。
   it('editor returns null selection (not throw) on schema-invalid selection, keeping storyline layer', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       // missing selectedNewsIds + mainThemes
       storylineTouches: [{ storylineId: 7, valence: 'support', note: 'CPI 低於預期' }],
       newStorylines: [],
@@ -122,7 +122,7 @@ describe('callEditor', () => {
   })
 
   it('注入 market snapshot + calendar 時 user content 含對應段、null 時略過', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_OUTPUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     await callEditor({
       candidates: [{ id: 12, title: 't', excerpt: 'x', category: 'tw-equity-other' as const }],
@@ -132,7 +132,7 @@ describe('callEditor', () => {
       calendarBlock: 'CALENDAR_BLOCK_Y',
     })
 
-    const userContent = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]?.userContent ?? ''
+    const userContent = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]?.userContent ?? ''
     expect(userContent).toContain('CALENDAR_BLOCK_Y')
     expect(userContent).toContain('SNAPSHOT_BLOCK_X')
     expect(userContent).toContain('本週財經行事曆')
@@ -140,7 +140,7 @@ describe('callEditor', () => {
   })
 
   it('marketSnapshot / calendarBlock 省略時不出現對應 heading', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_OUTPUT)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     await callEditor({
       candidates: [{ id: 12, title: 't', excerpt: 'x', category: 'tw-equity-other' as const }],
@@ -148,7 +148,7 @@ describe('callEditor', () => {
       recentBriefs: [],
     })
 
-    const userContent = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]?.userContent ?? ''
+    const userContent = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]?.userContent ?? ''
     expect(userContent).not.toContain('市場數據快照')
     expect(userContent).not.toContain('本週財經行事曆')
   })

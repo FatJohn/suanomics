@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { callNewsTagger, normalizeTaggerResponse } from './news-tagger.js'
 
-vi.mock('./llm-wrapper.js', () => ({ callAgentLLM: vi.fn() }))
-const { callAgentLLM } = await import('./llm-wrapper.js')
+vi.mock('./call-agent.js', () => ({ callAgent: vi.fn() }))
+const { callAgent } = await import('./call-agent.js')
 
 afterEach(() => vi.clearAllMocks())
 
@@ -43,15 +43,15 @@ describe('normalizeTaggerResponse', () => {
 
 describe('callNewsTagger', () => {
   it('calls the news-tagger agent and normalizes the result', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValue({ results: [{ id: 10, tags: ['Nvidia', 'bond-issuance'] }] })
+    vi.mocked(callAgent).mockResolvedValue({ results: [{ id: 10, tags: ['Nvidia', 'bond-issuance'] }] })
     const out = await callNewsTagger([{ id: 10, title: '輝達發債', excerpt: '200 億美元' }])
-    expect(vi.mocked(callAgentLLM).mock.calls[0]?.[0]?.agentName).toBe('news-tagger')
-    expect(vi.mocked(callAgentLLM).mock.calls[0]?.[0]?.userContent).toContain('[id=10] 輝達發債 — 200 億美元')
+    expect(vi.mocked(callAgent).mock.calls[0]?.[0]).toBe('news-tagger')
+    expect(vi.mocked(callAgent).mock.calls[0]?.[1]?.userContent).toContain('[id=10] 輝達發債 — 200 億美元')
     expect(out).toEqual([{ id: 10, tags: ['nvidia', 'bond-issuance'] }])
   })
   it('returns [] for empty input without calling the LLM', async () => {
     const out = await callNewsTagger([])
     expect(out).toEqual([])
-    expect(vi.mocked(callAgentLLM)).not.toHaveBeenCalled()
+    expect(vi.mocked(callAgent)).not.toHaveBeenCalled()
   })
 })

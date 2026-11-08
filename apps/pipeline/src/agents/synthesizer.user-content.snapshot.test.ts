@@ -1,16 +1,16 @@
 import { checkCompliance } from '@suanomics/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import * as wrapper from './llm-wrapper.js'
+import * as wrapper from './call-agent.js'
 import { callSynthesizer } from './synthesizer.js'
 
 // Characterization test：在把 synthesizer.ts 的 user content 字面值搬到
 // prompts/synthesizer.user-content.ts 之前，先把目前送給 LLM 的 user content 逐位元組釘住。
-// `formatUserContent` 未 export，比照既有 synthesizer.test.ts 的手法 mock callAgentLLM、
+// `formatUserContent` 未 export，比照既有 synthesizer.test.ts 的手法 mock callAgent、
 // 從呼叫參數取出 userContent 做 snapshot。覆蓋：0 篇/多篇 analystOutputs、
 // newsId 有無、cascadeChains 空/非空、tier/parentChainId/speculative 各自有無、
 // marketCloseFraming 有無、marketSnapshot 有無、continuityHint 有無、
 // compliance 違規重試時的 feedback 字面值。
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 vi.mock('../prompts/synthesizer.prompt.js', () => ({
   SYNTHESIZER_SYSTEM_PROMPT: 'TEST_SYN',
 }))
@@ -29,7 +29,7 @@ const VALID_SYNTH = {
 }
 
 function firstUserContent(): string {
-  return String(vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]?.userContent ?? '')
+  return String(vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]?.userContent ?? '')
 }
 
 describe('synthesizer formatUserContent snapshot (characterization)', () => {
@@ -39,13 +39,13 @@ describe('synthesizer formatUserContent snapshot (characterization)', () => {
   })
 
   it('captures zero analystOutputs, no optional blocks', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_SYNTH)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_SYNTH)
     await callSynthesizer({ analystOutputs: [], date: '2026-06-13' })
     expect(firstUserContent()).toMatchSnapshot()
   })
 
   it('captures multiple analystOutputs with newsId present/absent, empty cascadeChains', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_SYNTH)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_SYNTH)
     await callSynthesizer({
       analystOutputs: [
         { newsId: 'n1', primaryImpact: '主衝擊一', cascadeChains: [], reasoning: '理由一', claims: [] },
@@ -57,7 +57,7 @@ describe('synthesizer formatUserContent snapshot (characterization)', () => {
   })
 
   it('captures cascadeChains with tier/parentChainId/speculative present and absent in the same output', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_SYNTH)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_SYNTH)
     await callSynthesizer({
       analystOutputs: [{
         newsId: 'n1',
@@ -90,7 +90,7 @@ describe('synthesizer formatUserContent snapshot (characterization)', () => {
   })
 
   it('captures marketCloseFraming + marketSnapshot present together', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_SYNTH)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_SYNTH)
     await callSynthesizer({
       analystOutputs: [],
       date: '2026-06-13',
@@ -101,7 +101,7 @@ describe('synthesizer formatUserContent snapshot (characterization)', () => {
   })
 
   it('captures continuityHint present', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_SYNTH)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_SYNTH)
     await callSynthesizer({
       analystOutputs: [],
       date: '2026-06-13',
@@ -111,14 +111,14 @@ describe('synthesizer formatUserContent snapshot (characterization)', () => {
   })
 
   it('captures compliance-violation retry feedback text appended to second call', async () => {
-    vi.mocked(wrapper.callAgentLLM)
+    vi.mocked(wrapper.callAgent)
       .mockResolvedValueOnce({ ...VALID_SYNTH, summary: 'TSMC 加碼' })
       .mockResolvedValueOnce(VALID_SYNTH)
     vi.mocked(checkCompliance)
       .mockReturnValueOnce({ violation: 'ticker-direction', matched: 'TSMC 加碼' })
       .mockReturnValueOnce(null)
     await callSynthesizer({ analystOutputs: [], date: '2026-06-13' })
-    const secondCall = String(vi.mocked(wrapper.callAgentLLM).mock.calls[1]?.[0]?.userContent ?? '')
+    const secondCall = String(vi.mocked(wrapper.callAgent).mock.calls[1]?.[1]?.userContent ?? '')
     expect(secondCall).toMatchSnapshot()
   })
 })

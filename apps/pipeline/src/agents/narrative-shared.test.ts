@@ -8,6 +8,14 @@ import {
 } from './narrative-shared.js'
 
 describe('classifyError', () => {
+  it('classifies structured output mismatch as zod-parse', () => {
+    const e = new Error('No object generated')
+    e.name = 'AI_NoObjectGeneratedError'
+    expect(classifyError(e)).toBe('zod-parse')
+  })
+  it('classifies SDK TimeoutError as timeout', () => {
+    expect(classifyError(new DOMException('The operation timed out', 'TimeoutError'))).toBe('timeout')
+  })
   it('classifies AbortError as timeout', () => {
     const e = new Error('aborted')
     e.name = 'AbortError'
@@ -27,8 +35,8 @@ describe('classifyError', () => {
   it('classifies "unknown citation url" as zod-parse', () => {
     expect(classifyError(new Error('unknown citation url'))).toBe('zod-parse')
   })
-  it('falls back to gemini-api for unrecognized errors', () => {
-    expect(classifyError(new Error('500 Internal Server Error'))).toBe('gemini-api')
+  it('falls back to llm-api for unrecognized errors', () => {
+    expect(classifyError(new Error('500 Internal Server Error'))).toBe('llm-api')
   })
 })
 
@@ -92,7 +100,7 @@ describe('nARRATIVE_REWRITE_MAP', () => {
 
 describe('retryReason type', () => {
   it('accepts all 4 union variants', () => {
-    const _values: RetryReason[] = ['zod-parse', 'gemini-api', 'timeout', 'compliance-residual', null]
+    const _values: RetryReason[] = ['zod-parse', 'llm-api', 'timeout', 'compliance-residual', null]
     expect(_values).toHaveLength(5)
   })
 })

@@ -1,8 +1,10 @@
 import type { CascadeChain } from '@suanomics/shared'
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import { CHAIN_GROUPER_SYSTEM_PROMPT } from '../prompts/chain-grouper.prompt.js'
 import { CHAIN_GROUPER_USER_TEXT } from '../prompts/chain-grouper.user-content.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
+import { CostGateError } from './cost-gate.js'
+import { ChainGrouperResponse } from './response-schemas.js'
 
 /**
  * 把每條 cascade chain 標上它所屬的力場分組。
@@ -13,24 +15,6 @@ import { callAgentLLM } from './llm-wrapper.js'
  *
  * 這一步**永遠不阻擋 brief**：失敗就回傳原 chains，讀者面退回不分組呈現。
  */
-
-const RESPONSE_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: {
-    mapping: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          label: { type: 'string' },
-          force: { type: 'string' },
-        },
-        required: ['label', 'force'],
-      },
-    },
-  },
-  required: ['mapping'],
-}
 
 export interface CallChainGrouperParams {
   chains: CascadeChain[]
@@ -63,16 +47,14 @@ export async function tagChainForceGroups(p: CallChainGrouperParams): Promise<Ca
 
   let mapping: { label: string, force: string }[]
   try {
-    const out = await callAgentLLM<{ mapping: { label: string, force: string }[] }>({
-      agentName: 'chain-grouper',
-      systemPrompt: CHAIN_GROUPER_SYSTEM_PROMPT,
-      userContent: buildUserContent(labels, p.forceNames),
-      responseSchema: RESPONSE_GEMINI_SCHEMA,
+    const out = await callAgent('chain-grouper', { systemPrompt: CHAIN_GROUPER_SYSTEM_PROMPT, userContent: buildUserContent(labels, p.forceNames) }, ChainGrouperResponse, {
       ...(p.onCallRecord ? { onCallRecord: p.onCallRecord } : {}),
     })
     mapping = out.mapping ?? []
   }
-  catch {
+  catch (err) {
+    if (err instanceof CostGateError)
+      throw err
     // 分組是加分項不是必需品：grouper 掛掉不該讓整份 brief 產不出來
     return p.chains
   }

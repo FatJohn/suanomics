@@ -1,50 +1,12 @@
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import type { AnalystOutput, RetrievedArticle } from './types.js'
 import { ANALYST_TIER2_SYSTEM_PROMPT } from '../prompts/analyst-tier2.prompt.js'
 import { ANALYST_TIER2_USER_TEXT } from '../prompts/analyst-tier2.user-content.js'
 import { normalizeForAnalystSchema } from './analyst-shared.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
 import { appendMarketSnapshotSection } from './market-snapshot-section.js'
+import { AnalystTier2Response } from './response-schemas.js'
 import { AnalystOutputSchema } from './types.js'
-
-const RESPONSE_TIER2_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: {
-    newsId: { type: 'string' },
-    primaryImpact: { type: 'string' },
-    cascadeChains: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          industry: { type: 'string' },
-          mechanism: { type: 'string' },
-          affectedTickers: { type: 'array', items: { type: 'string' } },
-          direction: { type: 'string', enum: ['positive', 'neutral', 'negative'] },
-          citations: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                url: { type: 'string' },
-                title: { type: 'string' },
-                quote: { type: 'string' },
-              },
-              required: ['url', 'title', 'quote'],
-            },
-            minItems: 0,
-            maxItems: 5,
-          },
-          // 結構性禁止 nextTierEntities：Gemini structured output 對 unknown property 會 strip
-          // → tier 2 chain 永不產 nextTierEntities、recursion bound = 2
-        },
-        required: ['industry', 'mechanism', 'affectedTickers', 'direction', 'citations'],
-      },
-    },
-    reasoning: { type: 'string' },
-  },
-  required: ['primaryImpact', 'cascadeChains', 'reasoning'],
-}
 
 export interface CallAnalystTier2Params {
   newsTitle: string
@@ -89,18 +51,14 @@ export async function callAnalystTier2(p: CallAnalystTier2Params): Promise<Analy
   while (attempts < maxRetries) {
     attempts++
     const userContent = feedback ? `${baseUserContent}\n\n${feedback}` : baseUserContent
-    const raw = await callAgentLLM<unknown>({
-      agentName: 'analyst-tier2',
-      systemPrompt: ANALYST_TIER2_SYSTEM_PROMPT,
-      userContent,
-      responseSchema: RESPONSE_TIER2_GEMINI_SCHEMA,
+    const raw = await callAgent('analyst-tier2', { systemPrompt: ANALYST_TIER2_SYSTEM_PROMPT, userContent }, AnalystTier2Response, {
       ...(p.newsId !== undefined ? { newsId: p.newsId } : {}),
       onCallRecord: captureRecord,
     })
     // tier2 不產 claim，但與 tier1 共用 AnalystOutputSchema。供應商若自行回了 claims，
     // 一條壞 claim 會 throw 掉整份 tier2 分析——強制覆寫成空陣列，讓那條路徑不存在。
     const parsed = AnalystOutputSchema.parse({
-      ...(normalizeForAnalystSchema(raw) as Record<string, unknown>),
+      ...(normalizeForAnalystSchema(raw, allowedUrls) as Record<string, unknown>),
       claims: [],
     })
     if (parsed.newsId === undefined && p.newsId !== undefined)

@@ -217,4 +217,10 @@ describe('sanitizeStoryline', () => {
     const s = sanitizeStoryline({ ...VALID_STORYLINE, newStorylines: three }, [])
     expect(s.newStorylines).toHaveLength(3)
   })
+
+  it('anthropic 不強制 maxItems：選稿層超量時截斷，不整層回退', () => {
+    const r = parseEditorOutput({ ...VALID_SELECTION, mainThemes: ['a', 'b', 'c'], selectedNewsIds: [1, 2, 3, 4, 5, 6, 7, 8, 9] })
+    expect(r.selection?.mainThemes).toEqual(['a', 'b'])
+    expect(r.selection?.selectedNewsIds).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
+  })
 })

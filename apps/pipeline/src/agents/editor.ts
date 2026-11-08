@@ -1,26 +1,14 @@
 import type { ItemCategory } from '../db/news-categories.js'
 import type { Storyline } from '../db/repos/storylines-repo.js'
+import type { LlmCallRecord } from './call-agent.js'
 import type { EditorParseResult } from './editor-output.js'
-import type { LlmCallRecord } from './llm-wrapper.js'
 import { ITEM_CATEGORY_LABEL } from '../db/news-categories.js'
 import { EDITOR_SYSTEM_PROMPT } from '../prompts/editor.prompt.js'
 import { EDITOR_USER_TEXT } from '../prompts/editor.user-content.js'
+import { callAgent } from './call-agent.js'
 import { parseEditorOutput } from './editor-output.js'
-import { callAgentLLM } from './llm-wrapper.js'
 import { clampString } from './narrative-shared.js'
-
-const RESPONSE_GEMINI_SCHEMA = {
-  type: 'object',
-  properties: {
-    mainThemes: { type: 'array', items: { type: 'string' }, minItems: 1, maxItems: 2 },
-    dailyThesis: { type: 'string' },
-    selectedNewsIds: { type: 'array', items: { type: 'integer' }, minItems: 1, maxItems: 8 },
-    storylineTouches: { type: 'array', items: { type: 'object', properties: { storylineId: { type: 'integer' }, valence: { type: 'string', enum: ['support', 'challenge', 'extend'] }, note: { type: 'string' } }, required: ['storylineId', 'valence', 'note'] } },
-    resolveStorylines: { type: 'array', maxItems: 2, items: { type: 'object', properties: { storylineId: { type: 'integer' }, disposition: { type: 'string', enum: ['confirmed', 'refuted'] }, note: { type: 'string' } }, required: ['storylineId', 'disposition', 'note'] } },
-    newStorylines: { type: 'array', maxItems: 2, items: { type: 'object', properties: { title: { type: 'string' }, thesis: { type: 'string' }, entities: { type: 'array', items: { type: 'string' } } }, required: ['title', 'thesis', 'entities'] } },
-  },
-  required: ['mainThemes', 'dailyThesis', 'selectedNewsIds', 'storylineTouches', 'newStorylines'],
-}
+import { EditorResponse } from './response-schemas.js'
 
 export interface EditorCandidate { id: number, title: string, excerpt: string, category: ItemCategory }
 export interface CallEditorParams {
@@ -37,11 +25,7 @@ export interface CallEditorParams {
 
 // 不對 LLM 輸出做全有全無的 parse：選稿層與 storyline 層各自成立、各自降級（見 editor-output.ts）。
 export async function callEditor(p: CallEditorParams): Promise<EditorParseResult> {
-  const raw = await callAgentLLM<unknown>({
-    agentName: 'editor',
-    systemPrompt: EDITOR_SYSTEM_PROMPT,
-    userContent: formatUserContent(p),
-    responseSchema: RESPONSE_GEMINI_SCHEMA,
+  const raw = await callAgent('editor', { systemPrompt: EDITOR_SYSTEM_PROMPT, userContent: formatUserContent(p) }, EditorResponse, {
     ...(p.onCallRecord !== undefined ? { onCallRecord: p.onCallRecord } : {}),
   })
   return parseEditorOutput(raw)

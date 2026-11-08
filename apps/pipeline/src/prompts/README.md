@@ -17,12 +17,12 @@
 | `chain-grouper.prompt.ts` | `chain-grouper.ts` | `CHAIN_GROUPER_SYSTEM_PROMPT` |
 | `decomposer.prompt.ts` | `decomposer.ts` | `DECOMPOSER_SYSTEM_PROMPT` |
 | `editor.prompt.ts` | `editor.ts` | `EDITOR_SYSTEM_PROMPT` |
-| `narrative-writer.prompt.ts` | `narrative-writer.ts` | `NARRATIVE_WRITER_SYSTEM_PROMPT`、`NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT`、`NARRATIVE_CLAIM_LEDGER_INSTRUCTION`、`NARRATIVE_GEMINI_SCHEMA` |
+| `narrative-writer.prompt.ts` | `narrative-writer.ts` | `NARRATIVE_WRITER_SYSTEM_PROMPT`、`NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT`、`NARRATIVE_CLAIM_LEDGER_INSTRUCTION` |
 | `news-categorizer.prompt.ts` | `news-categorizer.ts` | `NEWS_CATEGORIZER_SYSTEM_PROMPT` |
 | `news-tagger.prompt.ts` | `news-tagger.ts` | `NEWS_TAGGER_SYSTEM_PROMPT` |
 | `podcast-writer.prompt.ts` | `podcast-writer.ts` | `PODCAST_WRITER_SYSTEM_PROMPT` |
 | `synthesizer.prompt.ts` | `synthesizer.ts` | `SYNTHESIZER_SYSTEM_PROMPT` |
-| `viewpoints-debate.prompt.ts` | `viewpoints-debate.ts` | `SUPPORT_PROMPT`、`RISK_PROMPT`、`NET_READ_PROMPT`、`buildDebateMaterial()`、`POINTS_GEMINI_SCHEMA`、`NET_READ_GEMINI_SCHEMA` |
+| `viewpoints-debate.prompt.ts` | `viewpoints-debate.ts` | `SUPPORT_PROMPT`、`RISK_PROMPT`、`NET_READ_PROMPT`、`buildDebateMaterial()` |
 
 `macro-frames.ts` 也在這個目錄：它是手寫的總經數據解讀框架，由 `analyst-tier1.prompt.ts` 用
 `renderMacroFramesSection()` 接在 system prompt 尾端，換場景時要一起換。

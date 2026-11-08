@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { normalizeForAnalystSchema } from './analyst-shared.js'
 import { callAnalystTier1, callAnalystTier2 } from './analyst.js'
-import * as wrapper from './llm-wrapper.js'
+import * as wrapper from './call-agent.js'
 
-vi.mock('./llm-wrapper.js')
+vi.mock('./call-agent.js')
 vi.mock('../prompts/analyst-tier1.prompt.js', () => ({
   ANALYST_TIER1_SYSTEM_PROMPT: 'TEST_ANALYST_PROMPT',
 }))
@@ -28,7 +29,7 @@ describe('callAnalystTier1', () => {
   }
 
   it('should pass news + hypotheses + retrieved articles to LLM', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(baseValid)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(baseValid)
     await callAnalystTier1({
       briefDate: '2026-04-25',
       newsTitle: 'T',
@@ -36,13 +37,13 @@ describe('callAnalystTier1', () => {
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
       retrieved: [{ id: '1', url: 'https://known/1', title: 'r', contentSummary: 's', entities: [], topicTags: [], fetchedAt: '2026-04-25' }],
     })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('body')
     expect(args?.userContent).toContain('https://known/1')
   })
 
   it('should list the primary news url as a citable source even when retrieved is empty', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue(baseValid)
+    vi.mocked(wrapper.callAgent).mockResolvedValue(baseValid)
     await callAnalystTier1({
       briefDate: '2026-04-25',
       newsTitle: 'T',
@@ -51,12 +52,12 @@ describe('callAnalystTier1', () => {
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
       retrieved: [],
     })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('https://src.example.com/primary-news')
   })
 
   it('should NOT strip a citation to the primary news url when retrieved is empty', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'x',
       cascadeChains: [{
         industry: 'i',
@@ -76,12 +77,12 @@ describe('callAnalystTier1', () => {
       retrieved: [],
       maxFabricationRetries: 2,
     })
-    expect(vi.mocked(wrapper.callAgentLLM)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(1)
     expect(result.cascadeChains[0]?.citations[0]?.url).toBe('https://src.example.com/primary-news')
   })
 
   it('should retry when LLM cites URL not in retrieved set', async () => {
-    vi.mocked(wrapper.callAgentLLM)
+    vi.mocked(wrapper.callAgent)
       .mockResolvedValueOnce({
         primaryImpact: 'x',
         cascadeChains: [{
@@ -103,12 +104,12 @@ describe('callAnalystTier1', () => {
       retrieved: [{ id: '1', url: 'https://known/1', title: 'r', contentSummary: '', entities: [], topicTags: [], fetchedAt: '2026-04-25' }],
       maxFabricationRetries: 2,
     })
-    expect(vi.mocked(wrapper.callAgentLLM)).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(2)
     expect(result.cascadeChains[0]?.citations[0]?.url).toBe('https://known/1')
   })
 
   it('should strip fabricated citations after max retries instead of throwing', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'x',
       cascadeChains: [{
         industry: 'i',
@@ -130,15 +131,15 @@ describe('callAnalystTier1', () => {
     // fabricated url stripped; citations should be empty (allowed url was never returned by LLM)
     expect(result.cascadeChains[0]?.citations).toHaveLength(0)
     // should have retried maxFabricationRetries times
-    expect(vi.mocked(wrapper.callAgentLLM)).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(2)
   })
 
   it('should set fabricationStripped on the final LlmCallRecord when stripping', async () => {
     // wrapper 每次 invoke 時把 record forward 給呼叫方傳進來的 onCallRecord、
     // 模擬實際 production 的 callback chain
     // eslint-disable-next-line ts/no-explicit-any -- mock implementation, generic T type not inferrable at mock boundary
-    vi.mocked(wrapper.callAgentLLM).mockImplementation(async (params: any) => {
-      params.onCallRecord?.({
+    vi.mocked(wrapper.callAgent).mockImplementation(async (_name: any, _input: any, _schema: any, options: any) => {
+      options.onCallRecord?.({
         agentName: 'analyst-tier1',
         tokensIn: 100,
         tokensOut: 50,
@@ -183,8 +184,8 @@ describe('callAnalystTier1', () => {
 
   it('should not set fabricationStripped when LLM returns valid citations on first try', async () => {
     // eslint-disable-next-line ts/no-explicit-any -- mock implementation, generic T type not inferrable at mock boundary
-    vi.mocked(wrapper.callAgentLLM).mockImplementation(async (params: any) => {
-      params.onCallRecord?.({
+    vi.mocked(wrapper.callAgent).mockImplementation(async (_name: any, _input: any, _schema: any, options: any) => {
+      options.onCallRecord?.({
         agentName: 'analyst-tier1',
         tokensIn: 100,
         tokensOut: 50,
@@ -224,9 +225,9 @@ describe('callAnalystTier1 market snapshot injection', () => {
   }
 
   it('analyst user content includes market snapshot with 主動解讀 directives', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
     await callAnalystTier1({ ...baseParams, marketSnapshot: '## 今日市場數據\n- 加權指數：23,150 點' })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('## 今日市場數據')
     expect(args?.userContent).toContain('# 市場數據快照（主動解讀、不只當背景）')
     expect(args?.userContent).toContain('照抄快照提供的值')
@@ -235,16 +236,16 @@ describe('callAnalystTier1 market snapshot injection', () => {
   })
 
   it('analyst user content omits market section when null', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
     await callAnalystTier1({ ...baseParams, marketSnapshot: null })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('今日市場數據')
   })
 
   it('analyst user content omits market section when not provided', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
     await callAnalystTier1(baseParams)
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('今日市場數據')
   })
 })
@@ -256,7 +257,7 @@ describe('analyst · quote truncation hotfix', () => {
 
   it('should truncate cascadeChains[].citations[].quote when Gemini returns > 600 chars', async () => {
     const longQuote = 'A'.repeat(700)
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'x',
       cascadeChains: [{
         industry: 'i',
@@ -298,7 +299,7 @@ describe('callAnalystTier2', () => {
   }
 
   it('returns tier 2 cascadeChains from Gemini output', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'tier 2 partner impact',
       cascadeChains: [{
         industry: '半導體測試設備',
@@ -323,7 +324,7 @@ describe('callAnalystTier2', () => {
   })
 
   it('passes parent chain context into user content', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'p',
       cascadeChains: [],
       reasoning: 'r',
@@ -334,15 +335,15 @@ describe('callAnalystTier2', () => {
       parentChain,
       retrieved: [],
     })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('半導體封測')
     expect(args?.userContent).toContain('AI capex 推 advanced packaging')
     expect(args?.userContent).toContain('愛德萬測試')
-    expect(args?.agentName).toBe('analyst-tier2')
+    expect(vi.mocked(wrapper.callAgent).mock.calls[0]?.[0]).toBe('analyst-tier2')
   })
 
   it('strips fabricated tier 2 citations after max retries', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'p',
       cascadeChains: [{
         industry: 'x',
@@ -361,12 +362,12 @@ describe('callAnalystTier2', () => {
       maxFabricationRetries: 2,
     })
     expect(result.cascadeChains[0]?.citations).toHaveLength(0)
-    expect(vi.mocked(wrapper.callAgentLLM)).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(2)
   })
 
   // empty retrieved 時 prompt 指示 Gemini 留空、單次 call 完成
   it('returns empty cascadeChains and single call when retrieved is empty (Gemini follows instruction)', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'p',
       cascadeChains: [],
       reasoning: 'r',
@@ -378,13 +379,13 @@ describe('callAnalystTier2', () => {
       retrieved: [],
     })
     expect(result.cascadeChains).toEqual([])
-    expect(vi.mocked(wrapper.callAgentLLM)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(1)
   })
 
   // edge case：retrieved 空但 Gemini 沒守紀律仍掰 url、allowedUrls 空集合 → 全 fabricated
   // → 應 retry maxRetries 次然後 strip 成空 citations
   it('loops to maxRetries and strips when retrieved is empty but Gemini fabricates URLs', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'p',
       cascadeChains: [{
         industry: 'x',
@@ -403,13 +404,13 @@ describe('callAnalystTier2', () => {
       maxFabricationRetries: 2,
     })
     expect(result.cascadeChains[0]?.citations).toEqual([])
-    expect(vi.mocked(wrapper.callAgentLLM)).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(2)
   })
 })
 
 // NOTE: 這 describe 驗證 Zod parse path（AnalystOutputSchema.parse 保 nextTierEntities）。
-// Gemini schema (RESPONSE_TIER1_GEMINI_SCHEMA) 本身的 shape 由 prod 路徑
-// 驗、不在 unit test 範圍 — 因為 mock 攔截 callAgentLLM、
+// LLM response schema（AnalystTier1Response）本身的 shape 由 prod 路徑
+// 驗、不在 unit test 範圍 — 因為 mock 攔截 callAgent、
 // Gemini structured-output 的 schema 永遠用不到。
 describe('callAnalystTier1 nextTierEntities', () => {
   beforeEach(() => {
@@ -418,8 +419,8 @@ describe('callAnalystTier1 nextTierEntities', () => {
 
   it('preserves nextTierEntities when Gemini outputs them', async () => {
     // eslint-disable-next-line ts/no-explicit-any -- mock implementation, generic T type not inferrable at mock boundary
-    vi.mocked(wrapper.callAgentLLM).mockImplementation(async (params: any) => {
-      params.onCallRecord?.({
+    vi.mocked(wrapper.callAgent).mockImplementation(async (_name: any, _input: any, _schema: any, options: any) => {
+      options.onCallRecord?.({
         agentName: 'analyst-tier1',
         tokensIn: 100,
         tokensOut: 50,
@@ -464,9 +465,9 @@ describe('callAnalystTier2 market snapshot injection', () => {
   }
 
   it('tier2 user content includes snapshot with 主動解讀 directives', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
     await callAnalystTier2({ ...baseTier2Params, marketSnapshot: '## 今日市場數據\n- 加權指數：23,150 點' })
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toContain('# 市場數據快照（主動解讀、不只當背景）')
     expect(args?.userContent).toContain('檢查快照中是否有相關序列')
     expect(args?.userContent).toContain('無相關序列的主軸不要硬引用')
@@ -474,9 +475,33 @@ describe('callAnalystTier2 market snapshot injection', () => {
   })
 
   it('tier2 user content omits snapshot section when absent', async () => {
-    vi.mocked(wrapper.callAgentLLM).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
     await callAnalystTier2(baseTier2Params)
-    const args = vi.mocked(wrapper.callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).not.toContain('市場數據快照')
+  })
+})
+
+describe('normalizeForAnalystSchema 的數量上限', () => {
+  const allowed = new Set(['real-1', 'real-2'])
+  const cite = (url: string) => ({ url, title: 't', quote: 'q' })
+
+  it('超量時 nextTierEntities 截到 5 筆', () => {
+    const out = normalizeForAnalystSchema({
+      cascadeChains: [{ citations: [], nextTierEntities: ['a', 'b', 'c', 'd', 'e', 'f'] }],
+    }, allowed) as { cascadeChains: { nextTierEntities: unknown[] }[] }
+    expect(out.cascadeChains[0]?.nextTierEntities).toHaveLength(5)
+  })
+
+  it('超量時優先留有來源的 citation，真來源不被幻覺 url 擠掉', () => {
+    const urls = ['f1', 'f2', 'f3', 'f4', 'f5', 'real-1', 'real-2']
+    const out = normalizeForAnalystSchema({ cascadeChains: [{ citations: urls.map(cite) }] }, allowed) as { cascadeChains: { citations: { url: string }[] }[] }
+    expect(out.cascadeChains[0]?.citations.map(c => c.url)).toEqual(['real-1', 'real-2', 'f1', 'f2', 'f3'])
+  })
+
+  it('沒超量時順序不變', () => {
+    const urls = ['f1', 'real-1']
+    const out = normalizeForAnalystSchema({ cascadeChains: [{ citations: urls.map(cite) }] }, allowed) as { cascadeChains: { citations: { url: string }[] }[] }
+    expect(out.cascadeChains[0]?.citations.map(c => c.url)).toEqual(['f1', 'real-1'])
   })
 })
