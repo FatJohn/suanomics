@@ -25,7 +25,7 @@ pnpm knip            # 未使用的檔案、export 與依賴
 pnpm --filter @suanomics/pipeline run db:migrate
 ```
 
-CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，資料庫是 Postgres 18 service container；knip 沒有 CI 把關，開 PR 前自己跑。本機起 Postgres 的步驟見 [本機開發](docs/operations/local-dev.md)。
+CI（`.github/workflows/ci.yml`）跑上面全部指令，資料庫是 Postgres 18 service container。本機起 Postgres 的步驟見 [本機開發](docs/operations/local-dev.md)。
 
 ## Tech Stack（已鎖定，要換先開 issue）
 
@@ -59,6 +59,10 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 | `apps/web` 不 import `apps/pipeline`；`packages/*` 不 import `apps/*` | ESLint `import-x/no-restricted-paths` |
 | `.ts` 與 `.astro` 不用 `any`；`.ts` 不用非空斷言 `!`，型別 import 用 `import type` | ESLint `ts/no-explicit-any`、`ts/no-non-null-assertion`、`ts/consistent-type-imports` |
 | 不 import `@anthropic-ai/sdk`、`@google/genai`、`openai`，也不 import `ai` 的 `generateObject`；`apps/web` 另不 import `ai`、`@ai-sdk/*`（只涵蓋靜態 import） | ESLint `no-restricted-imports` |
+| `packages/shared` 的 runtime 依賴只有 `zod` | CI `Check packages/shared dependencies` |
+| workflow 的 action 釘 commit SHA、最小 `permissions`、不用 `pull_request_target` | CI `Audit workflows`（zizmor） |
+| `apps/`、`packages/` 不放 emoji | CI `Check emoji` |
+| 長存文件通過 `check_docs.py`，`AGENTS.md` 規則清單與 `docs/rules/coding.md` 同步 | CI `Check docs`、`Check rules index`（`tools/agents-guideline/`） |
 | `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`（shared、pipeline）與 `apps/web/tsconfig.json`，`pnpm -r type-check` |
 | `rewrite` 要走 PR、`gitleaks` 與 `ci` 兩個 check 通過、commit 要簽章、禁 force push 與刪除 | GitHub ruleset |
 
@@ -93,15 +97,11 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 **依賴與設定**
 - 新增 dependency 前確認授權與 Apache-2.0 相容（例如 AGPL 不相容）（MEDIUM）
 - 能用 Node 原生 API（`fetch`、`node:*` 模組）解決的，不引入第三方套件（LOW）
-- `packages/shared` 的 runtime 依賴只有 `zod`；要加其他依賴先開 issue〔待 lint 化〕（MEDIUM）
 - 新增或改名環境變數時，同步更新根目錄 `.env.example`，只寫 key 名不寫值（MEDIUM）
-- 修改 `.github/workflows/**` 時，第三方 action 釘 commit SHA、`permissions` 只給需要的最小權限、不使用 `pull_request_target`〔待 lint 化〕（HIGH）
 - eslint 的函式行數上限 80 行 warn 是刻意設定，不要改成 50 行或 error；寫函式時仍以 50 行為目標（LOW）
 **程式碼與文件風格**
 - 文件與註解用繁體中文（台灣用語），程式碼 identifier 用英文（LOW）
-- 程式碼與註解不放 emoji〔待 lint 化〕（LOW）
 - 註解寫為什麼這樣做，不重述程式在做什麼（LOW）
-- 新寫或改寫長存文件（README、`AGENTS.md`、`CONTRIBUTING.md`、`docs/**`）後，跑 writing-principles 的 `check_docs.py` 到 RESULT PASS〔待 lint 化〕（MEDIUM）
 
 <!-- END GENERATED RULES -->
 
