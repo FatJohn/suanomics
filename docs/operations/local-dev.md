@@ -27,7 +27,7 @@
    pnpm -r build
    ```
 
-3. 跑 lint、type-check、測試與未使用程式碼檢查，四條都要以 0 結束。lint 用根目錄的 `pnpm lint`，`pnpm -r lint` 掃不到根目錄的設定檔：
+3. 跑 lint、type-check、測試與未使用程式碼檢查，四條都要以 0 結束。lint 在根目錄跑 `pnpm lint`，workspace 沒有 lint script：
 
    ```bash
    pnpm lint
@@ -36,14 +36,14 @@
    pnpm knip
    ```
 
-4. 起一個本機 Postgres 18 container。port 用 55432，避開本機可能已在跑的 Postgres：
+4. 起一個本機 Postgres 18 container。port 用 55432，避開本機可能已在跑的 Postgres；`docker run` 回報 port 已被占用時，換一個沒人用的 port，並在下一步的 `DATABASE_URL` 用同一個 port，不要沿用別人的資料庫：
 
    ```bash
    docker run -d --rm --name suanomics-pg -e POSTGRES_PASSWORD=postgres -p 55432:5432 postgres:18
    docker exec suanomics-pg pg_isready -U postgres
    ```
 
-   第二條印出 `accepting connections` 才往下做；剛起的 container 要幾秒才就緒。
+   `docker run` 失敗時停在這裡處理，不往下做。第二條印出 `accepting connections` 才往下做；剛起的 container 要幾秒才就緒。
 
 5. 對本機 Postgres 套用全部 migration，最後一行印出 `[db:migrate] done`：
 

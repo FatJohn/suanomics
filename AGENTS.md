@@ -16,7 +16,7 @@
 ```bash
 pnpm install --frozen-lockfile
 pnpm -r build        # fresh clone 先跑：@suanomics/shared 的 exports 指向 dist，沒 build 過 type-check 會找不到模組
-pnpm lint            # 用這條，不用 pnpm -r lint：後者逐 workspace 跑、掃不到 root 的設定檔
+pnpm lint            # 用這條：ESLint 只在 root 跑，workspace 沒有 lint script
 pnpm -r type-check   # tsc；apps/web 是 astro check
 pnpm -r test         # vitest
 pnpm knip            # 未使用的檔案、export 與依賴
@@ -25,7 +25,7 @@ pnpm knip            # 未使用的檔案、export 與依賴
 pnpm --filter @suanomics/pipeline run db:migrate
 ```
 
-CI（`.github/workflows/ci.yml`）跑的是上面同一組指令，資料庫是 Postgres 18 service container。本機起 Postgres 的步驟見 [本機開發](docs/operations/local-dev.md)。
+CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，資料庫是 Postgres 18 service container；knip 沒有 CI 把關，開 PR 前自己跑。本機起 Postgres 的步驟見 [本機開發](docs/operations/local-dev.md)。
 
 ## Tech Stack（已鎖定，要換先開 issue）
 
@@ -58,7 +58,7 @@ CI（`.github/workflows/ci.yml`）跑的是上面同一組指令，資料庫是 
 | 單檔 300 行（不含空行與註解，測試檔除外） | ESLint `max-lines` error |
 | `apps/web` 不 import `apps/pipeline`；`packages/*` 不 import `apps/*` | ESLint `import-x/no-restricted-paths` |
 | `.ts` 不用 `any`、不用非空斷言 `!`，型別 import 用 `import type` | ESLint `ts/no-explicit-any`、`ts/no-non-null-assertion`、`ts/consistent-type-imports` |
-| `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`，`pnpm -r type-check` |
+| `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`（shared、pipeline）與 `apps/web/tsconfig.json`，`pnpm -r type-check` |
 | `rewrite` 要走 PR、`gitleaks` 與 `ci` 兩個 check 通過、commit 要簽章、禁 force push 與刪除 | GitHub ruleset |
 
 ## 規則
@@ -100,7 +100,7 @@ CI（`.github/workflows/ci.yml`）跑的是上面同一組指令，資料庫是 
 - 文件與註解用繁體中文（台灣用語），程式碼 identifier 用英文（LOW）
 - 程式碼與註解不放 emoji〔待 lint 化〕（LOW）
 - 註解寫為什麼這樣做，不重述程式在做什麼（LOW）
-- 新寫或改寫長存文件（README、`CONTRIBUTING.md`、`docs/**`）後，跑 writing-principles 的 `check_docs.py` 到 RESULT PASS〔待 lint 化〕（MEDIUM）
+- 新寫或改寫長存文件（README、`AGENTS.md`、`CONTRIBUTING.md`、`docs/**`）後，跑 writing-principles 的 `check_docs.py` 到 RESULT PASS〔待 lint 化〕（MEDIUM）
 
 <!-- END GENERATED RULES -->
 

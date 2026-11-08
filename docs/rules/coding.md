@@ -129,7 +129,7 @@ emoji 在終端機、diff 與 log 的顯示不一致，也無助於說明。
 
 程式在做什麼看程式就知道；取捨、外部限制、踩過的坑只能寫在註解裡。
 
-### 新寫或改寫長存文件（README、`CONTRIBUTING.md`、`docs/**`）後，跑 writing-principles 的 `check_docs.py` 到 RESULT PASS〔待 lint 化〕（MEDIUM）
+### 新寫或改寫長存文件（README、`AGENTS.md`、`CONTRIBUTING.md`、`docs/**`）後，跑 writing-principles 的 `check_docs.py` 到 RESULT PASS〔待 lint 化〕（MEDIUM）
 
 指令與排除設定見 [CONTRIBUTING 的〈文件〉](../../CONTRIBUTING.md#文件)。`docs/adr/`、`CHANGELOG.md` 與 `docs/history/` 的搬來檔不在掃描範圍。
 
