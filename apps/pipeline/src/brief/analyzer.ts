@@ -1,21 +1,13 @@
 import type { MarketBrief, MarketBriefCitation } from '@suanomics/shared'
-import type { AnalystOutput } from '../agents/types.js'
-import { createHash } from 'node:crypto'
-import { checkCompliance, MarketBriefCitationSchema, MarketBriefDisclaimer, MarketBriefSchema } from '@suanomics/shared'
+import { checkCompliance, MarketBriefCitationSchema, MarketBriefSchema } from '@suanomics/shared'
 import { stripViolatingProse } from '../agents/_compliance-strip.js'
 import { clampString, truncateAtSentence } from '../agents/_truncate.js'
 import { rewriteText } from '../agents/narrative-shared.js'
 
-export type RawAnalysis = MarketBrief
-
-export function hashPrompt(system: string, user: string): string {
-  return createHash('sha256').update(`${system}\n\n${user}`).digest('hex').slice(0, 16)
-}
-
 // finalizeBriefSafety 的可選觀測出口。閘是純函式、拿不到 audit，所以照這個 repo 既有的
 // 慣例（sanitizeAnalystForbiddenPhrases 的 counter、orchestrator 的 metadata）把數字帶回
 // 呼叫端，由呼叫端決定要不要寫進 background_jobs.metadata。
-export interface BriefSafetyStats {
+interface BriefSafetyStats {
   droppedCitationUrls: number
 }
 
@@ -29,75 +21,6 @@ export const INSUFFICIENT_CITATION_URL = 'data:insufficient'
 // 的理由不同，那句話會直接落到讀者面。
 export function makeInsufficientCitation(quote: string): MarketBriefCitation {
   return { title: '資料不足', url: INSUFFICIENT_CITATION_URL, quote }
-}
-
-export function filterCitationsToAllowedUrls<T extends { citations: readonly { url: string }[] }>(
-  raw: T,
-  allowed: ReadonlySet<string>,
-): T {
-  return { ...raw, citations: raw.citations.filter(c => allowed.has(c.url)) } as T
-}
-
-export function adaptAnalystToMarketBrief(a: AnalystOutput): MarketBrief {
-  if (a.cascadeChains.length === 0)
-    throw new Error('analyzer: analyst returned no cascade chains, cannot adapt to MarketBrief')
-
-  const allCitations = a.cascadeChains.flatMap(c => c.citations).slice(0, 5)
-
-  const headline = a.primaryImpact.slice(0, 80) || '單則新聞分析'
-  const summaryFull = `${a.primaryImpact}\n${a.reasoning}`
-  const summary = summaryFull.length > 300 ? `${summaryFull.slice(0, 297)}...` : summaryFull
-
-  const directionMap: Record<AnalystOutput['cascadeChains'][number]['direction'], 'positive' | 'negative' | 'mixed'> = {
-    positive: 'positive',
-    negative: 'negative',
-    neutral: 'mixed',
-  }
-
-  const reasoningChain = a.cascadeChains
-    .map(c => `${c.industry}: ${c.mechanism}`.slice(0, 150))
-    .slice(0, 6)
-  // schema requires min(2); pad if needed
-  if (reasoningChain.length < 2)
-    reasoningChain.push((a.reasoning.slice(0, 150)) || '依新聞主訴推導')
-
-  return {
-    headline,
-    summary,
-    relatedNews: [],
-    affectedIndustries: a.cascadeChains.slice(0, 5).map(c => ({
-      name: c.industry,
-      direction: directionMap[c.direction],
-      confidence: 'medium' as const,
-      reasoning: c.mechanism.slice(0, 200),
-    })),
-    relatedETFs: [],
-    reasoningChain,
-    citations: allCitations,
-    disclaimer: MarketBriefDisclaimer,
-    cascadeChains: a.cascadeChains, // pass-through、不折疊
-  }
-}
-
-// helper：將 AnalystOutput 轉成通過 MarketBriefSchema + L3 gate 的 MarketBrief。
-// citation filter + data:insufficient placeholder + checkCompliance gate 抽出供
-// worker（db-related mode）與 route（single-news mode）共用、避免 duplication。
-export function finalizeAnalystToMarketBrief(
-  analyst: AnalystOutput,
-  retrievedUrls: string[],
-  allowedUrlsBase: ReadonlySet<string>,
-  stats?: BriefSafetyStats,
-): MarketBrief {
-  const brief = adaptAnalystToMarketBrief(analyst)
-  const expandedAllowed = new Set([...allowedUrlsBase, ...retrievedUrls])
-  const filtered = filterCitationsToAllowedUrls(brief, expandedAllowed)
-  const withCitations: MarketBrief = filtered.citations.length > 0
-    ? filtered
-    : {
-        ...filtered,
-        citations: [makeInsufficientCitation('此分析基於 Decomposer 推論、7 天內無相關新聞可佐證、citation 不可考')],
-      }
-  return finalizeBriefSafety(withCitations, stats)
 }
 
 // 必填 prose 欄位被合規 strip 清空時的中性代換（headline/summary）。
@@ -221,7 +144,6 @@ function keepParsableCitationUrls(brief: MarketBrief, stats?: BriefSafetyStats):
 }
 
 // sanitize forbidden phrases → 合規 gate：違規 → sentence-strip graceful degrade（不 throw）→ clamp → schema parse。
-// single-news（finalizeAnalystToMarketBrief）與 daily（assembleDailyBrief）共用、ruthlessly 消重複。
 export function finalizeBriefSafety(brief: MarketBrief, stats?: BriefSafetyStats): MarketBrief {
   const sanitized = sanitizeAnalystForbiddenPhrases(keepParsableCitationUrls(brief, stats))
   const safe = briefHasViolation(sanitized)

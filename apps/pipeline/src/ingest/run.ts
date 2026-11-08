@@ -1,22 +1,35 @@
+import type { RelevanceCandidate } from '../db/repos/news-repo.js'
 import type { RunNewsRefreshResult } from './news/refresh.js'
 import process from 'node:process'
 import { isTwseTradingDay, taipeiDateOf } from '@suanomics/shared'
 import { CostGateError } from '../agents/cost-gate.js'
 import { getRelevanceCandidates } from '../db/repos/news-repo.js'
+import { getSourceFetchHistory, recordSourceFetchResults } from '../db/repos/source-fetch-repo.js'
 import { refreshMarketData } from './market-data/refresh.js'
 import { runNewsRefresh } from './news/refresh.js'
 import { DEFAULT_SELECTION_TOTAL, parseCategoryFloors, selectWithCategoryFloors } from './news/selection.js'
+import { CONSECUTIVE_FAILURE_THRESHOLD, findConsecutiveFailures, formatSourceAlert } from './news/source-failure-alert.js'
 import { ingestEconCalendar, ingestMaterialAnnouncements, refreshTwseOpenapi } from './structured.js'
 
 const CANDIDATE_WINDOW_DAYS = 2
 
 export type IngestResult
   = | { status: 'skipped', date: string }
-    | { status: 'done', date: string, news: RunNewsRefreshResult, selected: number, failures: string[] }
+    | { status: 'done', date: string, news: RunNewsRefreshResult, selected: RelevanceCandidate[], failures: string[] }
 
-export async function runIngest(options: { now?: Date, force?: boolean } = {}): Promise<IngestResult> {
+// 歷史窗只要涵蓋門檻天數；來源可能中間幾天沒跑（週末），多抓一週。
+const ALERT_HISTORY_DAYS = CONSECUTIVE_FAILURE_THRESHOLD + 7
+
+async function reportSourceFailures(date: string, news: RunNewsRefreshResult): Promise<void> {
+  await recordSourceFetchResults(date, news.perSource.map(s => ({ slug: s.slug, failed: s.failed, httpStatus: s.httpStatus })))
+  const since = new Date(Date.parse(`${date}T00:00:00Z`) - ALERT_HISTORY_DAYS * 864e5).toISOString().slice(0, 10)
+  for (const alert of findConsecutiveFailures(await getSourceFetchHistory(since), CONSECUTIVE_FAILURE_THRESHOLD))
+    console.warn(formatSourceAlert(alert))
+}
+
+export async function runIngest(options: { now?: Date, date?: string, force?: boolean } = {}): Promise<IngestResult> {
   const now = options.now ?? new Date()
-  const date = taipeiDateOf(now)
+  const date = options.date ?? taipeiDateOf(now)
   if (!options.force && !isTwseTradingDay(date))
     return { status: 'skipped', date }
 
@@ -36,6 +49,7 @@ export async function runIngest(options: { now?: Date, force?: boolean } = {}): 
   }
 
   const news = await runNewsRefresh()
+  await attempt('source-failure-alert', () => reportSourceFailures(date, news))
   const twse = await attempt('twse-openapi', refreshTwseOpenapi)
   const market = await attempt('market-data', () => refreshMarketData({ fredApiKey: process.env.FRED_API_KEY ?? '' }))
   if (market)
@@ -56,5 +70,5 @@ export async function runIngest(options: { now?: Date, force?: boolean } = {}): 
   if (calendar)
     console.warn(`[ingest] econ calendar manual=${calendar.manual} fed=${calendar.fed} upserted=${calendar.upserted}`)
 
-  return { status: 'done', date, news, selected: selected.length, failures }
+  return { status: 'done', date, news, selected, failures }
 }

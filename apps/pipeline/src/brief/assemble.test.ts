@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { assembleBriefCitations, assembleDailyBrief, filterCascadeCitations, isHttpUrl, resolveRelatedNews } from './assemble.js'
 
 function analyst(chains: AnalystOutput['cascadeChains']): AnalystOutput {
-  return { primaryImpact: 'x', cascadeChains: chains, reasoning: 'r' }
+  return { primaryImpact: 'x', cascadeChains: chains, claims: [], reasoning: 'r' }
 }
 function chain(citations: { url: string, title: string, quote: string }[]) {
   return { industry: 'i', mechanism: 'm', affectedTickers: [], direction: 'neutral' as const, citations }

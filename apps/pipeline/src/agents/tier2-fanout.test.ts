@@ -1,6 +1,7 @@
 import type { CascadeChain } from './types.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as analystMod from './analyst.js'
+import { DailyCostLimitExceededError } from './cost-gate.js'
 import * as retrieverMod from './retriever.js'
 import { runTier2Fanout, stampTier1 } from './tier2-fanout.js'
 
@@ -16,7 +17,7 @@ describe('runTier2Fanout marketSnapshot pass-through', () => {
     vi.mocked(retrieverMod.retrieveArticles).mockResolvedValue([
       { id: '1', url: 'https://example.com/a', title: 't', contentSummary: null, entities: [], topicTags: [], fetchedAt: '2026-06-13' },
     ])
-    vi.mocked(analystMod.callAnalystTier2).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], reasoning: 'r' })
+    vi.mocked(analystMod.callAnalystTier2).mockResolvedValue({ primaryImpact: 'p', cascadeChains: [], claims: [], reasoning: 'r' })
     const tier1: CascadeChain[] = stampTier1([{
       industry: 'i',
       mechanism: 'm',
@@ -37,5 +38,14 @@ describe('runTier2Fanout marketSnapshot pass-through', () => {
     // ★ 二階檢索窗的上界也錨在報告日。釘的是**值**不只是「有傳」——
     //   改成 `taipeiDateOf(new Date())` 時這行要紅，補產舊報告才不會靜默用今天的窗。
     expect(vi.mocked(retrieverMod.retrieveArticles).mock.calls[0]?.[0]?.reportDate).toBe('2026-06-12')
+  })
+
+  it('花費閘例外不被降級吞掉', async () => {
+    vi.mocked(retrieverMod.retrieveArticles).mockResolvedValue([
+      { id: '1', url: 'https://example.com/a', title: 't', contentSummary: null, entities: [], topicTags: [], fetchedAt: '2026-06-13' },
+    ])
+    vi.mocked(analystMod.callAnalystTier2).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    const tier1 = stampTier1([{ industry: 'i', mechanism: 'm', affectedTickers: [], direction: 'neutral', citations: [], nextTierEntities: ['台積電'] }])
+    await expect(runTier2Fanout({ news: { title: 't', text: 'x' }, tier1Chains: tier1, reportDate: '2026-06-13' })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
   })
 })

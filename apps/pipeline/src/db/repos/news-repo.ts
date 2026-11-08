@@ -260,12 +260,21 @@ export async function saveDailyBrief(
   briefJson?: unknown,
 ): Promise<number> {
   const db = getDb()
-  const insertValues = { briefDate, selectedNewsIds: [...selectedIds], summary, ...(briefJson !== undefined ? { briefJson } : {}) }
-  const updateSet = { selectedNewsIds: [...selectedIds], summary, ...(briefJson !== undefined ? { briefJson } : {}) }
+  const insertValues = { briefDate, selectedNewsIds: [...selectedIds], summary, status: 'complete', progress: null, ...(briefJson !== undefined ? { briefJson } : {}) }
+  const updateSet = { selectedNewsIds: [...selectedIds], summary, status: 'complete', progress: null, ...(briefJson !== undefined ? { briefJson } : {}) }
   const [row] = await db.insert(dailyBriefs).values(insertValues).onConflictDoUpdate({ target: dailyBriefs.briefDate, set: updateSet }).returning({ id: dailyBriefs.id })
   if (!row)
     throw new Error('saveDailyBrief: upsert returned no row')
   return row.id
+}
+
+// --force 重跑途中觸發花費閘時，不可用未完成的結果蓋掉已發布的完整 brief。
+export async function saveIncompleteDailyBrief(briefDate: string, selectedIds: readonly number[], progress: unknown): Promise<void> {
+  await getDb().insert(dailyBriefs).values({ briefDate, selectedNewsIds: [...selectedIds], summary: '', status: 'incomplete', progress }).onConflictDoUpdate({
+    target: dailyBriefs.briefDate,
+    set: { selectedNewsIds: [...selectedIds], progress },
+    setWhere: eq(dailyBriefs.status, 'incomplete'),
+  })
 }
 
 export async function getLatestDailyBrief() {
@@ -300,7 +309,7 @@ export async function getRecentBriefSummaries(n: number, before?: string): Promi
   const db = getDb()
   const rows = await db.select({ briefDate: dailyBriefs.briefDate, summary: dailyBriefs.summary, briefJson: dailyBriefs.briefJson })
     .from(dailyBriefs)
-    .where(before === undefined ? undefined : lt(dailyBriefs.briefDate, before))
+    .where(and(eq(dailyBriefs.status, 'complete'), before === undefined ? undefined : lt(dailyBriefs.briefDate, before)))
     .orderBy(desc(dailyBriefs.briefDate))
     .limit(n)
   return rows.map((r) => {

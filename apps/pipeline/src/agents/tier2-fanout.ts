@@ -1,10 +1,9 @@
+import type { LlmCallRecord } from './call-agent.js'
 import type { AliasMap } from './entity-aliases.js'
-import type { LlmCallRecord } from './llm-wrapper.js'
 import type { CascadeChain } from './types.js'
-import { pMap } from '../_p-map.js'
+import { FANOUT, fanoutSettled } from '../orchestrator/fanout.js'
 import { callAnalystTier2 } from './analyst.js'
 import { expandEntities, getDefaultAliasMap } from './entity-aliases.js'
-import { TIER2_FANOUT_CONCURRENCY } from './fanout-concurrency.js'
 import { retrieveArticles } from './retriever.js'
 
 // tier 1 chains 蓋 chainId / tier / parentChainId、dedupe nextTierEntities vs affectedTickers
@@ -32,76 +31,56 @@ export interface RunTier2FanoutParams {
   reportDate: string
   aliases?: AliasMap
   marketSnapshot?: string | null
-  onCallRecord: (r: LlmCallRecord) => void
+  onCallRecord?: (r: LlmCallRecord) => void
 }
 
-// 對 nextTierEntities 非空的 tier 1 chain 並行做 retrieve + tier 2 Analyst pass、
-// 蓋 chainId / parentChainId、graceful degrade（retrieve 空 / Analyst fail 各別吞）
+type EligibleParent = CascadeChain & { chainId: string, nextTierEntities: string[] }
+
+function isEligibleParent(c: CascadeChain): c is EligibleParent {
+  return c.chainId !== undefined && (c.nextTierEntities?.length ?? 0) > 0
+}
+
+// 對 nextTierEntities 非空的 tier 1 chain 做 retrieve + tier 2 Analyst、蓋 chainId／parentChainId。
+// retrieve 空或 Analyst 失敗都只少該 parent 的 chain；花費閘例外由 fanoutSettled 往外丟。
 export async function runTier2Fanout(p: RunTier2FanoutParams): Promise<CascadeChain[]> {
-  // 契約：tier1Chains 必須先過 stampTier1（蓋 chainId）。沒蓋的若有 nextTierEntities
-  // 會被 silently 跳過、log warn 讓 caller bug 浮上來而非吃掉。
-  for (const c of p.tier1Chains) {
-    if (c.nextTierEntities && c.nextTierEntities.length > 0 && c.chainId === undefined)
-      console.warn('[orchestrator] tier 1 chain missing chainId — was stampTier1 called?', c.industry)
-  }
   const aliasMap = p.aliases ?? getDefaultAliasMap()
-  const eligibleParents = p.tier1Chains.filter(
-    c => c.nextTierEntities && c.nextTierEntities.length > 0 && c.chainId !== undefined,
-  )
-  if (eligibleParents.length === 0)
+  const parents = p.tier1Chains.filter(isEligibleParent)
+  if (parents.length === 0)
     return []
 
-  // bounded concurrency：避免撞 Gemini rate limit / DB connection pool
-  // review 意見補上的修正。每個 worker 仍 try/catch 包好、不影響其他 parent。
-  interface ParentResult { parent: CascadeChain, chains: CascadeChain[], failed: boolean }
-  const tier2Results: ParentResult[] = await pMap(eligibleParents, TIER2_FANOUT_CONCURRENCY, async (parent) => {
-    try {
-      // eslint-disable-next-line ts/no-non-null-assertion -- nextTierEntities && chainId presence guaranteed by eligibleParents filter above
-      const expanded = expandEntities(parent.nextTierEntities!, aliasMap)
-      const retrieved = await retrieveArticles({ entities: expanded, days: 7, reportDate: p.reportDate }).catch(() => [])
-      if (retrieved.length === 0)
-        return { parent, chains: [], failed: false }
-      const a2 = await callAnalystTier2({
-        newsTitle: p.news.title,
-        newsText: p.news.text,
-        ...(p.news.id !== undefined ? { newsId: p.news.id } : {}),
-        parentChain: {
-          // eslint-disable-next-line ts/no-non-null-assertion -- chainId !== undefined guaranteed by eligibleParents filter above
-          chainId: parent.chainId!,
-          industry: parent.industry,
-          mechanism: parent.mechanism,
-          // eslint-disable-next-line ts/no-non-null-assertion -- nextTierEntities presence guaranteed by eligibleParents filter above
-          nextTierEntities: parent.nextTierEntities!,
-        },
-        retrieved,
-        ...(p.marketSnapshot !== undefined ? { marketSnapshot: p.marketSnapshot } : {}),
-        onCallRecord: p.onCallRecord,
-      })
-      return { parent, chains: a2.cascadeChains, failed: false }
-    }
-    catch {
-      return { parent, chains: [], failed: true }
-    }
+  const settled = await fanoutSettled(parents, FANOUT.tier2, async (parent): Promise<CascadeChain[]> => {
+    const retrieved = await retrieveArticles({ entities: expandEntities(parent.nextTierEntities, aliasMap), days: 7, reportDate: p.reportDate }).catch(() => [])
+    if (retrieved.length === 0)
+      return []
+    const output = await callAnalystTier2({
+      newsTitle: p.news.title,
+      newsText: p.news.text,
+      ...(p.news.id !== undefined ? { newsId: p.news.id } : {}),
+      parentChain: { chainId: parent.chainId, industry: parent.industry, mechanism: parent.mechanism, nextTierEntities: parent.nextTierEntities },
+      retrieved,
+      ...(p.marketSnapshot !== undefined ? { marketSnapshot: p.marketSnapshot } : {}),
+      ...(p.onCallRecord !== undefined ? { onCallRecord: p.onCallRecord } : {}),
+    })
+    return output.cascadeChains
   })
 
-  // 觀測 graceful degrade：tier 2 Analyst 失敗的 parent 不貢獻 chain、log warn
-  // 對齊 [analyst-tier1] / [analyst-tier2] log pattern、prod 才有訊號可看
-  const rejectedCount = tier2Results.filter(r => r.failed).length
-  if (rejectedCount > 0)
-    console.warn('[orchestrator] %d tier-2 Analyst call(s) failed (graceful degrade)', rejectedCount)
+  const failed = settled.filter(r => r.status === 'rejected').length
+  if (failed > 0)
+    console.warn(`[tier2] ${failed} 次 Analyst 失敗（降級為少二階 chain）`)
 
   let t2Idx = 0
-  return tier2Results.flatMap(r => r.chains.map(c => ({
-    ...c,
-    chainId: `t2-${t2Idx++}`,
-    tier: 2 as const,
-    // eslint-disable-next-line ts/no-non-null-assertion -- chainId !== undefined guaranteed by eligibleParents filter above
-    parentChainId: r.parent.chainId!,
-    // 防禦：tier 2 chains 強制 nextTierEntities = undefined（即使 Gemini schema 已禁、
-    // 萬一 normalizer 沒 strip 也補一刀）
-    nextTierEntities: undefined,
-    // 無 citation 的二階推演標 speculative（程式判定、非 LLM）：tier2 沒有 fabrication
-    // detection 的 retrieve 白名單兜底、無佐證的鏈不得與 tier1 平起平坐
-    ...(c.citations.length === 0 ? { speculative: true } : {}),
-  })))
+  return settled.flatMap((result, i) => {
+    const parent = parents[i]
+    if (result.status === 'rejected' || parent === undefined)
+      return []
+    return result.value.map(c => ({
+      ...c,
+      chainId: `t2-${t2Idx++}`,
+      tier: 2 as const,
+      parentChainId: parent.chainId,
+      nextTierEntities: undefined,
+      // tier2 沒有 fabrication 白名單兜底，無佐證的鏈不得與 tier1 平起平坐。
+      ...(c.citations.length === 0 ? { speculative: true } : {}),
+    }))
+  })
 }

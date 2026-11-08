@@ -2,6 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { CostGateError, DailyCostGate, DailyCostLimitExceededError, parseDailyCostLimit } from './cost-gate.js'
 
 describe('dailyCostGate', () => {
+  it('每次 record 累計呼叫數', () => {
+    const gate = new DailyCostGate(1)
+    gate.record(0.1)
+    gate.record(0.2)
+    expect(gate.callCount).toBe(2)
+  })
+
   it('累計低於上限時通過', () => {
     const gate = new DailyCostGate(1)
     gate.record(0.99)
