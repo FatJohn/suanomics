@@ -1,0 +1,138 @@
+import type { DailyDeps, DailyLogEvent } from './daily.js'
+import { describe, expect, it, vi } from 'vitest'
+import { DailyCostGate, DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { runDaily } from './daily.js'
+
+const DATE = '2026-11-09'
+const brief = { headline: 'H', summary: 'S' }
+
+function fakeDeps(overrides: Partial<DailyDeps> = {}): DailyDeps & { events: DailyLogEvent[] } {
+  const events: DailyLogEvent[] = []
+  return {
+    events,
+    gate: new DailyCostGate(1),
+    log: e => events.push(e),
+    isTradingDay: () => true,
+    findExistingBrief: vi.fn(async () => null),
+    ingest: vi.fn(async () => []),
+    loadMarket: vi.fn(async () => ({}) as never),
+    selectNews: vi.fn(async () => ({
+      news: [{ id: 1, title: 't', url: 'u', text: 'x', publishedAt: null }],
+      selection: null,
+      storyline: { storylineTouches: [], resolveStorylines: [], newStorylines: [{ title: 'a', thesis: 'b', entities: [] }] },
+      storylineBlock: null,
+      continuityHint: null,
+    })),
+    generateBrief: vi.fn(async () => brief as never),
+    saveBrief: vi.fn(async () => 7),
+    saveIncompleteBrief: vi.fn(async () => undefined),
+    applyStorylines: vi.fn(async () => undefined),
+    ...overrides,
+  }
+}
+
+const over = () => new DailyCostLimitExceededError(1, 1.2)
+
+describe('runDaily', () => {
+  it('非交易日不做任何事並回 skipped', async () => {
+    const deps = fakeDeps({ isTradingDay: () => false })
+    expect(await runDaily({ date: DATE, force: false }, deps)).toEqual({ status: 'skipped', reason: 'non-trading-day', date: DATE })
+    expect(deps.findExistingBrief).not.toHaveBeenCalled()
+    expect(deps.ingest).not.toHaveBeenCalled()
+  })
+
+  it('當日已有 brief 且未帶 force 時不跑', async () => {
+    const deps = fakeDeps({ findExistingBrief: vi.fn(async () => ({ status: 'complete' })) })
+    expect(await runDaily({ date: DATE, force: false }, deps)).toEqual({ status: 'skipped', reason: 'already-exists', date: DATE })
+    expect(deps.ingest).not.toHaveBeenCalled()
+  })
+
+  it('已有 incomplete brief 且未帶 force 也不跑，避免備援排程把當日花費翻倍', async () => {
+    const deps = fakeDeps({ findExistingBrief: vi.fn(async () => ({ status: 'incomplete' })) })
+    expect((await runDaily({ date: DATE, force: false }, deps)).status).toBe('skipped')
+    expect(deps.ingest).not.toHaveBeenCalled()
+  })
+
+  it('帶 force 時略過已存在檢查並重跑', async () => {
+    const deps = fakeDeps({ findExistingBrief: vi.fn(async () => ({ status: 'complete' })) })
+    expect((await runDaily({ date: DATE, force: true }, deps)).status).toBe('complete')
+    expect(deps.saveBrief).toHaveBeenCalled()
+  })
+
+  it('完整路徑：先寫 brief 再寫 storylines', async () => {
+    const order: string[] = []
+    const deps = fakeDeps({
+      saveBrief: vi.fn(async () => {
+        order.push('save')
+        return 7
+      }),
+      applyStorylines: vi.fn(async () => {
+        order.push('storylines')
+      }),
+    })
+    expect(await runDaily({ date: DATE, force: false }, deps)).toMatchObject({ status: 'complete', briefId: 7 })
+    expect(order).toEqual(['save', 'storylines'])
+    expect(deps.saveBrief).toHaveBeenCalledWith(DATE, [1], 'H\n\nS', brief)
+  })
+
+  it('storylines 寫回失敗不影響 brief，但要留下 log', async () => {
+    const deps = fakeDeps({ applyStorylines: vi.fn(async () => {
+      throw new Error('db down')
+    }) })
+    expect((await runDaily({ date: DATE, force: false }, deps)).status).toBe('complete')
+    expect(deps.events.some(e => e.event === 'storylines_failed')).toBe(true)
+  })
+
+  it('花費閘在 agents 階段觸發：保留已完成階段、標 incomplete、不寫 storylines', async () => {
+    const deps = fakeDeps({
+      generateBrief: vi.fn(async (p) => {
+        await p.stage('decompose', async () => undefined)
+        p.progress.analystOutputs = [{ newsId: '1' }] as never
+        return p.stage('analyst', async () => {
+          throw over()
+        })
+      }),
+    })
+    const result = await runDaily({ date: DATE, force: false }, deps)
+    expect(result).toMatchObject({ status: 'incomplete', failedStage: 'analyst' })
+    expect(deps.saveBrief).not.toHaveBeenCalled()
+    expect(deps.applyStorylines).not.toHaveBeenCalled()
+    expect(deps.saveIncompleteBrief).toHaveBeenCalledWith(DATE, [1], expect.objectContaining({
+      failedStage: 'analyst',
+      completedStages: ['ingest', 'market-context', 'editor', 'decompose'],
+      analystOutputs: [{ newsId: '1' }],
+    }))
+  })
+
+  it('花費閘在 ingest 觸發：仍寫一筆 incomplete，選稿為空', async () => {
+    const deps = fakeDeps({ ingest: vi.fn(async () => {
+      throw over()
+    }) })
+    expect(await runDaily({ date: DATE, force: false }, deps)).toMatchObject({ status: 'incomplete', failedStage: 'ingest' })
+    expect(deps.saveIncompleteBrief).toHaveBeenCalledWith(DATE, [], expect.objectContaining({ completedStages: [] }))
+  })
+
+  it('花費閘以外的錯誤往外丟，不寫 incomplete', async () => {
+    const deps = fakeDeps({ generateBrief: vi.fn(async () => {
+      throw new Error('boom')
+    }) })
+    await expect(runDaily({ date: DATE, force: false }, deps)).rejects.toThrow('boom')
+    expect(deps.saveIncompleteBrief).not.toHaveBeenCalled()
+  })
+
+  it('每階段記開始與結束，含耗時、呼叫數與 USD 差額', async () => {
+    const gate = new DailyCostGate(1)
+    const deps = fakeDeps({
+      gate,
+      ingest: vi.fn(async () => {
+        gate.record(0.25)
+        gate.record(0.25)
+        return []
+      }),
+    })
+    await runDaily({ date: DATE, force: false }, deps)
+    expect(deps.events.find(e => e.event === 'stage_start' && e.stage === 'ingest')).toBeDefined()
+    expect(deps.events.find(e => e.event === 'stage_end' && e.stage === 'ingest')).toMatchObject({ calls: 2, usd: 0.5 })
+    expect(deps.events.find(e => e.event === 'stage_end' && e.stage === 'editor')).toMatchObject({ calls: 0, usd: 0 })
+  })
+})

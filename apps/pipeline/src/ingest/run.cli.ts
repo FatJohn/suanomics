@@ -17,7 +17,7 @@ async function main(): Promise<void> {
     date: result.date,
     sourcesProcessed: result.news.sourcesProcessed,
     sourcesFailed: result.news.perSource.filter(s => s.failed).map(s => ({ slug: s.slug, httpStatus: s.httpStatus })),
-    selected: result.selected,
+    selected: result.selected.length,
     failures: result.failures,
     ...stats,
     llmCostUsd: Number(getDailyCostGate().totalUsd.toFixed(4)),

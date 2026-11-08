@@ -5,6 +5,7 @@ vi.mock('./news/refresh.js')
 vi.mock('./structured.js')
 vi.mock('./market-data/refresh.js')
 vi.mock('../db/repos/news-repo.js')
+vi.mock('../db/repos/source-fetch-repo.js')
 
 const SATURDAY = new Date('2026-11-07T00:00:00Z')
 const MONDAY = new Date('2026-11-08T21:00:00Z') // 台北 11-09 週一 05:00
@@ -19,6 +20,8 @@ async function mocks(): Promise<{
   const structured = await import('./structured.js')
   const repo = await import('../db/repos/news-repo.js')
   const market = await import('./market-data/refresh.js')
+  const sourceFetch = await import('../db/repos/source-fetch-repo.js')
+  vi.mocked(sourceFetch.getSourceFetchHistory).mockResolvedValue(new Map())
   vi.mocked(news.runNewsRefresh).mockResolvedValue({ sourcesProcessed: 1, sourcesFailed: 0, totalInserted: 2, perSource: [] })
   vi.mocked(structured.refreshTwseOpenapi).mockResolvedValue({ pointsUpserted: 3, companies: [{ code: '2330', name: '台積電' }], topVolume: [{ code: '2317', name: '鴻海' }] })
   vi.mocked(structured.ingestMaterialAnnouncements).mockResolvedValue({ fetched: 5, kept: 1, inserted: 1 })
@@ -38,6 +41,32 @@ describe('runIngest', () => {
     const result = await runIngest({ now: SATURDAY })
     expect(result).toEqual({ status: 'skipped', date: '2026-11-07' })
     expect(news.runNewsRefresh).not.toHaveBeenCalled()
+  })
+
+  it('帶 date 時以該日為報告日，不用執行當下的台北日期', async () => {
+    const { repo } = await mocks()
+    const result = await runIngest({ now: SATURDAY, date: '2026-11-10', force: true })
+    expect(result).toMatchObject({ status: 'done', date: '2026-11-10' })
+    expect(repo.getRelevanceCandidates).toHaveBeenCalledWith('2026-11-10', 2)
+    const sourceFetch = await import('../db/repos/source-fetch-repo.js')
+    // 當下的 feed 狀態不代表該報告日，寫進去會竄改連續失敗的歷史。
+    expect(sourceFetch.recordSourceFetchResults).not.toHaveBeenCalled()
+  })
+
+  it('記錄逐來源狀態，連續失敗達門檻時輸出告警', async () => {
+    const { news } = await mocks()
+    const sourceFetch = await import('../db/repos/source-fetch-repo.js')
+    vi.mocked(news.runNewsRefresh).mockResolvedValue({ sourcesProcessed: 1, sourcesFailed: 1, totalInserted: 0, perSource: [{ slug: 'cna', inserted: 0, failed: true, httpStatus: 403 }] as never })
+    vi.mocked(sourceFetch.getSourceFetchHistory).mockResolvedValue(new Map([['cna', [
+      { runDate: '2026-11-09', failed: true, httpStatus: 403 },
+      { runDate: '2026-11-06', failed: true, httpStatus: 403 },
+      { runDate: '2026-11-05', failed: true, httpStatus: 500 },
+    ]]]))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    await runIngest({ now: MONDAY })
+    expect(sourceFetch.recordSourceFetchResults).toHaveBeenCalledWith('2026-11-09', [{ slug: 'cna', failed: true, httpStatus: 403 }])
+    expect(warn).toHaveBeenCalledWith('::warning title=新聞來源連續失敗::cna 連續 3 天失敗（HTTP 403）')
+    warn.mockRestore()
   })
 
   it('force 時非交易日也跑（本機驗證用）', async () => {

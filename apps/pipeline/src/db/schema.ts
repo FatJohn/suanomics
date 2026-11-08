@@ -65,8 +65,13 @@ export const dailyBriefs = pgTable('daily_briefs', {
   // path null = 尚未跑 podcast:tts、應 fallback frontend stub
   podcastAudioPath: text('podcast_audio_path'),
   podcastAudioGeneratedAt: timestamp('podcast_audio_generated_at', { withTimezone: true }),
+  // 'incomplete' = 花費閘中止；此時 brief_json 為 null，已完成階段的產出在 progress。
+  status: text('status').notNull().default('complete'),
+  progress: jsonb('progress').$type<unknown>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+}, t => ({
+  statusCheck: check('daily_briefs_status_check', sql`${t.status} IN ('complete', 'incomplete')`),
+}))
 
 export const externalSources = pgTable('external_sources', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -131,6 +136,19 @@ export const storylines = pgTable('storylines', {
 }, t => ({
   statusCheck: check('storylines_status_check', sql`${t.status} IN ('open', 'confirmed', 'refuted', 'dormant')`),
   statusIdx: index('idx_storylines_status').on(t.status),
+}))
+
+// 每日各新聞來源的抓取結果，用來判斷連續失敗（ADR 0002）。
+export const sourceFetchResults = pgTable('source_fetch_results', {
+  id: serial('id').primaryKey(),
+  runDate: date('run_date').notNull(),
+  slug: text('slug').notNull(),
+  failed: boolean('failed').notNull(),
+  httpStatus: integer('http_status'),
+  recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => ({
+  dateSlugUnique: unique('source_fetch_results_date_slug_unique').on(t.runDate, t.slug),
+  runDateIdx: index('idx_source_fetch_results_run_date').on(t.runDate.desc()),
 }))
 
 // TWSE／TPEx 每日重大訊息；端點只回最新一日，靠這張表累積。

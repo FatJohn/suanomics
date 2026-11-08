@@ -14,11 +14,16 @@ export class DailyCostLimitExceededError extends CostGateError {
 // 真正的硬上限是 Anthropic Console 的 workspace spend limit。
 export class DailyCostGate {
   private spentUsd = 0
+  private calls = 0
 
   constructor(private readonly limitUsd: number) {}
 
   get totalUsd(): number {
     return this.spentUsd
+  }
+
+  get callCount(): number {
+    return this.calls
   }
 
   assertWithinLimit(): void {
@@ -28,6 +33,7 @@ export class DailyCostGate {
 
   record(costUsd: number): void {
     this.spentUsd += costUsd
+    this.calls += 1
   }
 }
 
