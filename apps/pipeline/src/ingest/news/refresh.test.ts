@@ -68,8 +68,7 @@ describe('runNewsRefresh 對 scrape 結果的分流', () => {
     // scrape 失敗是單篇的事、不該把整個來源標成失敗（那會讓 SLO 誤報來源死掉）
     expect(result.sourcesFailed).toBe(0)
     expect(result.perSource[0]?.failed).toBe(false)
-    // 失敗次數要進得了 background_jobs.metadata。perSource 是既有的 metadata
-    // 欄位（index.ts 的 makeMetadata），所以掛在這裡不必動 audit 那一層。
+    // 失敗次數掛在 perSource 回傳給呼叫端（v0 由 job runner 寫進 metadata；v1 的落地處由 #25 決定）。
     expect(result.perSource[0]?.scrapeFailed).toBe(1)
   })
 

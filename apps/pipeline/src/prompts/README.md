@@ -51,7 +51,7 @@
   `apps/pipeline/src/ingest/market-data/calendar.ts`（行事曆區塊）、`apps/pipeline/src/brief/official-announcements.ts`
   （官方公告區塊）產生的標題與說明文字寫在各自的資料格式化程式裡，沒有抽到這個目錄。
 - `apps/pipeline/src/db/news-categories.ts` 的 `ITEM_CATEGORY_LABEL`（新聞類別的中文標籤）會出現在 editor 的輸入裡；
-  它同時被資料層與前端共用，所以留在 `apps/pipeline/src/db`。
+  它也是資料層的類別定義，所以留在 `apps/pipeline/src/db`。
 - `packages/shared/src/compliance.ts` 的 `FORBIDDEN_PHRASES`（投信投顧法禁用語，例如「建議買」
   「建議賣」）是中文字串，硬式攔截在合規檢查裡。
 - `apps/pipeline/src/ingest/market-data/` 有台灣專屬資料源（`twse-client.ts`、`taifex-client.ts`），

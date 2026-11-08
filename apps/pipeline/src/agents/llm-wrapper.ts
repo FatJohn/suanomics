@@ -1,6 +1,10 @@
 // LLM 呼叫層的暫時介面。#22 只搬 agents，不搬 v0 的 llm-wrapper 與 provider adapter；
 // 這個檔只保留 agents 會用到的型別與函式簽名，讓搬進來的 agents 能編譯、測試能 mock。
 // 真正的呼叫層（AI SDK、model 對照表、花費閘）由 #23 實作並取代本檔。
+// 限制：在 #23 之前 callAgentLLM 一律 throw；news refresh 的 categorize／tag 會接住錯誤只 warn，
+// 所以那段期間跑 ingest 會留下 category／taggedAt 為 null 的新聞。
+
+import type { RetryReason } from './narrative-shared.js'
 
 export type AgentName
   = | 'decomposer'
@@ -27,7 +31,7 @@ export interface LlmCallRecord {
   fabricationStripped?: number
   // narrative-writer 專用（語意見 narrative-writer.ts）
   narrativeFailed?: boolean
-  narrativeRetryReason?: 'zod-parse' | 'gemini-api' | 'timeout' | 'compliance-residual' | null
+  narrativeRetryReason?: RetryReason
   narrativeFabricationStripped?: number
   narrativeClaimIdsStripped?: number
   narrativeClaimCitationUrlsDropped?: number

@@ -178,9 +178,8 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
         console.warn(`[runNewsRefresh] ${src.slug}: ${toScrape.length} 篇跳過抓正文（Google News 代理來源）`)
       }
       const attempted = feedDenied ? [] : toScrape
-      // 計數直接累加進 entry（它是 SourceTally 的超集）。perSource 會被 index.ts 的
-      // makeMetadata 原樣寫進 background_jobs.metadata，所以這些數字是**查得到**的——
-      // 不像 console 只活在容器 log。
+      // 計數直接累加進 entry（它是 SourceTally 的超集），隨 perSource 回傳給呼叫端。
+      // v0 由 job runner 寫進 background_jobs.metadata；v1 沒有那張表，落地處由 #25 決定。
       await pMap(attempted, concurrency, item => fetchAndStoreBody(item, src.slug, current))
       // 分母是**真的試過**的篇數：feed 層跳過的那些從來沒有嘗試抓取，算進去會讓
       // 「N/M 篇失敗」的 M 憑空變大。

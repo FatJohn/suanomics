@@ -61,7 +61,7 @@ function requestsClaudeModel(raw: string | undefined): boolean {
 }
 
 // gemini／openai 兩個「有沒有被顯式指定」的 provider 前綴，判斷邏輯獨立於
-// apps/server/src/agents/providers/resolve.ts 的 parseModelSpec——packages/shared
+// v0 `apps/server/src/agents/providers/resolve.ts` 的 parseModelSpec（#23 會換掉 provider 層）——packages/shared
 // 不能依賴 apps/pipeline，這裡是同一條規則的獨立實作：只有 `provider/model` 的
 // provider 半剛好是已知名字才算，裸 model（例如 `gemini-3.7-flash`）不算。
 type NonClaudeProvider = 'gemini' | 'openai'
@@ -101,7 +101,7 @@ function agentModelsIsEmpty(raw: string | undefined): boolean {
 }
 
 // footgun：只換全域 provider、沒有用 AGENT_MODELS 換掉任何 agent 的 model。
-// AGENT_MODEL_DEFAULTS（apps/server/src/agents/providers/resolve.ts）目前全部是
+// AGENT_MODEL_DEFAULTS（v0 `apps/server/src/agents/providers/resolve.ts`）目前全部是
 // gemini-* model 名，LLM_PROVIDER=gemini 配預設值完全正常（model 名與端點對得上），
 // 但 LLM_PROVIDER=openai 配預設值會把那些 gemini-* model 名原樣送去 OpenAI 相容端點，
 // 要等到第一次呼叫才因 model not found 失敗。anthropic 不在這裡判斷：它已經有自己的
@@ -118,7 +118,7 @@ function globalProviderModelMismatch(env: EnvSnapshot): boolean {
 // 這個組態實際會用到哪些非 anthropic provider（anthropic 走既有三條件邏輯、不重複判斷）。
 //
 // ★ 前提同上面 checkStartupConfig 裡「AGENT_MODELS 代表有沒有 agent 指向 claude*」那則星號
-//   註解：AGENT_MODEL_DEFAULTS（apps/server/src/agents/providers/resolve.ts）目前全部是
+//   註解：AGENT_MODEL_DEFAULTS（v0 `apps/server/src/agents/providers/resolve.ts`）目前全部是
 //   gemini-* model，所以沒被 AGENT_MODELS 顯式指定 provider、也沒有全域 LLM_PROVIDER 覆蓋的
 //   agent，一律解析成 gemini。哪天預設表加進非 gemini 的 model，這裡要一起改。
 //
