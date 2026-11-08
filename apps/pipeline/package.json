@@ -10,10 +10,13 @@
     "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
-    "fixtures:check": "tsx src/ingest/fixtures/cli.ts"
+    "fixtures:check": "tsx src/ingest/fixtures/cli.ts",
+    "llm:live-check": "tsx src/agents/live-check.cli.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.98",
     "@suanomics/shared": "workspace:*",
+    "ai": "^7.0.164",
     "cheerio": "^1.2.0",
     "drizzle-orm": "^0.45.4",
     "fast-xml-parser": "^5.12.0",
