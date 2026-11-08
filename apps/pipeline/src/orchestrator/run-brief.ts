@@ -6,6 +6,7 @@ import type { BriefNews, EditorStageResult } from './editor-stage.js'
 import { buildClaimLedger } from '@suanomics/shared'
 import { callAnalystTier1 } from '../agents/analyst.js'
 import { tagChainForceGroups } from '../agents/chain-grouper.js'
+import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
 import { callDecomposer } from '../agents/decomposer.js'
 import { buildMarketCloseFraming } from '../agents/market-close-framing.js'
 import { callNarrativeWriter } from '../agents/narrative-writer.js'
@@ -54,6 +55,7 @@ async function analyzeNews(
   date: string,
   market: MarketContext,
   marketCloseFraming: string | null,
+  progress: DailyProgress,
 ): Promise<AnalystOutput[]> {
   const settled = await fanoutSettled(items, FANOUT.tier1, async ({ news, decomposed }, i) => {
     const tier1 = await callAnalystTier1({
@@ -72,7 +74,10 @@ async function analyzeNews(
     })
     const tier1Chains = stampTier1(tier1.cascadeChains)
     const tier2Chains = await runTier2Fanout({ news: { title: news.title, text: news.text, id: news.id }, tier1Chains, reportDate: date, marketSnapshot: market.snapshotBlock })
-    return { ...tier1, cascadeChains: [...tier1Chains, ...tier2Chains] }
+    const output = { ...tier1, cascadeChains: [...tier1Chains, ...tier2Chains] }
+    // 逐則累積：花費閘中途觸發時，已付費的單則結果不能隨整階段失敗一起遺失。
+    progress.analystOutputs = [...(progress.analystOutputs ?? []), { ...output, newsId: news.id }]
+    return output
   })
   const outputs: AnalystOutput[] = []
   settled.forEach((res, i) => {
@@ -88,6 +93,16 @@ async function analyzeNews(
   return outputs
 }
 
+// 不用 Promise.all：它在第一個 reject 就返回，其餘 LLM 呼叫會在 run 收尾後繼續計費且不進統計。
+async function settleFinalize<A, B, C>(calls: [Promise<A>, Promise<B>, Promise<C>]): Promise<[A, B, C]> {
+  const results = await Promise.allSettled(calls)
+  const rejected = results.filter(r => r.status === 'rejected').map(r => r.reason as unknown)
+  const firstError = rejected.find(e => e instanceof DailyCostLimitExceededError) ?? rejected[0]
+  if (rejected.length > 0)
+    throw firstError
+  return Promise.all(calls)
+}
+
 export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief> {
   const { date, market, editor, stage, progress } = p
   const marketCloseFraming = buildMarketCloseFraming(market.taiexCloseDate, date)
@@ -98,7 +113,7 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
     const settled = await fanoutSettled(survived, FANOUT.retrieve, s => retrieveForDecomposed(s.decomposed, date))
     return settled.map(r => (r.status === 'fulfilled' ? r.value : []))
   })
-  const analystOutputs = await stage('analyst', () => analyzeNews(survived, retrieved, date, market, marketCloseFraming))
+  const analystOutputs = await stage('analyst', () => analyzeNews(survived, retrieved, date, market, marketCloseFraming, progress))
   progress.analystOutputs = analystOutputs
 
   const synth = await stage('synthesize', () => callSynthesizer({
@@ -121,7 +136,7 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
   progress.brief = assembled
   const thesis = assembled.dailyThesis
 
-  const [viewpoints, narrative, groupedChains] = await stage('finalize', () => Promise.all([
+  const [viewpoints, narrative, groupedChains] = await stage('finalize', () => settleFinalize([
     thesis
       ? runViewpointsDebate({ thesis, headline: assembled.headline, summary: assembled.summary, marketSnapshot: market.snapshotBlock, cascadeChains: mergedChains, claimLedger: claimLedger.claims })
       : Promise.resolve(null),

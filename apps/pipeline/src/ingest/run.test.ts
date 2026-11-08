@@ -48,6 +48,9 @@ describe('runIngest', () => {
     const result = await runIngest({ now: SATURDAY, date: '2026-11-10', force: true })
     expect(result).toMatchObject({ status: 'done', date: '2026-11-10' })
     expect(repo.getRelevanceCandidates).toHaveBeenCalledWith('2026-11-10', 2)
+    const sourceFetch = await import('../db/repos/source-fetch-repo.js')
+    // 當下的 feed 狀態不代表該報告日，寫進去會竄改連續失敗的歷史。
+    expect(sourceFetch.recordSourceFetchResults).not.toHaveBeenCalled()
   })
 
   it('記錄逐來源狀態，連續失敗達門檻時輸出告警', async () => {

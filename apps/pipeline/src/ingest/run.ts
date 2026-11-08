@@ -49,7 +49,9 @@ export async function runIngest(options: { now?: Date, date?: string, force?: bo
   }
 
   const news = await runNewsRefresh()
-  await attempt('source-failure-alert', () => reportSourceFailures(date, news))
+  // 補跑舊日期時，當下的 feed 狀態不代表該報告日。
+  if (date === taipeiDateOf(now))
+    await attempt('source-failure-alert', () => reportSourceFailures(date, news))
   const twse = await attempt('twse-openapi', refreshTwseOpenapi)
   const market = await attempt('market-data', () => refreshMarketData({ fredApiKey: process.env.FRED_API_KEY ?? '' }))
   if (market)

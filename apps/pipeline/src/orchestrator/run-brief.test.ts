@@ -2,10 +2,13 @@ import type { DailyProgress, RunStage, StageName } from './daily.js'
 import type { GenerateBriefParams } from './run-brief.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { callAnalystTier1 } from '../agents/analyst.js'
+import { tagChainForceGroups } from '../agents/chain-grouper.js'
 import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
 import { callDecomposer } from '../agents/decomposer.js'
+import { callNarrativeWriter } from '../agents/narrative-writer.js'
 import { retrieveForDecomposed } from '../agents/retrieve-for-decomposed.js'
 import { callSynthesizer } from '../agents/synthesizer.js'
+import { assembleDailyBrief } from '../brief/assemble.js'
 import { EMPTY_MARKET_CONTEXT } from '../ingest/market-data/context.js'
 import { generateBrief } from './run-brief.js'
 
@@ -13,6 +16,9 @@ vi.mock('../agents/analyst.js')
 vi.mock('../agents/decomposer.js')
 vi.mock('../agents/synthesizer.js')
 vi.mock('../agents/retrieve-for-decomposed.js')
+vi.mock('../agents/chain-grouper.js')
+vi.mock('../agents/narrative-writer.js')
+vi.mock('../brief/assemble.js')
 vi.mock('../agents/tier2-fanout.js', () => ({ stampTier1: (c: unknown) => c, runTier2Fanout: async () => [] }))
 
 const NEWS = [1, 2, 3].map(id => ({ id, title: `t${id}`, url: `https://e.com/${id}`, text: 'x', publishedAt: null }))
@@ -73,5 +79,34 @@ describe('generateBrief', () => {
     await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
     expect(p.progress.analystOutputs).toHaveLength(3)
     expect(p.progress.analystOutputs?.map(a => a.newsId)).toEqual(['1', '2', '3'])
+  })
+
+  it('analyst 中途觸發花費閘時，已完成的單則結果仍進 progress', async () => {
+    vi.mocked(callAnalystTier1).mockResolvedValueOnce(analyst).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    const { p } = params()
+    await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(p.progress.analystOutputs?.map(a => a.newsId)).toEqual(['1'])
+  })
+
+  it('finalize 觸發花費閘時等在途呼叫收尾才往外丟', async () => {
+    let narrativeDone = false
+    vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+    vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+    vi.mocked(tagChainForceGroups).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    vi.mocked(callNarrativeWriter).mockImplementation(async () => {
+      await new Promise(r => setTimeout(r, 10))
+      narrativeDone = true
+      return { narrative: null } as never
+    })
+    await expect(generateBrief(params().p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(narrativeDone).toBe(true)
+  })
+
+  it('finalize 同時有一般錯誤與花費閘時優先回報花費閘', async () => {
+    vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+    vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+    vi.mocked(callNarrativeWriter).mockRejectedValue(new Error('narrative'))
+    vi.mocked(tagChainForceGroups).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    await expect(generateBrief(params().p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
   })
 })
