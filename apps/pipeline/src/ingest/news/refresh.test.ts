@@ -309,8 +309,25 @@ describe('runNewsRefresh 的 ingest 政策', () => {
     return { repo, scraper, firecrawl, rss }
   }
 
-  it('國際通訊社只取標題與連結，不抓正文', async () => {
-    const { scraper } = await setup('bbc-world')
+  it('條款只給標題與連結的來源不存 feed 摘要', async () => {
+    const { repo } = await setup('google-news-cnyes')
+    const rss = await import('../external/rss-fetcher.js')
+    vi.mocked(rss.dedupByExternalId).mockReturnValue([{ externalId: 'e1', publishedAt: null, excerpt: '摘要' }] as never)
+    await runNewsRefresh()
+    expect(vi.mocked(repo.buildUpsertRows).mock.calls[0]?.[0]).toEqual([{ externalId: 'e1', publishedAt: null, excerpt: '' }])
+  })
+
+  it('feed-excerpt 來源保留摘要但不抓正文', async () => {
+    const { repo, scraper } = await setup('cna')
+    const rss = await import('../external/rss-fetcher.js')
+    vi.mocked(rss.dedupByExternalId).mockReturnValue([{ externalId: 'e1', publishedAt: null, excerpt: '前言' }] as never)
+    await runNewsRefresh()
+    expect(vi.mocked(repo.buildUpsertRows).mock.calls[0]?.[0]).toEqual([{ externalId: 'e1', publishedAt: null, excerpt: '前言' }])
+    expect(scraper.scrapeArticle).not.toHaveBeenCalled()
+  })
+
+  it('不抓正文的來源計入 feedSkipped', async () => {
+    const { scraper } = await setup('cna')
     const result = await runNewsRefresh()
     expect(scraper.scrapeArticle).not.toHaveBeenCalled()
     expect(result.perSource[0]?.feedSkipped).toBe(1)

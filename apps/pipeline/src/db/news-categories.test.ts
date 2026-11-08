@@ -15,7 +15,7 @@ describe('categoryForSlug', () => {
   })
 
   it('總經/能源 feed slug → macro', () => {
-    expect(categoryForSlug('eia')).toBe('macro')
+    expect(categoryForSlug('fed-press')).toBe('macro')
     expect(categoryForSlug('google-news-us-macro')).toBe('macro')
   })
 
@@ -83,7 +83,7 @@ describe('resolveItemCategory', () => {
   })
   it('falls back to source category when item category is null', () => {
     expect(resolveItemCategory(null, 'cna')).toBe('industry')
-    expect(resolveItemCategory(null, 'eia')).toBe('macro')
+    expect(resolveItemCategory(null, 'fed-press')).toBe('macro')
   })
   it('falls back when item category is an unknown string', () => {
     expect(resolveItemCategory('tech-semi', 'cna')).toBe('industry')

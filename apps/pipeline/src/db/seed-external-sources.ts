@@ -95,34 +95,6 @@ export type ExternalSourceSeed = z.input<typeof ExternalSourceSeedSchema>
 // 任何內容（`seed-external-sources.db.test.ts` 用合成 fixture 直接驗證這件事）。
 // gate 只加在檔尾 CLI entry，對 `EXTERNAL_SOURCES_SEED` map 過再傳進去。
 export const EXTERNAL_SOURCES_SEED: readonly ExternalSourceSeed[] = [
-  // Tier 1 · RSS · baseline (10 家、台美經濟核心)
-  { slug: 'anue', displayName: '鉅亨網頭條', kind: 'rss', tier: 1, config: { feedUrl: 'https://api.cnyes.com/media/api/v1/newslist/category/headline?limit=30', format: 'cnyes-json' } },
-  // 2026-08-22 停用：這個 feed 已不存在（回 404），首頁也沒有 RSS autodiscovery。
-  // ★ 同樣沒有復活偵測（理由同 commercial-times）。人手複查：
-  //   curl -s -o /dev/null -w '%{http_code}' https://news.moneydj.com/z/rss/all.xml
-  { slug: 'moneydj', displayName: 'MoneyDJ 理財網', kind: 'rss', tier: 1, enabled: false, config: { feedUrl: 'https://news.moneydj.com/z/rss/all.xml' } },
-  // 舊路徑帶子分類代碼 7240/7241，回合法 XML 但 items=0（代碼已失效）。2026-08-17 查證、08-21 複驗。
-  // 2026-08-22 停用：feed 本身是好的，但這個網域對部分網路環境的自動化請求回 403；
-  // 站方不歡迎就不抓，故停用。
-  { slug: 'udn-money', displayName: '經濟日報', kind: 'rss', tier: 1, enabled: false, config: { feedUrl: 'https://money.udn.com/rssfeed/news/1001?ch=money' } },
-  { slug: 'cnyes-global', displayName: '鉅亨國際', kind: 'rss', tier: 1, config: { feedUrl: 'https://api.cnyes.com/media/api/v1/newslist/category/wd_stock?limit=30', format: 'cnyes-json' } },
-  // 2026-08-22 停用：站方不允許自動化存取（feed 一律回 403），故停用。
-  // ★ 停用的代價：getSourceActivity 只看 enabled=true，所以它從此不進靜默判定——
-  //   站方哪天重新開放 feed 不會有任何機制通知，只能人手複查。
-  { slug: 'commercial-times', displayName: '工商時報', kind: 'rss', tier: 1, enabled: false, config: { feedUrl: 'https://ctee.com.tw/feed' } },
-  // 舊路徑在 ec. 子網域、已棄用（回 200 但 body 是 HTML 錯誤頁「網址錯誤 - 自由財經」）。
-  // 對照組 liberty-international 用 news. 子網域、一直正常——差異就是子網域本身。
-  { slug: 'liberty-finance', displayName: '自由財經', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.ltn.com.tw/rss/business.xml' } },
-  // 直連 feed 2020 後已停（feeds.reuters.com 現在連 DNS 都不解析），改走 Google News
-  // proxy，與下面的 reuters-world 同一種做法。
-  { slug: 'reuters-biz', displayName: 'Reuters Business (Google News proxy)', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.google.com/rss/search?q=site:reuters.com+business&hl=en' } },
-  // 原走 Google News 代理，citation 落在 news.google.com 不透明轉址、讀者點不到原文，
-  // 且 description 只有錨點 HTML（enrich 出來的摘要是憑標題編的）。官方 feed 有 1-2 句真摘要。
-  // 文章頁本身 403（付費牆），但網址仍是合法 citation——讀者看得到出處、知道需訂閱。
-  { slug: 'bloomberg-markets', displayName: 'Bloomberg Markets', kind: 'rss', tier: 1, config: { feedUrl: 'https://www.bloomberg.com/feeds/markets/news.rss' } },
-  { slug: 'wsj-markets', displayName: 'WSJ Markets (Google News proxy)', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.google.com/rss/search?q=site:wsj.com+markets&hl=en' } },
-  { slug: 'cnbc-markets', displayName: 'CNBC Markets', kind: 'rss', tier: 1, config: { feedUrl: 'https://www.cnbc.com/id/15839135/device/rss/rss.html' } },
-
   // Tier 2 · html-selector (5 家)
   { slug: 'twse-mops-news', displayName: '公開資訊觀測站重大訊息', kind: 'html-selector', tier: 2, config: {
     listingUrl: 'https://mops.twse.com.tw/mops/web/t146sb05',
@@ -176,46 +148,15 @@ export const EXTERNAL_SOURCES_SEED: readonly ExternalSourceSeed[] = [
     feedUrl: 'https://www.federalreserve.gov/feeds/press_monetary.xml',
     format: 'rss',
   } },
-
-  // ────────────────────────────────────────────
-  // 跨域 corpus 擴充（15 家）
-  // reachability dry-run 結論：7 OK / 6 FALLBACK / 1 DEAD（udn-cross-strait 改 udn-main）
-  // ────────────────────────────────────────────
-
-  // #1 海外地緣 / 政治
-  { slug: 'reuters-world', displayName: 'Reuters World (Google News proxy)', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.google.com/rss/search?q=site:reuters.com+world&hl=en' } },
-  { slug: 'bbc-world', displayName: 'BBC World', kind: 'rss', tier: 1, config: { feedUrl: 'https://feeds.bbci.co.uk/news/world/rss.xml' } },
   // 同 bloomberg-markets 的理由改直連。官方 feed 的 description 是完整段落（實測首則 782 字元）。
   // 另有 /presidential-actions/feed/（行政命令、備忘錄）30 則，與本 feed **部分重疊**：
   // 2026-08-21 比對兩支的 <link>，交集 8/30，且本 feed 裡本來就有 8 則 /presidential-actions/
   // 路徑的文章。另立一個 source 的淨新增只有 22 則，是否值得未決。
   { slug: 'whitehouse-statements', displayName: 'White House 新聞稿', kind: 'rss', tier: 1, config: { feedUrl: 'https://www.whitehouse.gov/news/feed/' } },
-
   // #3 台灣兩岸 / 政治
   { slug: 'cna-politics', displayName: '中央社政治', kind: 'rss', tier: 1, config: { feedUrl: 'https://feeds.feedburner.com/rsscna/politics' } },
-  // 舊路徑的 RSS 產生器回空殼（200、20 items，但 title/link/description 全空、pubDate=1970-01-01），
-  // 換三個分類 id 皆同、與分類無關。/news/rssfeed/ 需帶尾斜線。
-  // 2026-08-22 停用，理由同 udn-money。
-  { slug: 'udn-main', displayName: '聯合新聞網主分類（兩岸 + 國際 + 政治混流）', kind: 'rss', tier: 1, enabled: false, config: { feedUrl: 'https://udn.com/news/rssfeed/' } },
-  { slug: 'liberty-international', displayName: '自由時報國際', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.ltn.com.tw/rss/world.xml' } },
-
   // #4 台灣政策 / 監管（補行政院；MOPS / TWSE / FSC / CBC 已有）
   { slug: 'ey-press', displayName: '行政院新聞稿 RSS', kind: 'rss', tier: 1, config: { feedUrl: 'https://www.ey.gov.tw/RSS_Content.aspx?ModuleType=3' } },
-
-  // #5 戰爭 / 衝突
-  { slug: 'aljazeera', displayName: 'Al Jazeera English', kind: 'rss', tier: 1, config: { feedUrl: 'https://www.aljazeera.com/xml/rss/all.xml' } },
-  { slug: 'isw', displayName: 'Institute for the Study of War (Google News proxy)', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.google.com/rss/search?q=site:understandingwar.org&hl=en' } },
-  { slug: 'scmp-world', displayName: 'SCMP World', kind: 'rss', tier: 1, config: { feedUrl: 'https://www.scmp.com/rss/91/feed' } },
-
-  // #6 智庫 / 政策研究
-  { slug: 'csis', displayName: 'CSIS (Google News proxy)', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.google.com/rss/search?q=site:csis.org&hl=en' } },
-  { slug: 'brookings', displayName: 'Brookings (Google News proxy)', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.google.com/rss/search?q=site:brookings.edu&hl=en' } },
-
-  // #7 能源 / 大宗商品
-  // 注意：EIA feed 為 ISO-8859-1 encoding。預設 RSS parser 應 cover；若 spot-check 發現 mojibake 再回來加 encoding field。
-  { slug: 'eia', displayName: 'U.S. EIA Today in Energy', kind: 'rss', tier: 1, config: { feedUrl: 'https://www.eia.gov/rss/todayinenergy.xml' } },
-  { slug: 'iea', displayName: 'International Energy Agency (Google News proxy)', kind: 'rss', tier: 1, config: { feedUrl: 'https://news.google.com/rss/search?q=site:iea.org&hl=en' } },
-  { slug: 'oilprice', displayName: 'OilPrice.com', kind: 'rss', tier: 1, config: { feedUrl: 'https://oilprice.com/rss/main' } },
 ] as const
 
 /**

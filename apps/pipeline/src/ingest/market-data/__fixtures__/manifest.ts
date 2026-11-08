@@ -127,7 +127,7 @@ export const marketDataFixtures: FixtureManifest = {
       origin: 'captured',
       url: 'https://www.federalreserve.gov/json/calendar.json',
       capturedAt: '2026-11-08',
-      transform: '只留 2 筆 FOMC meeting、1 筆 minutes、1 筆演說',
+      transform: '只留 FOMC meeting、minutes、演說與欄位較少的 Stat／link 列各幾筆，announcement 留完整與缺欄各 1 筆',
       note: 'Fed 行事曆；回應開頭有 UTF-8 BOM。',
     },
   ],

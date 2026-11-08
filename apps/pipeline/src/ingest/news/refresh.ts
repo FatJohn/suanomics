@@ -8,7 +8,7 @@ import {
   insertNewsItems,
   updateScrapedContent,
 } from '../../db/repos/news-repo.js'
-import { isGoogleNewsProxySeed, TITLE_ONLY_SOURCE_SLUGS } from '../../db/seed.js'
+import { EXCERPT_STRIPPED_SLUGS, isGoogleNewsProxySeed, NO_BODY_FETCH_SLUGS } from '../../db/seed.js'
 import { extractReadableText } from '../external/article-extract.js'
 import { scrapeWithFirecrawl } from '../external/firecrawl.js'
 import { dedupByExternalId, fetchRss, parseRssXml } from '../external/rss-fetcher.js'
@@ -39,7 +39,7 @@ export interface RunNewsRefreshResult {
     scrapeFailed: number
     // - `bodyDenied`：目標 host 在拒抓清單上（`body-fetch-policy.ts` 的
     //   `BODY_FETCH_DENIED_HOSTS`），政策上不抓正文。
-    // - `feedSkipped`：來源條款只允許標題與連結（`TITLE_ONLY_SOURCE_SLUGS`），或整個 feed
+    // - `feedSkipped`：來源條款或 robots 不允許抓文章頁（`NO_BODY_FETCH_SLUGS`），或整個 feed
     //   是 Google News 代理（`isGoogleNewsProxySeed`）——這批
     //   來源的 `<link>` 是轉址頁，抓那一頁拿不到正文（見下面 `resolveArticleTarget` 的
     //   註解），所以整批連抓都不抓，不是逐篇判定。
@@ -176,7 +176,8 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
       const parsed = filterRecentEntries(dedupByExternalId(parseRssXml(xml)), new Date(), FEED_WINDOW_HOURS)
       const existing = await getExistingExternalIds(src.id)
       const fresh = parsed.filter(e => !existing.has(e.externalId))
-      const rows = buildUpsertRows(fresh, src.id)
+      // 條款禁轉載的來源，feed 附的摘要也不存，也就不會送進 LLM。
+      const rows = buildUpsertRows(EXCERPT_STRIPPED_SLUGS.includes(src.slug) ? fresh.map(e => ({ ...e, excerpt: '' })) : fresh, src.id)
       const insertedIds = await insertNewsItems(rows)
       totalInserted += insertedIds.length
       // 先 push、之後**就地累加**：抓正文途中 throw 時，已經插入的則數與已經累加的計數
@@ -194,10 +195,10 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
       // 整個 feed 是 Google News 代理（`isGoogleNewsProxySeed`）時，整批跳過抓正文：
       // 轉址頁本身就拿不到正文（見 `resolveArticleTarget` 的註解），讀者拿到的是標題與
       // 轉址連結，需要正文得自行以合法方式取得（見 docs/architecture/news-corpus-systems.md）。
-      const feedDenied = isGoogleNewsProxySeed(src) || TITLE_ONLY_SOURCE_SLUGS.includes(src.slug)
+      const feedDenied = isGoogleNewsProxySeed(src) || NO_BODY_FETCH_SLUGS.includes(src.slug)
       if (feedDenied && toScrape.length > 0) {
         current.feedSkipped = toScrape.length
-        console.warn(`[runNewsRefresh] ${src.slug}: ${toScrape.length} 篇跳過抓正文（只取標題與連結）`)
+        console.warn(`[runNewsRefresh] ${src.slug}: ${toScrape.length} 篇跳過抓正文（條款或 robots 限制）`)
       }
       const attempted = feedDenied ? [] : toScrape
       // 計數直接累加進 entry（它是 SourceTally 的超集），隨 perSource 回傳給呼叫端。
