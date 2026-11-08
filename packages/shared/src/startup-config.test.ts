@@ -7,7 +7,6 @@ import { checkStartupConfig, formatStartupConfigReport } from './startup-config.
 const PROD_SERVER_ENV = {
   NODE_ENV: 'production',
   DATABASE_URL: 'postgres://x',
-  GEMINI_API_KEY: 'g',
   FRED_API_KEY: 'f',
   PODCAST_TTS_PROVIDER: 'azure',
   AZURE_SPEECH_KEY: 'k',
@@ -50,15 +49,15 @@ describe('checkStartupConfig：主線缺就是 fatal', () => {
     expect(r.ok).toBe(false)
   })
 
-  it('缺 GEMINI_API_KEY', () => {
-    const { GEMINI_API_KEY: _g, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', env)
-    expect(keys(r.fatal)).toEqual(['GEMINI_API_KEY'])
+  // v1 全部走 Anthropic，沒有任何 agent 或 TTS 路徑需要 Gemini。
+  it('沒有 GEMINI_API_KEY 不叫', () => {
+    const r = checkStartupConfig('server', PROD_SERVER_ENV)
+    expect(keys(r.issues)).not.toContain('GEMINI_API_KEY')
   })
 
   it('空字串與只有空白都算缺', () => {
-    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, GEMINI_API_KEY: '   ' })
-    expect(keys(r.fatal)).toEqual(['GEMINI_API_KEY'])
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, DATABASE_URL: '   ' })
+    expect(keys(r.fatal)).toEqual(['DATABASE_URL'])
   })
 
   // v1 沒有 HTTP 服務（批次 pipeline＋靜態站），v0 的 HTTP 欄位不再檢查。
@@ -106,87 +105,53 @@ describe('checkStartupConfig：LLM provider 的靜默 fallback', () => {
   // 2026-09-10 修正：LLM_PROVIDER=anthropic（全域覆蓋，非 AGENT_MODELS 顯式 claude* 名）
   // 但 AI_PROVIDER 總開關沒開——resolveAgentModel 會把所有沒有顯式 provider 前綴的 agent
   // 靜默 fallback 回 Gemini（不需要 model 名是 claude*），pipeline 跑得動、只要有
-  // GEMINI_API_KEY。舊版把這個組態誤判成「保底」fatal（LLM_PROVIDER missing），這裡是
+  // 舊版把這個組態誤判成「保底」fatal（LLM_PROVIDER missing），這裡是
   // 獨立複查抓到的那個誤叫，改成 contradiction、不擋啟動。
-  it('用 LLM_PROVIDER=anthropic 但總開關沒開、有 GEMINI_API_KEY → 不得擋啟動（controller 驗收場景 4）', () => {
+  it('用 LLM_PROVIDER=anthropic 但總開關沒開 → 不得擋啟動（controller 驗收場景 4）', () => {
     const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, LLM_PROVIDER: 'anthropic' })
     expect(r.fatal).toEqual([])
     expect(keys(r.degraded)).toEqual(['LLM_PROVIDER'])
     expect(r.degraded[0]?.kind).toBe('contradiction')
   })
 
-  // 同一個組態，但真正需要的 GEMINI_API_KEY 也沒有：這裡才該 fatal，且是因為 GEMINI_API_KEY
-  // 缺了、不是因為 LLM_PROVIDER 本身「缺」。
-  it('用 LLM_PROVIDER=anthropic 但總開關沒開、且沒有 GEMINI_API_KEY → fatal 在 GEMINI_API_KEY', () => {
-    const { GEMINI_API_KEY: _g, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', { ...env, LLM_PROVIDER: 'anthropic' })
-    expect(keys(r.fatal)).toEqual(['GEMINI_API_KEY'])
-  })
-
   // 反例：LLM_PROVIDER=anthropic 且三條件 gate 真的開啟（AI_PROVIDER=anthropic +
   // ANTHROPIC_API_KEY 存在）時，agent 真的會打 Anthropic、不會 fallback 回 Gemini，
-  // 不該再要求 GEMINI_API_KEY，也不該有任何 contradiction。
-  it('反例：LLM_PROVIDER=anthropic 且總開關真的開啟（有 ANTHROPIC_API_KEY）→ 不叫（不必再有 GEMINI_API_KEY，因為沒有 agent 會 fallback 回去）', () => {
+  // 不該有任何 contradiction。
+  it('反例：LLM_PROVIDER=anthropic 且總開關真的開啟（有 ANTHROPIC_API_KEY）→ 不叫', () => {
     const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, LLM_PROVIDER: 'anthropic', AI_PROVIDER: 'anthropic', ANTHROPIC_API_KEY: 'a' })
     expect(r.issues).toEqual([])
   })
 
   // LLM_PROVIDER=anthropic + AI_PROVIDER=anthropic（半開）但沒有 ANTHROPIC_API_KEY：
-  // gate 沒有「真的」開，resolveAgentModel 會 fallback 回 Gemini，所以兩把 key 都要——
-  // ANTHROPIC_API_KEY（不然使用者以為在用 Claude 其實沒有）與 GEMINI_API_KEY（真正在跑的那個）。
-  it('用 LLM_PROVIDER=anthropic + AI_PROVIDER=anthropic 但缺 ANTHROPIC_API_KEY 與 GEMINI_API_KEY → 兩者都 fatal', () => {
-    const { GEMINI_API_KEY: _g, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', { ...env, LLM_PROVIDER: 'anthropic', AI_PROVIDER: 'anthropic' })
-    expect(keys(r.fatal)).toEqual(['ANTHROPIC_API_KEY', 'GEMINI_API_KEY'])
+  // 使用者以為在用 Claude 其實沒有金鑰，要擋。
+  it('用 LLM_PROVIDER=anthropic + AI_PROVIDER=anthropic 但缺 ANTHROPIC_API_KEY → fatal', () => {
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, LLM_PROVIDER: 'anthropic', AI_PROVIDER: 'anthropic' })
+    expect(keys(r.fatal)).toEqual(['ANTHROPIC_API_KEY'])
   })
 })
 
 describe('checkStartupConfig：顯式 LLM provider（開源自架／OpenRouter）', () => {
-  // 這組沒有帶 AGENT_MODELS，所以同時踩到 globalProviderModelMismatch 那條 footgun
-  // 檢查（見下面「provider／model 沒對齊」describe block），degraded 因此有兩筆。
-  it('只設 LLM_PROVIDER=openai + OPENAI_API_KEY，沒有 GEMINI_API_KEY → 不 fatal（gemini 變 optional）', () => {
-    const { GEMINI_API_KEY: _g, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', { ...env, LLM_PROVIDER: 'openai', OPENAI_API_KEY: 'k' })
+  // 這組沒有帶 AGENT_MODELS，所以踩到 globalProviderModelMismatch 那條 footgun
+  // 檢查（見下面「provider／model 沒對齊」describe block）。
+  it('只設 LLM_PROVIDER=openai + OPENAI_API_KEY → 不 fatal', () => {
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, LLM_PROVIDER: 'openai', OPENAI_API_KEY: 'k' })
     expect(r.fatal).toEqual([])
-    expect(keys(r.degraded)).toEqual(['GEMINI_API_KEY', 'LLM_PROVIDER'])
+    expect(keys(r.degraded)).toEqual(['LLM_PROVIDER'])
   })
 
   it('設 LLM_PROVIDER=openai 但 OPENAI_API_KEY 與 LLM_API_KEY 都沒設 → fatal', () => {
-    const { GEMINI_API_KEY: _g, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', { ...env, LLM_PROVIDER: 'openai' })
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, LLM_PROVIDER: 'openai' })
     expect(keys(r.fatal)).toEqual(['OPENAI_API_KEY'])
   })
 
   it('設 LLM_PROVIDER=openai + LLM_API_KEY（不是 OPENAI_API_KEY）也算有 key → 不 fatal', () => {
-    const { GEMINI_API_KEY: _g, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', { ...env, LLM_PROVIDER: 'openai', LLM_API_KEY: 'k' })
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, LLM_PROVIDER: 'openai', LLM_API_KEY: 'k' })
     expect(r.fatal).toEqual([])
-  })
-
-  it('什麼 LLM key 都沒有（無 GEMINI/OPENAI/ANTHROPIC、無 LLM_PROVIDER）→ fatal', () => {
-    const { GEMINI_API_KEY: _g, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', env)
-    expect(r.fatal.length).toBeGreaterThan(0)
-    expect(keys(r.fatal)).toContain('GEMINI_API_KEY')
-  })
-
-  // podcast TTS 走 Gemini（非 azure）是跟 agent 推理完全獨立的用途：agent 那側全部走
-  // openai 時，GEMINI_API_KEY 只影響「當天有沒有音檔」，不該擋開機。
-  it('設 LLM_PROVIDER=openai 但 TTS 仍走 gemini（非 azure）時 GEMINI_API_KEY 是 optional 不是 required', () => {
-    const { GEMINI_API_KEY: _g, PODCAST_TTS_PROVIDER: _t, AZURE_SPEECH_KEY: _ak, AZURE_SPEECH_REGION: _ar, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', { ...env, LLM_PROVIDER: 'openai', OPENAI_API_KEY: 'k', PODCAST_TTS_PROVIDER: 'gemini' })
-    expect(r.fatal).toEqual([])
-    // 同上，沒帶 AGENT_MODELS 也一併踩到 footgun 檢查。
-    expect(keys(r.degraded)).toEqual(['GEMINI_API_KEY', 'LLM_PROVIDER'])
-    expect(r.degraded[0]?.kind).toBe('missing')
   })
 
   it('用 AGENT_MODELS 顯式 openai/ 前綴（無 LLM_PROVIDER）也視為用到 openai、缺 openai key 一併 fatal', () => {
-    const { GEMINI_API_KEY: _g, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', { ...env, AGENT_MODELS: 'decomposer:openai/llama-3.3-70b' })
-    // 沒被 override 的 agent（premise：全部預設 gemini）仍要 GEMINI_API_KEY，這裡刻意缺；
-    // decomposer 顯式指到 openai 但沒有 OPENAI_API_KEY/LLM_API_KEY，也一併 fatal。
-    expect(keys(r.fatal)).toEqual(['GEMINI_API_KEY', 'OPENAI_API_KEY'])
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, AGENT_MODELS: 'decomposer:openai/llama-3.3-70b' })
+    expect(keys(r.fatal)).toEqual(['OPENAI_API_KEY'])
   })
 })
 
