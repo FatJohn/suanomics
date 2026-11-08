@@ -43,7 +43,7 @@ pre-commit 跑 gitleaks 擋金鑰，commit-msg 跑 commitlint；跳過就等於�
 
 ### 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`；不直接 import `@anthropic-ai/sdk`、`@google/genai`、`openai`，也不用 `generateObject`〔待 lint 化〕（HIGH）
 
-provider 由 `@ai-sdk/anthropic` 與 `@ai-sdk/google` 提供，換 model 只改參數；直接綁某家 SDK 會繞過這層。`generateObject` 在 AI SDK v7 標為 deprecated。決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。
+provider 由 `@ai-sdk/anthropic` 提供，換 model 只改參數；直接綁某家 SDK 會繞過這層。`generateObject` 在 AI SDK v7 標為 deprecated。決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。
 
 待 lint 化：ESLint `no-restricted-imports` 擋上述三個套件，並用 `importNames` 擋 `ai` 的 `generateObject`。
 
