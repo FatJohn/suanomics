@@ -1,7 +1,8 @@
 import { checkCompliance } from '@suanomics/shared'
 
 const SENTENCE_END = /(?<=[。！？!?\n])/
-const MARKDOWN_MARKS = /[*_`~]/g
+// 空白也拿掉：換行與空白在瀏覽器上不會把一個詞拆開給讀者看。
+const MARKDOWN_MARKS = /[*_`~\s]/g
 
 function isBlocked(text: string): boolean {
   return checkCompliance(text.replace(MARKDOWN_MARKS, '')) !== null

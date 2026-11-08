@@ -56,15 +56,20 @@ function presentNarrative(brief: MarketBrief, citations: CitationLink[]): BriefV
   const byUrl = new Map(citations.map(c => [c.url, c]))
   return {
     intro: redactBlockedSentences(brief.narrative.intro),
-    sections: brief.narrative.sections.map(s => ({
-      heading: redactBlockedSentences(s.heading),
-      takeaway: redactBlockedSentences(s.takeaway ?? ''),
-      body: redactBlockedSentences(s.body),
-      citations: s.citationUrls.flatMap((u) => {
-        const c = byUrl.get(u)
-        return c ? [c] : []
-      }),
-    })),
+    sections: brief.narrative.sections.flatMap((s) => {
+      const body = redactBlockedSentences(s.body)
+      if (!body)
+        return []
+      return [{
+        heading: redactBlockedSentences(s.heading),
+        takeaway: redactBlockedSentences(s.takeaway ?? ''),
+        body,
+        citations: s.citationUrls.flatMap((u) => {
+          const c = byUrl.get(u)
+          return c ? [c] : []
+        }),
+      }]
+    }),
     outro: redactBlockedSentences(brief.narrative.outro),
   }
 }

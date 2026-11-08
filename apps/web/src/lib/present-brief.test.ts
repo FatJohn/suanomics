@@ -48,6 +48,13 @@ describe('presentBrief', () => {
   })
 })
 
+describe('presentBrief 過濾後的空內容', () => {
+  it('本文整段被攔截的段落不輸出', () => {
+    const narrative = { ...NARRATIVE, sections: [{ ...NARRATIVE.sections[0] as NonNullable<typeof NARRATIVE.sections[0]>, body: '建議買進。' }] }
+    expect(presentBrief('2095-01-01', { ...BASE, narrative }, []).narrative?.sections).toEqual([])
+  })
+})
+
 describe('parseBriefJson', () => {
   it('不合 schema 時帶日期丟錯，擋下這次部署而不是發佈未驗證內容', () => {
     expect(() => parseBriefJson('2095-01-01', null)).toThrow('2095-01-01')

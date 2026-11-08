@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro'
 import type { NewsRow } from '../../../lib/db/site-repo'
 import Base from '../../../layouts/Base.astro'
 import { redactBlockedSentences } from '../../../lib/compliance'
+import { formatTaipeiDate } from '../../../lib/date'
 import { safeHttpUrl, WITHHELD_NEWS_TITLE } from '../../../lib/present-brief'
 import { getSiteData } from '../../../lib/site-data'
 
@@ -20,7 +21,7 @@ const href = safeHttpUrl(item.url)
 <Base title={title}>
   <h1 class="my-2 text-2xl font-bold">{title}</h1>
   <p class="text-sm text-neutral-500">
-    {item.sourceName}{item.publishedAt && `・${item.publishedAt.toISOString().slice(0, 10)}`}
+    {item.sourceName}{item.publishedAt && `・${formatTaipeiDate(item.publishedAt)}`}
   </p>
   {href && <p class="my-3"><a class="underline" href={href} rel="noopener">閱讀原文</a></p>}
 </Base>

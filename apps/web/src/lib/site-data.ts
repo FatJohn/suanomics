@@ -6,11 +6,20 @@ import { parseBriefJson, presentBrief } from './present-brief'
 
 export interface SiteData { briefs: BriefView[], news: NewsRow[] }
 
+// fresh clone 與 CI 的 pnpm -r build 沒有資料庫可讀，仍要能 build；
+// 部署走 build:publish，少了連線字串要失敗，否則空站會蓋掉線上。
+export function resolveDatabaseUrl(env: Record<string, string | undefined>): string | null {
+  if (env.WEB_DATABASE_URL)
+    return env.WEB_DATABASE_URL
+  if (env.WEB_REQUIRE_DATABASE)
+    throw new Error('部署用的 build 需要 WEB_DATABASE_URL')
+  return null
+}
+
 async function readRows(): Promise<SiteRows> {
-  const url = process.env.WEB_DATABASE_URL
+  const url = resolveDatabaseUrl(process.env)
   if (url)
     return readSiteRows(url)
-  // fresh clone 與 CI 的 pnpm -r build 沒有資料庫可讀，仍要能 build。
   console.warn('[web] WEB_DATABASE_URL 未設定：產出沒有 brief 的空站')
   return { briefs: [], news: [] }
 }

@@ -14,6 +14,10 @@ describe('redactBlockedSentences', () => {
     expect(redactBlockedSentences('油價上漲。建議**買**進。')).toBe('油價上漲。')
   })
 
+  it('換行拆開禁用語時整段不顯示', () => {
+    expect(redactBlockedSentences('建\n議買進')).toBe('')
+  })
+
   it('個股與方向詞跨句靠近時，整段不顯示', () => {
     expect(redactBlockedSentences('台積電法說會在週四。市場加碼')).toBe('')
   })
