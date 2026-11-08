@@ -101,7 +101,7 @@ export default antfu(
     },
   },
   {
-    files: ['**/*.{ts,tsx,astro,js,mjs,cjs}'],
+    files: ['**/*.{ts,mts,cts,tsx,astro,js,mjs,cjs,jsx}'],
     rules: {
       'no-restricted-imports': ['error', {
         paths: [
@@ -114,7 +114,7 @@ export default antfu(
   },
   {
     // 網站是靜態產生，LLM 呼叫只在 pipeline。
-    files: ['apps/web/**/*.{ts,tsx,astro,js,mjs,cjs}'],
+    files: ['apps/web/**/*.{ts,mts,cts,tsx,astro,js,mjs,cjs,jsx}'],
     rules: {
       'no-restricted-imports': ['error', {
         paths: [

@@ -58,7 +58,7 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 | 單檔 300 行（不含空行與註解，測試檔除外） | ESLint `max-lines` error |
 | `apps/web` 不 import `apps/pipeline`；`packages/*` 不 import `apps/*` | ESLint `import-x/no-restricted-paths` |
 | `.ts` 與 `.astro` 不用 `any`；`.ts` 不用非空斷言 `!`，型別 import 用 `import type` | ESLint `ts/no-explicit-any`、`ts/no-non-null-assertion`、`ts/consistent-type-imports` |
-| 不 import `@anthropic-ai/sdk`、`@google/genai`、`openai`，也不 import `ai` 的 `generateObject`；`apps/web` 另不 import `ai`、`@ai-sdk/*` | ESLint `no-restricted-imports` |
+| 不 import `@anthropic-ai/sdk`、`@google/genai`、`openai`，也不 import `ai` 的 `generateObject`；`apps/web` 另不 import `ai`、`@ai-sdk/*`（只涵蓋靜態 import） | ESLint `no-restricted-imports` |
 | `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`（shared、pipeline）與 `apps/web/tsconfig.json`，`pnpm -r type-check` |
 | `rewrite` 要走 PR、`gitleaks` 與 `ci` 兩個 check 通過、commit 要簽章、禁 force push 與刪除 | GitHub ruleset |
 
@@ -81,6 +81,7 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 - agent 不 merge PR，也不 push 到 `rewrite` 或 `main`；PR 開進 `rewrite`，由維護者以 merge commit 合併（HIGH）
 **LLM 與報告內容**
 - 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`（HIGH）
+- `apps/web` 不 import 任何 LLM SDK，網站只讀 pipeline 寫進 Postgres 的結果（HIGH）
 - 每個 agent 用哪家哪個 model 只寫在 `apps/pipeline` 的 model 對照表，agent 程式碼裡不寫死 model ID（MEDIUM）
 - 新增或修改 agent 的 system prompt 時，帶入 `packages/shared` 的 compliance 禁用語清單（「建議買／賣／持有」「明牌」等投信投顧法禁用語），不在 prompt 內另寫一份（CRITICAL）
 - 連動鏈的每個數字、事件與因果都要帶可追溯的來源 URL，找不到來源的條目不寫進 brief（CRITICAL）

@@ -43,7 +43,11 @@ pre-commit 跑 gitleaks 擋金鑰，commit-msg 跑 commitlint；跳過就等於�
 
 ### 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`（HIGH）
 
-provider 由 `@ai-sdk/anthropic` 提供，換 model 只改參數；直接綁某家 SDK 會繞過這層。`generateObject` 在 AI SDK v7 標為 deprecated。決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。各家 SDK 與 `generateObject` 的 import 由 ESLint 擋下（見 `AGENTS.md`〈機械守門〉）；`ai` 套件的其他函式要靠本條。
+provider 由 `@ai-sdk/anthropic` 提供，換 model 只改參數；直接綁某家 SDK 會繞過這層。`generateObject` 在 AI SDK v7 標為 deprecated。決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。各家 SDK 與 `generateObject` 的 import 由 ESLint 擋下（見 `AGENTS.md`〈機械守門〉）；`ai` 套件的其他函式與動態 `import()` 要靠本條。
+
+### `apps/web` 不 import 任何 LLM SDK，網站只讀 pipeline 寫進 Postgres 的結果（HIGH）
+
+網站是 build 時產生的靜態 HTML，LLM 呼叫只在 pipeline 內，金鑰也只給 pipeline 那一步。ESLint 只擋列名的套件與靜態 import（見 `AGENTS.md`〈機械守門〉）；清單外的 SDK 與動態 `import()` 要靠本條。
 
 ### 每個 agent 用哪家哪個 model 只寫在 `apps/pipeline` 的 model 對照表，agent 程式碼裡不寫死 model ID（MEDIUM）
 
