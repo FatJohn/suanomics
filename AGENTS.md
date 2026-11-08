@@ -39,7 +39,7 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 | 觸發器 | Cloudflare Worker Cron Trigger 為主，Actions `schedule` 為備援 | [0009](docs/adr/0009-cron-trigger-via-cloudflare-worker.md) |
 | 資料庫 | Neon Postgres，drizzle-orm 與 drizzle-kit migration | [0003](docs/adr/0003-neon-postgres.md) |
 | LLM 呼叫層 | Vercel AI SDK（`ai`、`@ai-sdk/anthropic`），不用 agent 框架 | [0004](docs/adr/0004-ai-sdk-no-agent-framework.md) |
-| LLM provider | 目前只用 Anthropic | [0004](docs/adr/0004-ai-sdk-no-agent-framework.md) |
+| LLM provider | 只用 Anthropic | [0004](docs/adr/0004-ai-sdk-no-agent-framework.md) |
 | Schema 驗證 | Zod，契約放 `packages/shared` | [設計依據的〈Workspace 與依賴方向〉](docs/architecture/design-basis.md#workspace-與依賴方向) |
 | 網站 | Astro 靜態產生、Tailwind，部署到 Cloudflare Pages | [0005](docs/adr/0005-astro-static-site.md) |
 | 新聞來源 | 官方機構與發行商自己的 feed，正文在 pipeline 內抽取；不買新聞 API | [0007](docs/adr/0007-news-sources.md) |
