@@ -31,6 +31,12 @@ describe('parseRssXml', () => {
     expect(entries[0]?.externalId.length).toBeGreaterThan(0)
   })
 
+  // 金管會 feed 的 link 在 XML 解一次之後仍是 `&amp;`，直接抓會落到列表頁，抽出的是分頁字樣而不是正文。
+  it('shouldDecodeDoubleEscapedAmpersandInLink', () => {
+    const xml = `<rss><channel><item><title>T</title><link>https://x/home.jsp?id=96&amp;amp;dataserno=1</link></item></channel></rss>`
+    expect(parseRssXml(xml)[0]?.url).toBe('https://x/home.jsp?id=96&dataserno=1')
+  })
+
   it('shouldReturnEmptyForInvalidXml', () => {
     expect(parseRssXml('not xml at all')).toEqual([])
   })

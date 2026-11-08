@@ -60,12 +60,12 @@ function requestsClaudeModel(raw: string | undefined): boolean {
     .some(model => model.startsWith('claude'))
 }
 
-// gemini／openai 兩個「有沒有被顯式指定」的 provider 前綴，判斷邏輯獨立於
+// openai 這個「有沒有被顯式指定」的 provider 前綴，判斷邏輯獨立於
 // v0 `apps/server/src/agents/providers/resolve.ts` 的 parseModelSpec（#23 會換掉 provider 層）——packages/shared
 // 不能依賴 apps/pipeline，這裡是同一條規則的獨立實作：只有 `provider/model` 的
 // provider 半剛好是已知名字才算，裸 model（例如 `gemini-3.7-flash`）不算。
-type NonClaudeProvider = 'gemini' | 'openai'
-const KNOWN_NON_CLAUDE_PROVIDERS: readonly NonClaudeProvider[] = ['gemini', 'openai']
+type NonClaudeProvider = 'openai'
+const KNOWN_NON_CLAUDE_PROVIDERS: readonly NonClaudeProvider[] = ['openai']
 
 function explicitProviderPrefix(rawModel: string): NonClaudeProvider | undefined {
   const idx = rawModel.indexOf('/')
@@ -91,7 +91,7 @@ function explicitProvidersInAgentModels(raw: string | undefined): Set<NonClaudeP
 
 function globalProviderFromEnv(env: EnvSnapshot): NonClaudeProvider | 'anthropic' | undefined {
   const raw = (env.LLM_PROVIDER ?? '').trim().toLowerCase()
-  if (raw === 'gemini' || raw === 'openai' || raw === 'anthropic')
+  if (raw === 'openai' || raw === 'anthropic')
     return raw
   return undefined
 }
@@ -116,36 +116,17 @@ function globalProviderModelMismatch(env: EnvSnapshot): boolean {
 }
 
 // 這個組態實際會用到哪些非 anthropic provider（anthropic 走既有三條件邏輯、不重複判斷）。
-//
-// ★ 前提同上面 checkStartupConfig 裡「AGENT_MODELS 代表有沒有 agent 指向 claude*」那則星號
-//   註解：AGENT_MODEL_DEFAULTS（v0 `apps/server/src/agents/providers/resolve.ts`）目前全部是
-//   gemini-* model，所以沒被 AGENT_MODELS 顯式指定 provider、也沒有全域 LLM_PROVIDER 覆蓋的
-//   agent，一律解析成 gemini。哪天預設表加進非 gemini 的 model，這裡要一起改。
-//
-// 2026-09-10 更正：LLM_PROVIDER=anthropic 時，defaultProviderFromEnv() 會讓所有沒有顯式
-// provider 前綴的 agent 一律解析成 provider==='anthropic'（不需要 model 名是 claude*，見
-// resolve.ts 92-107、137-142）。這裡曾經整段跳過、當作「那些 agent 交給 anthropic 處理」
-// 不查任何 key，但這只在 anthropic 三條件 gate 真的開啟時才成立——gate 沒開（AI_PROVIDER
-// 不是 anthropic，或缺 ANTHROPIC_API_KEY）時 resolve.ts 137-160 會把這些 agent 全部靜默
-// fallback 回 Gemini。獨立複查抓到：舊版因此對「LLM_PROVIDER=anthropic +
-// gate 未開 + 有 GEMINI_API_KEY」這個能跑的組態誤判 fatal。這裡不再無條件跳過，改由呼叫端
-// （checkStartupConfig）依 gate 是否真的開啟，決定要不要把 gemini 加進來。
-function requestedNonClaudeProviders(env: EnvSnapshot, anthropicGateFullyOn: boolean): Set<NonClaudeProvider> {
+function requestedNonClaudeProviders(env: EnvSnapshot): Set<NonClaudeProvider> {
   const result = new Set<NonClaudeProvider>(explicitProvidersInAgentModels(env.AGENT_MODELS))
-  const global = globalProviderFromEnv(env)
-  if (global === 'gemini' || global === 'openai')
-    result.add(global)
-  else if (global === undefined)
-    result.add('gemini')
-  else if (global === 'anthropic' && !anthropicGateFullyOn)
-    result.add('gemini')
+  if (globalProviderFromEnv(env) === 'openai')
+    result.add('openai')
   return result
 }
 
 export function checkStartupConfig(service: StartupService, env: EnvSnapshot): StartupConfigResult {
   const issues: ConfigIssue[] = []
   const requireKey = (key: string, severity: ConfigSeverity, impact: string): void => {
-    if (!present(env, key))
+    if (!present(env, key) && !issues.some(i => i.key === key))
       issues.push({ key, severity, kind: 'missing', impact })
   }
   const contradiction = (key: string, impact: string): void => {
@@ -163,24 +144,14 @@ export function checkStartupConfig(service: StartupService, env: EnvSnapshot): S
   const anthropicGateOn = (env.AI_PROVIDER ?? '').trim().toLowerCase() === 'anthropic'
   const wantsClaude = requestsClaudeModel(env.AGENT_MODELS)
   const globalWantsAnthropic = globalProviderFromEnv(env) === 'anthropic'
-  const anthropicGateFullyOn = anthropicGateOn && present(env, 'ANTHROPIC_API_KEY')
   // 只要 wantsClaude 或 globalWantsAnthropic 任一成立，就有 agent 會在 resolve.ts 解析出
   // provider==='anthropic'，因此需要三條件 gate 真的開啟才不會被靜默 fallback。
   const anthropicRouteRequested = wantsClaude || globalWantsAnthropic
 
-  // GEMINI_API_KEY 兩條獨立用途拆開看：agent 推理（跟著這個組態實際會不會解析到
-  // gemini model）與 podcast TTS（非 azure 分支才吃、只影響當天有沒有音檔）。
-  // 開源後很可能有使用者只走 openai/自架、agent 那側完全不碰 gemini，這時這把 key
-  // 不該擋整個 process 起不來。
-  const requestedProviders = requestedNonClaudeProviders(env, anthropicGateFullyOn)
-  const usesGeminiForAgents = requestedProviders.has('gemini')
-  requireKey(
-    'GEMINI_API_KEY',
-    usesGeminiForAgents ? 'required' : 'optional',
-    usesGeminiForAgents
-      ? 'Cascade 有 agent 解析到 gemini model；缺了會等到第一次呼叫才 throw'
-      : '目前組態沒有 agent 解析到 gemini model；podcast-tts 若非 azure 仍會用它，缺了只影響當天有沒有音檔',
-  )
+  const requestedProviders = requestedNonClaudeProviders(env)
+  // v1 所有 agent 預設走 Anthropic；只有全域換成 openai 時才不需要。
+  if (globalProviderFromEnv(env) !== 'openai')
+    requireKey('ANTHROPIC_API_KEY', 'required', 'agent 預設都走 Anthropic；缺了要等到第一次 LLM 呼叫才 throw')
 
   // openai（自架／OpenRouter）：OPENAI_API_KEY 或 LLM_API_KEY 至少一把，缺兩把才算 required。
   if (requestedProviders.has('openai') && !present(env, 'OPENAI_API_KEY') && !present(env, 'LLM_API_KEY')) {
@@ -212,8 +183,7 @@ export function checkStartupConfig(service: StartupService, env: EnvSnapshot): S
   // ★ 2026-09-10 更正：舊版只看 wantsClaude，漏了 globalWantsAnthropic 這條路——
   //   LLM_PROVIDER=anthropic + gate 未開的組態，舊版誤判成「保底」fatal（見下面已移除
   //   的 requestedProviders.size===0 分支），但 resolveAgentModel 實際上會把所有 agent
-  //   靜默 fallback 回 Gemini、pipeline 跑得動，真正需要的是 GEMINI_API_KEY（已經在上面
-  //   requestedNonClaudeProviders 反映），這裡只需要用 contradiction（不擋啟動）出聲，
+  //   靜默 fallback 回 Gemini、pipeline 跑得動，這裡只需要用 contradiction（不擋啟動）出聲，
   //   不該再額外 fatal 掉 LLM_PROVIDER 本身。
   if (anthropicGateOn && anthropicRouteRequested) {
     // 這個組合下 resolveAgentModel 會靜默 fallback 回 Gemini、只留一行 log。
@@ -231,7 +201,7 @@ export function checkStartupConfig(service: StartupService, env: EnvSnapshot): S
   }
   else if (globalWantsAnthropic) {
     // 同上一支的鏡像：LLM_PROVIDER=anthropic 但總開關沒開，不是「整個 pipeline 跑不了」
-    // （已由上面 requestedNonClaudeProviders 把 gemini 標成需要的 key），只是使用者要的
+    // ，只是使用者要的
     // anthropic 沒有真的生效，值得出聲但不擋啟動。
     contradiction('LLM_PROVIDER', 'LLM_PROVIDER=anthropic，但總開關 AI_PROVIDER 未開到 anthropic（或缺 ANTHROPIC_API_KEY）：resolveAgentModel 會把所有沒有顯式 provider 前綴的 agent 靜默 fallback 回 Gemini，並非整個 pipeline 都跑不動')
   }

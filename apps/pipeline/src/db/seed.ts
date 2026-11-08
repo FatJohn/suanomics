@@ -11,105 +11,40 @@ export interface SeedEntry {
   rssUrl: string
   isActive: boolean
   category: NewsCategory
+  content: 'full' | 'feed-excerpt' | 'title-only'
 }
 
-// ★ 預設 seed policy：下面每一筆的 `isActive` 是**宣告值**。乾淨 clone
-// 跑 `db:seed` 實際寫進 DB 的啟用狀態改由 `main()` 透過 `effectiveEnabled()` 算：
-// 宣告 active 的來源裡，只有落在 `source-policy.ts` `OFFICIAL_SOURCE_DOMAINS`
-// 的官方網域（如 `cbc-press`、`eia`）會照常啟用；其餘商業媒體來源預設停用，
-// 需要設 `SEED_THIRD_PARTY_SOURCES=true` 才會被啟用。理由：這個檔案本身有 23 筆
-// 商業媒體 feed（跨 11 個不同網域；19 是這個檔案與 `seed-external-sources.ts` 合計的
-// distinct 商業網域數，兩邊各自的商業 feed 筆數不是 19），各站有自己的使用條款，
-// 要不要抓、能不能抓由使用者自己確認後再開啟。宣告 `isActive: false`
-// 的來源（壞掉而停用）不受這個 gate 影響，一律維持停用。
+// 每一筆的 feed、條款連結與允許用法記在 docs/sources.md，新增來源要先改那份（seed-sources.test.ts 守）。
+//
+// `isActive` 是宣告值；寫進 DB 的啟用狀態由 `RESOLVED_SEED_GATE` 算：官方網域
+// （`source-policy.ts` 的 `OFFICIAL_SOURCE_DOMAINS`）直接啟用，其餘要設
+// `SEED_THIRD_PARTY_SOURCES=true`。
+//
+// `content` 由各站條款與 robots 決定：
+// - full：可抓正文（政府資料開放授權或公共領域）。
+// - feed-excerpt：只存 feed 給的前言，不抓文章頁（條款僅提供前言，或站方限制抓取頻率）。
+// - title-only：只存標題與連結（ADR 0007，條款禁轉載內容）。
 export const SEED: readonly SeedEntry[] = [
-  { slug: 'cna', displayName: '中央社財經', rssUrl: 'https://feeds.feedburner.com/rsscna/finance', isActive: true, category: 'tw-equity' },
-  { slug: 'google-news-fin', displayName: 'Google News 財經', rssUrl: 'https://news.google.com/rss/search?q=%E5%8F%B0%E8%82%A1+%E8%B2%A1%E7%B6%93&hl=zh-TW&gl=TW&ceid=TW:zh-Hant', isActive: true, category: 'tw-equity' },
-  { slug: 'ltn-business', displayName: '自由時報財經', rssUrl: 'https://news.ltn.com.tw/rss/business.xml', isActive: true, category: 'tw-equity' },
-  // ── 台股出版社來源 ──
-  // ★ 2026-08-28：cnyes／udn／yahoo-stock 三個從 Google News site: 代理換成發行商
-  //   直連 feed。代理的 <link> 指向 news.google.com 的轉址頁，scraper 抓回來的
-  //   content_text 只有錨點 markup（非空、幾百字元，剝掉標記剛好等於標題），所以這三個
-  //   來源合計 11,184 篇對報告的貢獻是**零正文**。三個直連 feed 當天實測：item 全非空、
-  //   pubDate 是當天、且真的跑一次 scrapeArticle 抓得到 547～3,603 字的正文。
-  // ★ slug 保留 `google-news-` 前綴是歷史包袱、不是筆誤：seed 以 slug 為 upsert 鍵，改名
-  //   會新建一列而把舊列留成 active，等於同一個來源被抓兩次。要改名得配一支 migration。
-  { slug: 'google-news-cnyes', displayName: '鉅亨網', rssUrl: 'https://news.cnyes.com/rss/v1/news/category/tw_stock', isActive: true, category: 'tw-equity' },
-  { slug: 'google-news-udn', displayName: '經濟日報', rssUrl: 'https://money.udn.com/rssfeed/news/1001/5591?ch=money', isActive: true, category: 'tw-equity' },
-  { slug: 'google-news-yahoo-stock', displayName: 'Yahoo 股市', rssUrl: 'https://tw.stock.yahoo.com/rss?category=news', isActive: true, category: 'tw-equity' },
-  // ctee 沒有可用的公開 feed，且站方 robots.txt 不允許自動化存取；這一筆只透過
-  // Google News 的搜尋 feed 取得標題與連結，不抓該站的頁面（見 body-fetch-policy.ts）。
-  // ★ 這一點對**所有** `google-news-*` 前綴（及 `bloomberg-markets`／`wsj-markets`）的
-  //   Google News 代理來源同樣成立，不是 ctee 特例：這批來源在 `news-refresh` 的 feed
-  //   層整批跳過抓正文（`isGoogleNewsProxySeed`，見 `refresh.ts`），讀者拿到的一律是
-  //   標題與轉址連結。需要正文請改用發行商自己的公開 feed（上面 cnyes／udn／
-  //   yahoo-stock 是先例），或自行在 `refresh.ts` 的 `resolveArticleTarget`／
-  //   `fetchAndStoreBody` 接上 URL 解析。
-  { slug: 'google-news-ctee', displayName: '工商時報（Google News）', rssUrl: 'https://news.google.com/rss/search?q=site:ctee.com.tw&hl=zh-TW&gl=TW&ceid=TW:zh-Hant', isActive: true, category: 'tw-equity' },
-  // ── 2026-08-28：補有正文的新聞來源 ──
-  // 挑選方式是先量再加，四個判準全部實測過：feed 回得了 200 且 item 非空、
-  // pubDate 是當天、`scrapeArticle` 對它的文章頁抓得到正文、以及**與既有來源不重複**。
-  //
-  // ★ 「同一個 publisher 多開分類」比「找新 publisher」划算得多：這一輪看過的其他
-  //   publisher 都沒有提供可用的公開 feed，而已經有公開 feed 的 host 上還有沒開的分類。
-  //
-  // ★ 加分類前一定要量重疊。cnyes 的 `headline` 與現有 `tw_stock` 重疊 45%、`future`
-  //   與 `headline` 重疊 66%，加了是灌近重複——那正是 2026-07 「近重複灌爆 top-36」
-  //   的成因，後來得靠 story-level 去重與 per-storyline cap 收拾。`wd_stock` 與
-  //   `tw_stock` 重疊 **0%**，所以只加它。money.udn.com 的六個分類兩兩交集只有 1 篇。
-  // 壹蘋是這一輪唯一有規模的新 publisher（250 則/次、正文 3277 字），但財經內容
-  // 調性偏軟，所以 `SOURCE_WEIGHTS` 給 0.9 讓它在選稿時吃虧——素材層寧可先有，
-  // 選稿層再壓。用 `category` 的 `finance` 分類而不是 `latest`：後者是全站混合
-  // （娛樂／生活／國際都在裡面），兩者只重疊 16/250。
-  { slug: 'nextapple-finance', displayName: '壹蘋新聞網財經', rssUrl: 'https://news.nextapple.com/api/rss/category/finance', isActive: true, category: 'tw-equity' },
-  { slug: 'technews', displayName: 'TechNews 科技新報', rssUrl: 'https://technews.tw/feed/', isActive: true, category: 'macro' },
-  { slug: 'cnyes-world', displayName: '鉅亨網國際股市', rssUrl: 'https://news.cnyes.com/rss/v1/news/category/wd_stock', isActive: true, category: 'macro' },
-  // udn 的分類只有數字 ID、channel title 全部一樣是「經濟日報」，所以靠內容認：
-  // 5591（既有）產業個股／5590 台股盤勢與外資／5588 國際財經。刻意不加 5589（中國，
-  // 與 google-news-china 同一個 beat）、5592（綜合、與其他三個混）與 12017（金融財報，
-  // 太窄）——多開一個分類就多一個 udn 佔選稿名額，而來源多樣性是 per-source 判的。
-  { slug: 'udn-markets', displayName: '經濟日報台股', rssUrl: 'https://money.udn.com/rssfeed/news/1001/5590?ch=money', isActive: true, category: 'tw-equity' },
-  { slug: 'udn-global', displayName: '經濟日報國際', rssUrl: 'https://money.udn.com/rssfeed/news/1001/5588?ch=money', isActive: true, category: 'macro' },
-  // ── 總經/國際/能源（reachability 全數驗證通過；繁中 Google News 查詢沿用 google-news-fin pattern）──
-  { slug: 'google-news-us-macro', displayName: '美國總經（Google News）', rssUrl: 'https://news.google.com/rss/search?q=%E7%BE%8E%E5%9C%8B+%E9%80%9A%E8%86%A8+OR+CPI+OR+%E8%81%AF%E6%BA%96%E6%9C%83&hl=zh-TW&gl=TW&ceid=TW:zh-Hant', isActive: true, category: 'macro' },
-  { slug: 'google-news-oil', displayName: '油價能源（Google News）', rssUrl: 'https://news.google.com/rss/search?q=%E6%B2%B9%E5%83%B9+OR+%E5%8E%9F%E6%B2%B9+OR+OPEC&hl=zh-TW&gl=TW&ceid=TW:zh-Hant', isActive: true, category: 'macro' },
-  { slug: 'google-news-cbc', displayName: '央行貨幣政策（Google News）', rssUrl: 'https://news.google.com/rss/search?q=%E5%A4%AE%E8%A1%8C+%E5%88%A9%E7%8E%87+OR+%E8%B2%A8%E5%B9%A3%E6%94%BF%E7%AD%96&hl=zh-TW&gl=TW&ceid=TW:zh-Hant', isActive: true, category: 'macro' },
-  { slug: 'google-news-china', displayName: '中國經濟（Google News）', rssUrl: 'https://news.google.com/rss/search?q=%E4%B8%AD%E5%9C%8B+%E7%B6%93%E6%BF%9F+OR+%E5%87%BA%E5%8F%A3+OR+%E8%A3%BD%E9%80%A0%E6%A5%AD&hl=zh-TW&gl=TW&ceid=TW:zh-Hant', isActive: true, category: 'macro' },
-  { slug: 'eia', displayName: 'U.S. EIA Today in Energy', rssUrl: 'https://www.eia.gov/rss/todayinenergy.xml', isActive: true, category: 'macro' },
-  { slug: 'oilprice', displayName: 'OilPrice.com', rssUrl: 'https://oilprice.com/rss/main', isActive: true, category: 'macro' },
-  { slug: 'cnbc-markets', displayName: 'CNBC Markets', rssUrl: 'https://www.cnbc.com/id/15839135/device/rss/rss.html', isActive: true, category: 'macro' },
-  { slug: 'bloomberg-markets', displayName: 'Bloomberg Markets（Google News proxy）', rssUrl: 'https://news.google.com/rss/search?q=site:bloomberg.com+markets&hl=en', isActive: true, category: 'macro' },
-  { slug: 'wsj-markets', displayName: 'WSJ Markets（Google News proxy）', rssUrl: 'https://news.google.com/rss/search?q=site:wsj.com+markets&hl=en', isActive: true, category: 'macro' },
-  // ── 2026-08-28：一手官方來源（保留席用）──
-  // ★ 這個 slug 同時存在於 `external_sources`（Cascade 檢索與 officialBlock 用同一個 feed）。
-  //   **重複是刻意的**：兩張表是兩套獨立的抓取系統，而重大公告要能當日報主題就必須在
-  //   `news_items` 裡有真的 id——選稿、`selected_news_ids`、analyze job 的 FK、讀者面的
-  //   「看分析」連結全都吃那個 id。一度試過讓公告帶負數 id 直接插進選稿結果，
-  //   獨立複查抓到兩個實際回歸（analyze payload 撞 `.positive()`、
-  //   `getNewsItemsByIds` 用 `inArray` 查不到而讀者面少一則），所以改走這條。
-  // ★ 例行月報一起進池子是可接受的：官方公告用新聞的尺量必然低分（實測最佳名次 206、
-  //   中位 4,197），選不上；真正要出場的那幾則走保留席，不靠排序。
-  { slug: 'cbc-press', displayName: '中央銀行新聞稿', rssUrl: 'https://www.cbc.gov.tw/tw/rss-302-1.xml', isActive: true, category: 'macro' },
-  // ── 全球產業經濟 / 多邊金融（補 2026-06-16 eval 漏題：AI 模型定價、亞開銀/IMF 等；英文 Google News proxy、走 Google IP）──
-  { slug: 'google-news-ai-econ', displayName: 'AI 產業經濟（Google News）', rssUrl: 'https://news.google.com/rss/search?q=AI+model+pricing+OR+OpenAI+OR+inference+cost&hl=en', isActive: true, category: 'macro' },
-  { slug: 'google-news-global-macro-fin', displayName: '全球市場/多邊金融（Google News）', rssUrl: 'https://news.google.com/rss/search?q=emerging+markets+OR+MSCI+OR+IMF+OR+%22Asian+Development+Bank%22&hl=en', isActive: true, category: 'macro' },
-  // ── 2026-09-07：Yahoo 的第二個財經 feed ──
-  // 照本檔「先量再加」的四個判準實測（2026-09-07、本機 IP）：feed 200、30 則 item
-  // description 全非空（中位 241 字）、pubDate 全是當天（最舊 06:41、最新 07:28）。
-  // 文章頁與既有 `google-news-yahoo-stock` 同一個 host（`tw.stock.yahoo.com/news/...`），
-  // 不需要新的抓取設定——對本 feed 的前三則實跑 `scrapeArticle`，3/3 抓到 4145–4476 字正文。
-  //
-  // ★ **重疊是這一列唯一的風險，數字要看著決定**：同一時點抓兩個 feed 比對，
-  //   30 則裡有 9 則 link、11 則標題已經在 `google-news-yahoo-stock` 當下的 50 則窗內
-  //   （30%／37%）。這是**下界**——兩個 feed 的窗長不同，早滾掉或還沒進來的算不到。
-  //   本檔既有的判準線：cnyes `headline` 對 `tw_stock` 重疊 45% 被否決、`wd_stock` 0%
-  //   被採用。這一列落在中間，取捨是「素材層寧可先有、選稿層再壓」，同時靠 category
-  //   分流降低直接互相排擠。
-  // ★ category 取 `macro` 而不是跟 yahoo-stock 一樣的 `tw-equity`：同一份 30 則抽樣裡
-  //   明顯台股題只有 8 則，其餘是國際盤勢、中韓經濟與供應鏈產業題（SK 海力士、XR 出貨、
-  //   歐股）。來源層 category 是候選池的 2-strata 分流，分錯會讓兩個 Yahoo feed 擠同一格。
-  { slug: 'yahoo-finance', displayName: 'Yahoo 財經', rssUrl: 'https://tw.news.yahoo.com/rss/finance', isActive: true, category: 'macro' },
+  // slug 保留 `google-news-` 前綴是歷史包袱：seed 以 slug 為 upsert 鍵，改名會多一列。
+  { slug: 'google-news-cnyes', displayName: '鉅亨網台股', rssUrl: 'https://news.cnyes.com/rss/v1/news/category/tw_stock', isActive: true, category: 'tw-equity', content: 'title-only' },
+  { slug: 'cnyes-world', displayName: '鉅亨網國際股市', rssUrl: 'https://news.cnyes.com/rss/v1/news/category/wd_stock', isActive: true, category: 'macro', content: 'title-only' },
+  { slug: 'cna', displayName: '中央社財經', rssUrl: 'https://feeds.feedburner.com/rsscna/finance', isActive: true, category: 'tw-equity', content: 'feed-excerpt' },
+  { slug: 'cbc-press', displayName: '中央銀行新聞稿', rssUrl: 'https://www.cbc.gov.tw/tw/rss-302-1.xml', isActive: true, category: 'macro', content: 'full' },
+  { slug: 'fsc-press', displayName: '金管會新聞稿', rssUrl: 'https://www.fsc.gov.tw/RSS/Messages?serno=201202290009&language=chinese', isActive: true, category: 'macro', content: 'full' },
+  { slug: 'ey-press', displayName: '行政院新聞', rssUrl: 'https://www.ey.gov.tw/RSS_Content.aspx?ModuleType=3', isActive: true, category: 'macro', content: 'full' },
+  { slug: 'president-news', displayName: '總統府新聞', rssUrl: 'https://www.president.gov.tw/RSSNEWS.aspx', isActive: true, category: 'macro', content: 'full' },
+  { slug: 'mofa-press', displayName: '外交部新聞稿', rssUrl: 'https://www.mofa.gov.tw/OpenData.aspx?SN=E0AB271EE713F7E8', isActive: true, category: 'macro', content: 'full' },
+  { slug: 'cdc-press', displayName: '疾管署新聞稿', rssUrl: 'https://www.cdc.gov.tw/RSS/RssXml/Hh094B49-DRwe2RR4eFfrQ?type=1', isActive: true, category: 'macro', content: 'full' },
+  { slug: 'fed-press', displayName: '聯準會新聞稿', rssUrl: 'https://www.federalreserve.gov/feeds/press_all.xml', isActive: true, category: 'macro', content: 'full' },
+  { slug: 'whitehouse-news', displayName: '白宮新聞', rssUrl: 'https://www.whitehouse.gov/news/feed/', isActive: true, category: 'macro', content: 'full' },
+  // robots 宣告 crawl-delay 5 秒，併發抓文章頁會違反，所以只用 feed。
+  { slug: 'state-press', displayName: '美國國務院新聞稿', rssUrl: 'https://www.state.gov/rss-feed/press-releases/feed/', isActive: true, category: 'macro', content: 'feed-excerpt' },
+  // robots 宣告 Request-rate 1/60，同上。
+  { slug: 'gdacs', displayName: 'GDACS 全球災害警報', rssUrl: 'https://www.gdacs.org/xml/rss.xml', isActive: true, category: 'macro', content: 'feed-excerpt' },
 ]
+
+export const NO_BODY_FETCH_SLUGS: readonly string[] = SEED.filter(s => s.content !== 'full').map(s => s.slug)
+export const EXCERPT_STRIPPED_SLUGS: readonly string[] = SEED.filter(s => s.content === 'title-only').map(s => s.slug)
 
 /**
  * 這個來源是不是 Google News 代理（feed 是 news.google.com 的搜尋結果）。
@@ -178,7 +113,33 @@ export const ACCEPTED_ZERO_USABLE_NEWS_SLUGS: readonly string[] = Object.freeze(
  *   但 title／link／description 全空、pubDate 是 `Thu, 01 Jan 1970`。它零篇的真正
  *   原因是這個——**「200」判不出這件事**。
  */
-export const RETIRED_SLUGS: readonly string[] = Object.freeze(['anue', 'tvbs', 'udn-money'])
+export const RETIRED_SLUGS: readonly string[] = Object.freeze([
+  'anue',
+  'tvbs',
+  'udn-money',
+  // 2026-11-08（#24）：Google News 代理移除；其餘來源條款或 robots 不允許本用途，理由見 docs/sources.md。
+  'google-news-fin',
+  'google-news-udn',
+  'google-news-yahoo-stock',
+  'google-news-ctee',
+  'google-news-us-macro',
+  'google-news-oil',
+  'google-news-cbc',
+  'google-news-china',
+  'google-news-ai-econ',
+  'google-news-global-macro-fin',
+  'bloomberg-markets',
+  'wsj-markets',
+  'ltn-business',
+  'nextapple-finance',
+  'technews',
+  'udn-markets',
+  'udn-global',
+  'eia',
+  'oilprice',
+  'cnbc-markets',
+  'yahoo-finance',
+])
 
 // `SEED_THIRD_PARTY_SOURCES` 在 module 頂層讀一次（`db:seed` 的 tsx CLI 用
 // `--env-file-if-exists` 在 import 前就把 .env 載好，所以這裡讀到的跟原本在

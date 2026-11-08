@@ -60,7 +60,7 @@ pnpm workspace 三個成員：
 
 ## LLM 呼叫層
 
-所有 LLM 呼叫走 Vercel AI SDK 的 `generateText` 加 `Output.object({ schema })`。provider 目前只接 `@ai-sdk/anthropic`。不引入 agent 框架，決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。
+所有 LLM 呼叫走 Vercel AI SDK 的 `generateText` 加 `Output.object({ schema })`。provider 只接 `@ai-sdk/anthropic`。不引入 agent 框架，決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。
 
 每個 agent 用哪家哪個 model 由 `apps/pipeline/src/agents/models.ts` 的對照表決定，具體型號以那裡為準，環境變數 `AGENT_MODELS` 可逐 agent 覆寫：
 
@@ -70,7 +70,7 @@ pnpm workspace 三個成員：
 | 分析與綜合 | 能力較高的等級 | decomposer、analyst-tier1、analyst-tier2、synthesizer、editor、viewpoints-debate、narrative-writer、podcast-writer |
 | 品質評審（judge） | 與分析綜合同等級 | brief-judge、brief-quality-judge、brief-continuity-judge |
 
-judge 用不同家族的 model 可避免同家族評自己的輸出；目前全部用 Anthropic，是否換家族在接回 judge 時（#33）決定。system prompt 透過 `providerOptions.anthropic.cacheControl` 開 prompt caching。
+judge 用不同家族的 model 可避免同家族評自己的輸出；全部用 Anthropic，是否換家族在接回 judge 時（#33）決定。system prompt 透過 `providerOptions.anthropic.cacheControl` 開 prompt caching。
 
 ## 資料來源
 
@@ -78,10 +78,8 @@ judge 用不同家族的 model 可避免同家族評自己的輸出；目前全�
 
 | 類型 | 來源 | 用法 |
 |---|---|---|
-| 官方機構新聞稿 | 央行、金管會、行政院、總統府、外交部、TWSE、聯準會、EIA、白宮、美國國務院等 RSS | 標題、正文、連結 |
-| 發行商自有 feed | cnyes、yahoo-stock 等公開 RSS；聯合報系條款禁止 AI 用途，v1 不用；v1 沒有需要 RSSHub 的來源，日後需要時在 Actions job 內自架 | 標題、連結；正文依該站條款 |
-| 國際通訊社 | BBC、Al Jazeera 的 RSS；NHK World 沒有官方英文新聞 RSS，用法未決 | 只取標題與連結 |
-| 科技產業 | TechNews 科技新報 RSS | 標題、正文、連結 |
+| 官方機構新聞稿 | 央行、金管會、行政院、總統府、外交部、疾管署、聯準會、白宮、美國國務院等 RSS，GDACS 災害警報 | 標題、正文、連結；條款或 robots 限制時只用 feed 內容 |
+| 發行商自有 feed | 鉅亨網、中央社的公開 RSS；條款禁止或 robots 封鎖本用途的媒體不接，逐項理由見 `docs/sources.md`；v1 沒有需要 RSSHub 的來源，日後需要時在 Actions job 內自架 | 標題、連結；前言依該站條款 |
 | 結構化資料 | TWSE OpenAPI（新聞列表、MI_INDEX、外資持股、融資融券）、公開資訊觀測站重大訊息（TWSE／TPEx OpenAPI）、FRED、EIA、台美經濟日曆 | 數字與事件 |
 
 正文抽取在 pipeline 內用 Readability 類函式庫完成；抽不到的頁面才落到 Firecrawl 免費層。新聞進來先由 `news-categorizer` 分成六類——總經、地緣、產業、能源、天災公衛、其他——選稿時每類有保底名額，避免財經版獨佔。

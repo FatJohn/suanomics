@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { XMLParser } from 'fast-xml-parser'
+import { NEWS_FETCH_USER_AGENT } from './scraper.js'
 
 export interface ParsedEntry {
   externalId: string
@@ -62,7 +63,7 @@ export function parseRssXml(xml: string): ParsedEntry[] {
   return items
     .filter((it): it is RawItem => typeof it === 'object' && it !== null)
     .map((it) => {
-      const url = asString(it.link).trim()
+      const url = asString(it.link).trim().replace(/&amp;/g, '&')
       const guid = extractGuid(it)
       const externalId = guid ?? (url ? hashUrl(url) : '')
       const pubStr = asString(it.pubDate)
@@ -90,13 +91,14 @@ export function dedupByExternalId(entries: readonly ParsedEntry[]): ParsedEntry[
   return out
 }
 
-export async function fetchRss(url: string, timeoutMs = 10_000): Promise<string> {
+// 外交部 feed 約 3.6 MB，實測 10 秒內讀不完。
+export async function fetchRss(url: string, timeoutMs = 30_000): Promise<string> {
   const ctl = new AbortController()
   const timer = setTimeout(() => ctl.abort(), timeoutMs)
   try {
-    const res = await fetch(url, { signal: ctl.signal })
+    const res = await fetch(url, { signal: ctl.signal, headers: { 'user-agent': NEWS_FETCH_USER_AGENT } })
     if (!res.ok)
-      throw new Error(`RSS ${url} HTTP ${res.status}`)
+      throw Object.assign(new Error(`RSS ${url} HTTP ${res.status}`), { status: res.status })
     return await res.text()
   }
   finally { clearTimeout(timer) }

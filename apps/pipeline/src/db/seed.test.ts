@@ -19,15 +19,6 @@ describe('news_sources SEED', () => {
       expect(s.rssUrl.length, `${s.slug} rssUrl 空`).toBeGreaterThan(0)
   })
 
-  it('包含繁中總經 Google News 查詢來源且 active', () => {
-    const macroSlugs = ['google-news-us-macro', 'google-news-oil', 'google-news-cbc', 'google-news-china']
-    for (const slug of macroSlugs) {
-      const entry = SEED.find(s => s.slug === slug)
-      expect(entry, `缺 macro 來源 ${slug}`).toBeDefined()
-      expect(entry?.isActive, `${slug} 應 active`).toBe(true)
-    }
-  })
-
   it('sEED 至少 10 筆（原 6 + 新增 ≥ 4）', () => {
     expect(SEED.length).toBeGreaterThanOrEqual(10)
   })
@@ -40,48 +31,6 @@ describe('news_sources SEED', () => {
   it('sEED 內每一筆都是 active（不現役的請進 RETIRED_SLUGS）', () => {
     for (const s of SEED)
       expect(s.isActive, `${s.slug} 在 SEED 裡卻是 inactive`).toBe(true)
-  })
-
-  // ★ 這三個是 2026-08-28 換掉的：原本走 Google News site: 代理、content_text
-  // 只有錨點 markup，換成發行商直連 feed 之後 link 指向真網址、scraper 才抓得到正文。
-  // 寫死 host 是為了讓「手滑改回代理」這件事在測試層就紅——換回去等於偷偷把它們
-  // 加進 ACCEPTED_ZERO_USABLE_NEWS_SLUGS 的豁免名單。
-  it('三個台股出版社來源是直連發行商、不是 Google News 代理', () => {
-    const expected: Record<string, string> = {
-      'google-news-udn': 'money.udn.com',
-      'google-news-yahoo-stock': 'tw.stock.yahoo.com',
-      'google-news-cnyes': 'news.cnyes.com',
-    }
-    for (const [slug, host] of Object.entries(expected)) {
-      const entry = SEED.find(s => s.slug === slug)
-      expect(entry, `缺台股來源 ${slug}`).toBeDefined()
-      if (entry === undefined)
-        continue
-      expect(entry.isActive, `${slug} 應 active`).toBe(true)
-      expect(new URL(entry.rssUrl).host, `${slug} 應直連 ${host}`).toBe(host)
-      expect(isGoogleNewsProxySeed(entry), `${slug} 不該是代理`).toBe(false)
-    }
-  })
-
-  // ★ 2026-08-28 補進來的來源。寫死 host 的理由同上：這幾個都是實測過
-  // 「feed 活著＋scraper 抓得到正文」才加的，被改成別的 host 等於推翻那個實測。
-  it('補進來的新聞來源都是直連、且 active', () => {
-    const expected: Record<string, string> = {
-      'nextapple-finance': 'news.nextapple.com',
-      'technews': 'technews.tw',
-      'cnyes-world': 'news.cnyes.com',
-      'udn-markets': 'money.udn.com',
-      'udn-global': 'money.udn.com',
-    }
-    for (const [slug, host] of Object.entries(expected)) {
-      const entry = SEED.find(s => s.slug === slug)
-      expect(entry, `缺來源 ${slug}`).toBeDefined()
-      if (entry === undefined)
-        continue
-      expect(entry.isActive, `${slug} 應 active`).toBe(true)
-      expect(new URL(entry.rssUrl).host, `${slug} 應直連 ${host}`).toBe(host)
-      expect(isGoogleNewsProxySeed(entry), `${slug} 不該是代理`).toBe(false)
-    }
   })
 
   // ★ 同一個 host 開多個分類時，分類參數必須真的不一樣——複製貼上少改一個數字，
@@ -100,11 +49,15 @@ describe('news_sources SEED', () => {
     }
   })
 
-  // ctee 沒有可用的公開 feed，且站方 robots.txt 不允許自動化存取，所以仍走代理。
-  it('google-news-ctee 仍是代理（直連 feed 未解）', () => {
-    const entry = SEED.find(s => s.slug === 'google-news-ctee')
-    expect(entry?.isActive).toBe(true)
-    expect(entry && isGoogleNewsProxySeed(entry)).toBe(true)
+  it('沒有 Google News 代理', () => {
+    expect(SEED.filter(s => isGoogleNewsProxySeed(s)).map(s => s.slug)).toEqual([])
+  })
+
+  it('條款限制的來源不抓正文', () => {
+    const find = (slug: string) => SEED.find(s => s.slug === slug)?.content
+    expect(find('google-news-cnyes')).toBe('title-only')
+    expect(find('cna')).toBe('feed-excerpt')
+    expect(find('cbc-press')).toBe('full')
   })
 
   it('每筆都有合法 category（tw-equity | macro）', () => {
@@ -117,19 +70,14 @@ describe('news_sources SEED', () => {
     const find = (slug: string) => SEED.find(s => s.slug === slug)
     expect(find('cna')?.category).toBe('tw-equity')
     expect(find('google-news-cnyes')?.category).toBe('tw-equity')
-    expect(find('eia')?.category).toBe('macro')
-    expect(find('google-news-us-macro')?.category).toBe('macro')
+    expect(find('fed-press')?.category).toBe('macro')
   })
 })
 
 describe('isGoogleNewsProxySeed', () => {
   it('依 rss_url 的 host 判定，不看 slug 也不看 displayName', () => {
-    // bloomberg-markets / wsj-markets 的 slug 與 displayName 都看不出是代理，
-    // 但它們的 feed 是 news.google.com/rss/search?q=site:...——用 slug 猜會漏掉。
-    const bloomberg = SEED.find(s => s.slug === 'bloomberg-markets')
-    expect(bloomberg && isGoogleNewsProxySeed(bloomberg)).toBe(true)
-    const ltn = SEED.find(s => s.slug === 'ltn-business')
-    expect(ltn && isGoogleNewsProxySeed(ltn)).toBe(false)
+    expect(isGoogleNewsProxySeed({ rssUrl: 'https://news.google.com/rss/search?q=site:x' })).toBe(true)
+    expect(isGoogleNewsProxySeed({ rssUrl: 'https://news.cnyes.com/rss' })).toBe(false)
   })
 
   it('壞掉的 rss_url 回 false 而不是拋', () => {
@@ -180,8 +128,9 @@ describe('aCCEPTED_ZERO_USABLE_NEWS_SLUGS', () => {
 // 刪掉陣列裡那一列等於把 DB 的狀態凍結在當下——本機 DB 的 anue 與 udn-money
 // 在退役之前都還是 is_active = t，光刪陣列它們會繼續被抓。
 describe('rETIRED_SLUGS', () => {
-  it('涵蓋 2026-08-28 清掉的三個死設定', () => {
-    expect([...RETIRED_SLUGS].sort()).toEqual(['anue', 'tvbs', 'udn-money'])
+  it('涵蓋 Google News 代理與條款不允許的來源', () => {
+    for (const slug of ['anue', 'google-news-fin', 'technews', 'eia', 'yahoo-finance'])
+      expect(RETIRED_SLUGS).toContain(slug)
   })
 
   it('與 SEED 的 slug 沒有交集', () => {

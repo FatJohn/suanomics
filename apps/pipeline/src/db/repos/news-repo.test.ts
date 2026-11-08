@@ -135,16 +135,16 @@ describe('getStratifiedCandidates', () => {
 
   it('每類取最近 N 則、高產量類別不灌爆另一類', async () => {
     const tweId = await sourceIdForSlug('cna') // tw-equity
-    const macroId = await sourceIdForSlug('eia') // macro
+    const macroId = await sourceIdForSlug('fed-press') // macro
     await insertStratItems(tweId, `${STRAT_PREFIX}twe`, 6) // 高產量、6 > cap 4
     await insertStratItems(macroId, `${STRAT_PREFIX}macro`, 2) // 稀疏
 
     const result = await getStratifiedCandidates(todayIso(), 2, 4)
     const ours = result.filter(c => c.title.startsWith(STRAT_PREFIX))
 
-    expect(ours.filter(c => c.category === 'tw-equity-other').length).toBe(4) // 6 → capped 4（null category 退來源層→tw-equity-other）
+    expect(ours.filter(c => c.category === 'industry').length).toBe(4) // 6 → capped 4（null category 退來源層→industry）
     expect(ours.filter(c => c.category === 'macro').length).toBe(2) // 不足 4 取全部、沒被灌爆
-    expect(ours[0]?.category).toMatch(/tw-equity-other|macro/)
+    expect(ours[0]?.category).toMatch(/industry|macro/)
     expect(ours[0]?.contentText).toContain('body')
   })
 })
@@ -201,7 +201,7 @@ describe('selectNewsForBrief（fallback 分層）', () => {
 
   it('高產量類別在 fallback 路徑被 cap 在 3、不灌爆', async () => {
     const tweId = await sourceIdForSlug('cna')
-    const macroId = await sourceIdForSlug('eia')
+    const macroId = await sourceIdForSlug('fed-press')
     await insertStratItems(tweId, `${STRAT_PREFIX}fb-twe`, 7) // 高產量類別、7 > 4
     await insertStratItems(macroId, `${STRAT_PREFIX}fb-macro`, 2) // 稀疏類別
 

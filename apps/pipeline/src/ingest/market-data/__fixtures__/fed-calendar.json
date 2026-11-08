@@ -1,0 +1,65 @@
+{
+  "events": [
+    {
+      "description": "&lt;p&gt;Two-day meeting, December 8 - 9&lt;/p&gt;&#10;&#10;&lt;p&gt;Press Conference&lt;/p&gt;",
+      "title": "FOMC Meeting",
+      "time": "2:00 p.m.",
+      "month": "2026-12",
+      "days": "9",
+      "type": "FOMC"
+    },
+    {
+      "description": "&lt;p&gt;Two-day meeting, October 27 - 28&lt;/p&gt;&#10;&#10;&lt;p&gt;Press Conference&lt;/p&gt;",
+      "title": "FOMC Meeting",
+      "time": "2:00 p.m.",
+      "month": "2026-10",
+      "days": "28",
+      "type": "FOMC"
+    },
+    {
+      "description": "&lt;p&gt;Meeting of December 8-9&lt;/p&gt;",
+      "title": "FOMC Minutes",
+      "time": "2:00 p.m.",
+      "month": "2026-12",
+      "days": "30",
+      "type": "FOMC"
+    },
+    {
+      "description": "New Technology, Old Questions: Assessing Productivity Puzzles and Their Implications for Macroeconomic Activity",
+      "live": "https://cvent.me/8AmwNV",
+      "location": "At the University of California San Diego Economics Roundtable, La Jolla, Calif.",
+      "title": "Speech - Vice Chair Philip N. Jefferson",
+      "time": "7:00 p.m.",
+      "month": "2026-11",
+      "days": "13",
+      "type": "Speeches"
+    },
+    {
+      "title": "Z.1 - Financial Accounts of the United States",
+      "time": "12:00 p.m.",
+      "month": "2026-01",
+      "days": "9",
+      "type": "Stat"
+    },
+    {
+      "description": "Responsible Innovation and Financial Inclusion",
+      "live": "https://www.federalreserve.gov",
+      "location": "At the Federal Reserve Board Annual Financial Inclusion Conference, Washington, D.C. (via pre-recorded video)",
+      "link": "https://www.federalreserve.gov/conferences/next-gen-financial-inclusion.htm",
+      "title": "Speech - Vice Chair for Supervision Michelle W. Bowman",
+      "time": "2:55 p.m.",
+      "month": "2026-07",
+      "days": "14",
+      "type": "Speeches"
+    }
+  ],
+  "announcement": [
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed Tuesday, January 27, due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all releases as scheduled, including statistical publications.&lt;/p&gt;&#10;&#10;&lt;p&gt;The Federal Open Market Committee will meet as planned on Tuesday, January 27 and Wednesday, January 28. The FOMC statement will be released as scheduled at 2 p.m. EST, and the Chair&#39;s news conference will start at 2:30 p.m. EST on January 28.&lt;/p&gt;",
+      "month": "2026-01",
+      "day": "27",
+      "type": "other"
+    },
+    {}
+  ]
+}

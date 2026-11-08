@@ -1,4 +1,6 @@
+import { FORBIDDEN_PHRASES } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
+import { ITEM_CATEGORIES, ITEM_CATEGORY_LABEL } from '../db/news-categories.js'
 import { EDITOR_SYSTEM_PROMPT } from './editor.prompt.js'
 
 describe('editor system prompt', () => {
@@ -17,16 +19,20 @@ describe('editor system prompt', () => {
   })
 })
 
-describe('editor system prompt 5-way balance', () => {
-  it('lists all 5 item category labels', () => {
-    for (const label of ['科技半導體', '台股其他', '總經', '能源', '國際'])
-      expect(EDITOR_SYSTEM_PROMPT).toContain(label)
+describe('editor system prompt 6-way balance', () => {
+  it('lists all 6 item category labels', () => {
+    for (const label of ITEM_CATEGORIES.map(c => ITEM_CATEGORY_LABEL[c]))
+      expect(EDITOR_SYSTEM_PROMPT).toContain(`[${label}]`)
+  })
+  it('帶入 shared 的 compliance 禁用語清單', () => {
+    for (const phrase of FORBIDDEN_PHRASES)
+      expect(EDITOR_SYSTEM_PROMPT).toContain(phrase)
   })
 })
 
 describe('editor system prompt 降半導體 over-rotation', () => {
   it('拔掉半導體預設優先字眼', () => {
-    expect(EDITOR_SYSTEM_PROMPT).not.toContain('科技半導體對台灣投資人影響最直接、優先')
+    expect(EDITOR_SYSTEM_PROMPT).not.toContain('半導體對台灣投資人影響最直接、優先')
   })
 
   it('加入抗 over-rotation 與廣度指引', () => {

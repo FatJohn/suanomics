@@ -122,7 +122,7 @@ describe('官方 slug 窮舉（防清單腐爛）', () => {
       .filter(s => s.isActive && effectiveEnabled([s.rssUrl], s.isActive, false))
       .map(s => s.slug)
       .sort()
-    expect(official).toEqual(['cbc-press', 'eia'])
+    expect(official).toEqual(['cbc-press', 'cdc-press', 'ey-press', 'fed-press', 'fsc-press', 'gdacs', 'mofa-press', 'president-news', 'state-press', 'whitehouse-news'])
   })
 
   it('seed-external-sources.ts：導出的官方 slug 集合等於預期清單', () => {
@@ -133,7 +133,6 @@ describe('官方 slug 窮舉（防清單腐爛）', () => {
     expect(official).toEqual([
       'cbc-press',
       'ey-press',
-      'eia',
       'fomc-statements',
       'fsc-news',
       'twse-announcements',
@@ -154,22 +153,20 @@ describe('官方 slug 窮舉（防清單腐爛）', () => {
 // `applySeedGate`，就是為了讓這個 mutation 真的會被 import 觸發到——`optIn` 現在是
 // module 頂層的 binding，不再藏在只有連 DB 才會執行到的 `main()` / CLI guard 裡面。
 describe('第三方來源 gate 的實際套用結果（RESOLVED_SEED_GATE / RESOLVED_EXTERNAL_SOURCES_GATE）', () => {
-  it('news_sources：預設（optIn=false）剛好 2 筆會被啟用，且是 cbc-press / eia', () => {
+  it('news_sources：預設（optIn=false）只有官方來源會被啟用', () => {
     const enabledSlugs = RESOLVED_SEED_GATE.gated
       .filter(g => g.resolvedEnabled)
       .map(g => g.entry.slug)
       .sort()
-    expect(enabledSlugs).toEqual(['cbc-press', 'eia'])
+    expect(enabledSlugs).toEqual(['cbc-press', 'cdc-press', 'ey-press', 'fed-press', 'fsc-press', 'gdacs', 'mofa-press', 'president-news', 'state-press', 'whitehouse-news'])
   })
 
-  it('news_sources：25 筆全宣告 active，其中 23 筆被 withhold、2 筆官方放行', () => {
-    // SEED 目前全部宣告 isActive:true，扣掉官方的 2 筆，其餘 23 筆在 optIn=false 時
-    // 應該全數進 withheldSlugs。
-    expect(SEED.length).toBe(25)
-    expect(RESOLVED_SEED_GATE.withheldSlugs).toHaveLength(23)
+  it('news_sources：13 筆全宣告 active，其中 3 筆發行商被 withhold', () => {
+    expect(SEED.length).toBe(13)
+    expect([...RESOLVED_SEED_GATE.withheldSlugs].sort()).toEqual(['cna', 'cnyes-world', 'google-news-cnyes'])
   })
 
-  it('external_sources：預設（optIn=false）剛好 8 筆會被啟用，且等於官方 slug 清單', () => {
+  it('external_sources：預設（optIn=false）剛好 7 筆會被啟用，且等於官方 slug 清單', () => {
     const enabledSlugs = RESOLVED_EXTERNAL_SOURCES_GATE.gated
       .filter(g => g.resolvedEnabled)
       .map(g => g.entry.slug)
@@ -177,7 +174,6 @@ describe('第三方來源 gate 的實際套用結果（RESOLVED_SEED_GATE / RESO
     expect(enabledSlugs).toEqual([
       'cbc-press',
       'ey-press',
-      'eia',
       'fomc-statements',
       'fsc-news',
       'twse-announcements',
@@ -186,28 +182,24 @@ describe('第三方來源 gate 的實際套用結果（RESOLVED_SEED_GATE / RESO
     ].sort())
   })
 
-  it('external_sources：預設（optIn=false）有 18 筆被 withhold，且不含 declared-false 那 4 筆', () => {
-    expect(RESOLVED_EXTERNAL_SOURCES_GATE.withheldSlugs).toHaveLength(18)
-    for (const retiredSlug of ['moneydj', 'udn-money', 'commercial-times', 'udn-main'])
-      expect(RESOLVED_EXTERNAL_SOURCES_GATE.withheldSlugs, retiredSlug).not.toContain(retiredSlug)
+  it('external_sources：預設（optIn=false）只有 cna-politics 被 withhold', () => {
+    expect(RESOLVED_EXTERNAL_SOURCES_GATE.withheldSlugs).toEqual(['cna-politics'])
   })
 
   // optIn=true 不是 module 頂層的常態（頂層的 RESOLVED_*_GATE 讀的是實際 env），
   // 這裡直接呼叫 applySeedGate 驗證「開了 optIn 之後」的最終筆數。
-  it('news_sources：optIn=true → 25 筆全數啟用', () => {
+  it('news_sources：optIn=true → 13 筆全數啟用', () => {
     const { gated } = applySeedGate(SEED, true, s => ({ slug: s.slug, urls: [s.rssUrl], declared: s.isActive }))
-    expect(gated.filter(g => g.resolvedEnabled)).toHaveLength(25)
+    expect(gated.filter(g => g.resolvedEnabled)).toHaveLength(13)
   })
 
-  it('external_sources：optIn=true → 26 筆啟用（4 筆 declared-false 仍維持停用）', () => {
+  it('external_sources：optIn=true → 8 筆全數啟用', () => {
     const { gated } = applySeedGate(
       EXTERNAL_SOURCES_SEED,
       true,
       s => ({ slug: s.slug, urls: collectHttpUrls(s.config), declared: s.enabled ?? true }),
     )
-    expect(gated.filter(g => g.resolvedEnabled)).toHaveLength(26)
-    const stillDisabled = gated.filter(g => !g.resolvedEnabled).map(g => g.entry.slug).sort()
-    expect(stillDisabled).toEqual(['commercial-times', 'moneydj', 'udn-main', 'udn-money'].sort())
+    expect(gated.filter(g => g.resolvedEnabled)).toHaveLength(8)
   })
 })
 

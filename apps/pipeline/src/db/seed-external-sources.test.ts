@@ -7,10 +7,10 @@ describe('eXTERNAL_SOURCES_SEED', () => {
       expect(() => ExternalSourceSeedSchema.parse(src)).not.toThrow()
   })
 
-  it('恰有 25 個 Tier 1 + 5 個 Tier 2（含 15 個跨域 source）', () => {
+  it('恰有 3 個 Tier 1 + 5 個 Tier 2', () => {
     const t1 = EXTERNAL_SOURCES_SEED.filter(s => s.tier === 1)
     const t2 = EXTERNAL_SOURCES_SEED.filter(s => s.tier === 2)
-    expect(t1).toHaveLength(25)
+    expect(t1).toHaveLength(3)
     expect(t2).toHaveLength(5)
   })
 
@@ -41,13 +41,9 @@ describe('eXTERNAL_SOURCES_SEED', () => {
     }
 
     // 問題 ①：代理來源的 citation 是 news.google.com 不透明轉址，讀者點不到原文。
-    it.each(['bloomberg-markets', 'whitehouse-statements'])('%s 已改直連官方 feed、不得再走 Google News 代理', (slug) => {
+    it.each(['whitehouse-statements'])('%s 已改直連官方 feed、不得再走 Google News 代理', (slug) => {
       const host = new URL(feedUrlOf(slug)).host
       expect(host).not.toBe('news.google.com')
-    })
-
-    it('bloomberg-markets 指向 bloomberg.com 官方 feed', () => {
-      expect(new URL(feedUrlOf('bloomberg-markets')).host).toBe('www.bloomberg.com')
     })
 
     it('whitehouse-statements 指向 whitehouse.gov 官方 feed', () => {
@@ -61,36 +57,12 @@ describe('eXTERNAL_SOURCES_SEED', () => {
       expect(s?.config).toHaveProperty('feedUrl')
       expect(s?.config).toHaveProperty('format')
     })
-
-    // 問題 ⑤ 後半：三個台灣財經 RSS 各自獨立壞掉（棄用路徑／失效子分類代碼／空殼產生器）。
-    // 釘住已驗證的替代路徑，避免改回原本那三個回 200 卻沒有內容的網址。
-    it('liberty-finance 走 news. 子網域（ec. 的 RSS 路徑已棄用、回 HTML 錯誤頁）', () => {
-      expect(feedUrlOf('liberty-finance')).toBe('https://news.ltn.com.tw/rss/business.xml')
-    })
-
-    it('udn-money 不帶已失效的子分類代碼 7240/7241（回合法 XML 但 items=0）', () => {
-      const url = feedUrlOf('udn-money')
-      expect(url).toBe('https://money.udn.com/rssfeed/news/1001?ch=money')
-      expect(url).not.toContain('7240')
-    })
-
-    it('udn-main 走 /news/rssfeed/（舊 /rssfeed/news/2/0/ 回空殼、pubDate 1970）', () => {
-      expect(feedUrlOf('udn-main')).toBe('https://udn.com/news/rssfeed/')
-    })
   })
 
   describe('停用的來源', () => {
-    it('udn-money / udn-main 標成 enabled: false', () => {
-      for (const slug of ['udn-money', 'udn-main']) {
-        const src = EXTERNAL_SOURCES_SEED.find(s => s.slug === slug)
-        expect(src, slug).toBeDefined()
-        expect(src?.enabled, slug).toBe(false)
-      }
-    })
-
     it('其餘來源不帶 enabled（＝預設啟用），停用是明示的例外', () => {
       const disabled = EXTERNAL_SOURCES_SEED.filter(s => s.enabled === false).map(s => s.slug).sort()
-      expect(disabled).toEqual(['commercial-times', 'moneydj', 'udn-main', 'udn-money'])
+      expect(disabled).toEqual([])
     })
 
     // 這條是 forcing function：getSourceActivity 只看 enabled=true，所以停用來源留在
@@ -156,14 +128,11 @@ describe('eXTERNAL_SOURCES_SEED', () => {
       })).toBe(false)
     })
 
-    it('清單就是 seed 裡所有 Google News 代理，2026-08-21 實測 7 個各自 100% 錨點 excerpt', () => {
-      expect([...AGGREGATOR_PROXY_SLUGS].sort()).toEqual(
-        ['brookings', 'csis', 'iea', 'isw', 'reuters-biz', 'reuters-world', 'wsj-markets'],
-      )
+    it('seed 已沒有 Google News 代理', () => {
+      expect(AGGREGATOR_PROXY_SLUGS).toEqual([])
     })
 
-    it('★ 改直連的兩個不在清單裡——它們的 url 現在是真實網域、可以引用', () => {
-      expect(AGGREGATOR_PROXY_SLUGS).not.toContain('bloomberg-markets')
+    it('★ 改直連的不在清單裡——它們的 url 現在是真實網域、可以引用', () => {
       expect(AGGREGATOR_PROXY_SLUGS).not.toContain('whitehouse-statements')
     })
 

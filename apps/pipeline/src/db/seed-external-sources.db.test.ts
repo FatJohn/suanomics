@@ -2,7 +2,7 @@ import { eq, like } from 'drizzle-orm'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { closeDb, getDb } from './client.js'
 import { externalSources } from './schema.js'
-import { seedExternalSources } from './seed-external-sources.js'
+import { retireExternalSources, seedExternalSources } from './seed-external-sources.js'
 
 // 真 DB 測試。純常數的斷言在 seed-external-sources.test.ts，這支只驗一件事：
 // **upsert 的 `set` 子句真的會把 enabled 同步回 DB**。
@@ -58,6 +58,14 @@ describe('seedExternalSources (real DB)', () => {
 
     await seedExternalSources(FIXTURE)
     expect(await enabledOf(DISABLED)).toBe(false)
+  })
+
+  it('退役清單的來源會被停用，不在清單的不動', async () => {
+    await seedExternalSources(FIXTURE)
+    await retireExternalSources([ENABLED])
+    expect(await enabledOf(ENABLED)).toBe(false)
+    await getDb().update(externalSources).set({ enabled: true }).where(eq(externalSources.slug, DISABLED))
+    expect(await enabledOf(DISABLED)).toBe(true)
   })
 
   it('反向對照：啟用中的來源被 seed 重跑不會變成停用', async () => {

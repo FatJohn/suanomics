@@ -10,12 +10,17 @@ import process from 'node:process'
 /** 以公開發佈為目的的官方來源網域。 */
 export const OFFICIAL_SOURCE_DOMAINS: readonly string[] = [
   'cbc.gov.tw',
+  'cdc.gov.tw',
   'eia.gov',
   'ey.gov.tw',
   'federalreserve.gov',
   'fsc.gov.tw',
+  'gdacs.org',
+  'mofa.gov.tw',
   'mops.twse.com.tw',
   'openapi.twse.com.tw',
+  'president.gov.tw',
+  'state.gov',
   'whitehouse.gov',
 ]
 
