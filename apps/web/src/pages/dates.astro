@@ -1,0 +1,13 @@
+---
+import Base from '../layouts/Base.astro'
+import { getSiteData } from '../lib/site-data'
+
+const { briefs } = await getSiteData()
+---
+
+<Base title="歷史日期">
+  <h1 class="my-2 text-2xl font-bold">歷史日期</h1>
+  <ul>
+    {briefs.map(b => <li><a class="underline" href={`/d/${b.date}`}>{b.date}</a> {b.headline}</li>)}
+  </ul>
+</Base>

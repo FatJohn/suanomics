@@ -1,16 +1,12 @@
 ---
-import { pageTitle } from '../lib/title'
+import BriefArticle from '../components/BriefArticle.astro'
+import Base from '../layouts/Base.astro'
+import { getSiteData } from '../lib/site-data'
 
-const title = pageTitle()
+const { briefs } = await getSiteData()
+const latest = briefs[0]
 ---
 
-<html lang="zh-Hant-TW">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-  </head>
-  <body>
-    <h1>{title}</h1>
-  </body>
-</html>
+<Base>
+  {latest ? <BriefArticle brief={latest} /> : <p>目前還沒有報告。</p>}
+</Base>
