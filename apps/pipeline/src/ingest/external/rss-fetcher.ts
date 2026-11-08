@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { XMLParser } from 'fast-xml-parser'
+import { NEWS_FETCH_USER_AGENT } from './scraper.js'
 
 export interface ParsedEntry {
   externalId: string
@@ -94,9 +95,9 @@ export async function fetchRss(url: string, timeoutMs = 10_000): Promise<string>
   const ctl = new AbortController()
   const timer = setTimeout(() => ctl.abort(), timeoutMs)
   try {
-    const res = await fetch(url, { signal: ctl.signal })
+    const res = await fetch(url, { signal: ctl.signal, headers: { 'user-agent': NEWS_FETCH_USER_AGENT } })
     if (!res.ok)
-      throw new Error(`RSS ${url} HTTP ${res.status}`)
+      throw Object.assign(new Error(`RSS ${url} HTTP ${res.status}`), { status: res.status })
     return await res.text()
   }
   finally { clearTimeout(timer) }

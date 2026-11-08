@@ -8,15 +8,20 @@ import {
   insertNewsItems,
   updateScrapedContent,
 } from '../../db/repos/news-repo.js'
-import { isGoogleNewsProxySeed } from '../../db/seed.js'
+import { isGoogleNewsProxySeed, TITLE_ONLY_SOURCE_SLUGS } from '../../db/seed.js'
+import { extractReadableText } from '../external/article-extract.js'
+import { scrapeWithFirecrawl } from '../external/firecrawl.js'
 import { dedupByExternalId, fetchRss, parseRssXml } from '../external/rss-fetcher.js'
 import { scrapeArticle } from '../external/scraper.js'
 import { isBodyFetchDenied } from './body-fetch-policy.js'
 import { categorizeAndStore } from './categorize.js'
+import { filterRecentEntries } from './recency.js'
 import { tagAndStore } from './tag.js'
 
 // 逐篇失敗只印這麼多筆，其餘靠彙總行。理由見呼叫處。
 const SCRAPE_FAILURE_LOG_SAMPLE = 3
+
+const FEED_WINDOW_HOURS = 48
 
 export interface RunNewsRefreshResult {
   sourcesProcessed: number
@@ -29,10 +34,13 @@ export interface RunNewsRefreshResult {
     slug: string
     inserted: number
     failed: boolean
+    // feed 回非 2xx 時的狀態碼；連線失敗或逾時是 null。
+    httpStatus: number | null
     scrapeFailed: number
     // - `bodyDenied`：目標 host 在拒抓清單上（`body-fetch-policy.ts` 的
     //   `BODY_FETCH_DENIED_HOSTS`），政策上不抓正文。
-    // - `feedSkipped`：整個 feed 是 Google News 代理（`isGoogleNewsProxySeed`）——這批
+    // - `feedSkipped`：來源條款只允許標題與連結（`TITLE_ONLY_SOURCE_SLUGS`），或整個 feed
+    //   是 Google News 代理（`isGoogleNewsProxySeed`）——這批
     //   來源的 `<link>` 是轉址頁，抓那一頁拿不到正文（見下面 `resolveArticleTarget` 的
     //   註解），所以整批連抓都不抓，不是逐篇判定。
     // - `scrapeEmpty`：目標 host 沒被拒抓、對方也回了 2xx，但 `extract` 抽不出正文。
@@ -86,7 +94,15 @@ async function fetchAndStoreBody(item: { id: number, url: string }, slug: string
   // scrapeArticle 回的是 ok/reason 契約，所以這裡分得出三件事：
   // 抓到正文、呼叫成功但這篇沒有正文、呼叫本身失敗。以前三者都是 null，
   // 一個 `if (text)` 就把它們全吃掉了——失敗連一行 log 都不會留。
-  const scraped = await scrapeArticle(target.url)
+  const scraped = await scrapeArticle(target.url, { extract: extractReadableText })
+  if (!scraped.ok || !scraped.text) {
+    const firecrawlKey = process.env.FIRECRAWL_API_KEY?.trim()
+    const fallback = firecrawlKey ? await scrapeWithFirecrawl(target.url, firecrawlKey) : null
+    if (fallback) {
+      await updateScrapedContent(item.id, fallback)
+      return
+    }
+  }
   if (!scraped.ok) {
     tally.scrapeFailed += 1
     // 逐篇只印前幾筆：一個整站回 403 的來源
@@ -105,6 +121,11 @@ async function fetchAndStoreBody(item: { id: number, url: string }, slug: string
   tally.scrapeEmpty += 1
   if (tally.scrapeEmpty <= SCRAPE_FAILURE_LOG_SAMPLE)
     console.warn(`[runNewsRefresh] ${slug} scrape empty: ${target.url}`)
+}
+
+function httpStatusOf(err: unknown): number | null {
+  const status = (err as { status?: unknown } | null)?.status
+  return typeof status === 'number' ? status : null
 }
 
 function defaultConcurrency(): number {
@@ -152,7 +173,7 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
     let entry: PerSourceEntry | null = null
     try {
       const xml = await fetchRss(src.rssUrl)
-      const parsed = dedupByExternalId(parseRssXml(xml))
+      const parsed = filterRecentEntries(dedupByExternalId(parseRssXml(xml)), new Date(), FEED_WINDOW_HOURS)
       const existing = await getExistingExternalIds(src.id)
       const fresh = parsed.filter(e => !existing.has(e.externalId))
       const rows = buildUpsertRows(fresh, src.id)
@@ -164,7 +185,7 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
       // type-check 範圍內），只有 tsc 會叫。
       // `current` 是同一個物件、只是不帶 `| null`——閉包裡（pMap 的 callback）拿 `entry`
       // 會被 TS 放寬回可為 null，用一個 const 綁住就不必到處 assert。
-      const current: PerSourceEntry = { slug: src.slug, inserted: insertedIds.length, failed: false, ...newTally() }
+      const current: PerSourceEntry = { slug: src.slug, inserted: insertedIds.length, failed: false, httpStatus: null, ...newTally() }
       entry = current
       perSource.push(current)
       console.warn(`[runNewsRefresh] ${src.slug}: ${insertedIds.length} new`)
@@ -173,10 +194,10 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
       // 整個 feed 是 Google News 代理（`isGoogleNewsProxySeed`）時，整批跳過抓正文：
       // 轉址頁本身就拿不到正文（見 `resolveArticleTarget` 的註解），讀者拿到的是標題與
       // 轉址連結，需要正文得自行以合法方式取得（見 docs/architecture/news-corpus-systems.md）。
-      const feedDenied = isGoogleNewsProxySeed(src)
+      const feedDenied = isGoogleNewsProxySeed(src) || TITLE_ONLY_SOURCE_SLUGS.includes(src.slug)
       if (feedDenied && toScrape.length > 0) {
         current.feedSkipped = toScrape.length
-        console.warn(`[runNewsRefresh] ${src.slug}: ${toScrape.length} 篇跳過抓正文（Google News 代理來源）`)
+        console.warn(`[runNewsRefresh] ${src.slug}: ${toScrape.length} 篇跳過抓正文（只取標題與連結）`)
       }
       const attempted = feedDenied ? [] : toScrape
       // 計數直接累加進 entry（它是 SourceTally 的超集），隨 perSource 回傳給呼叫端。
@@ -213,7 +234,7 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
       // 已經有一筆就只補標記，不要再 push 第二筆。這樣「插入成功但抓正文途中
       // 失敗」那一列同時看得到真實的 inserted／計數與 failed。
       if (entry === null)
-        perSource.push({ slug: src.slug, inserted: 0, failed: true, ...newTally() })
+        perSource.push({ slug: src.slug, inserted: 0, failed: true, httpStatus: httpStatusOf(err), ...newTally() })
       else
         entry.failed = true
       console.error(`[runNewsRefresh] ${src.slug} failed, skipping:`, err)

@@ -1,0 +1,209 @@
+{
+  "events": [
+    {
+      "description": "&lt;p&gt;Two-day meeting, December 8 - 9&lt;/p&gt;&#10;&#10;&lt;p&gt;Press Conference&lt;/p&gt;",
+      "title": "FOMC Meeting",
+      "time": "2:00 p.m.",
+      "month": "2026-12",
+      "days": "9",
+      "type": "FOMC"
+    },
+    {
+      "description": "&lt;p&gt;Two-day meeting, October 27 - 28&lt;/p&gt;&#10;&#10;&lt;p&gt;Press Conference&lt;/p&gt;",
+      "title": "FOMC Meeting",
+      "time": "2:00 p.m.",
+      "month": "2026-10",
+      "days": "28",
+      "type": "FOMC"
+    },
+    {
+      "description": "New Technology, Old Questions: Assessing Productivity Puzzles and Their Implications for Macroeconomic Activity",
+      "live": "https://cvent.me/8AmwNV",
+      "location": "At the University of California San Diego Economics Roundtable, La Jolla, Calif.",
+      "title": "Speech - Vice Chair Philip N. Jefferson",
+      "time": "7:00 p.m.",
+      "month": "2026-11",
+      "days": "13",
+      "type": "Speeches"
+    },
+    {
+      "description": "&lt;p&gt;Meeting of December 8-9&lt;/p&gt;",
+      "title": "FOMC Minutes",
+      "time": "2:00 p.m.",
+      "month": "2026-12",
+      "days": "30",
+      "type": "FOMC"
+    }
+  ],
+  "announcement": [
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed Tuesday, January 27, due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all releases as scheduled, including statistical publications.&lt;/p&gt;&#10;&#10;&lt;p&gt;The Federal Open Market Committee will meet as planned on Tuesday, January 27 and Wednesday, January 28. The FOMC statement will be released as scheduled at 2 p.m. EST, and the Chair&#39;s news conference will start at 2:30 p.m. EST on January 28.&lt;/p&gt;",
+      "month": "2026-01",
+      "day": "27",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed Monday, January 26, due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all releases as scheduled, including statistical publications.&lt;/p&gt;",
+      "month": "2026-01",
+      "day": "26",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices will be closed on December 26, 2025.&lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The daily and weekly statistical releases scheduled for today will be released on the next business day, Monday, December 29. Federal Reserve Bank payments and cash services will be open and operating on their regular schedules. See&nbsp;&lt;a href=&quot;http://www.frbservices.org/&quot; target=&quot;_blank&quot;&gt;www.frbservices.org&lt;/a&gt;&nbsp;for information.&lt;/p&gt;",
+      "month": "2025-12",
+      "day": "26",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices will be closed on December 24, 2025. &lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The daily and weekly statistical releases scheduled for today will be released on the next business day, Monday, December 29. Federal Reserve Bank payments and cash services will be open and operating on their regular schedules. See &lt;a href=&quot;http://www.frbservices.org&quot;&gt;www.frbservices.org&lt;/a&gt; for information.&lt;/p&gt;",
+      "month": "2025-12",
+      "day": "24",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed Tuesday, January 7, due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all releases as scheduled, including statistical publications.&lt;/p&gt;",
+      "month": "2025-01",
+      "day": "7",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed Monday, January 6, due to inclement weather.&lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The Federal Reserve Board plans to issue all releases as scheduled, including statistical publications and Governor Cook&#39;s speech.&lt;/p&gt;",
+      "month": "2025-01",
+      "day": "6",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., will be closed on Thursday, January 9, 2025, due to the national day of mourning.&lt;/strong&gt;&lt;br /&gt;&#10;All previously scheduled releases for Thursday, January 9, 2025, will be postponed until Friday, January 10, 2025. Federal Reserve Bank payments systems will operate normally. For additional information, please see &lt;a href=&quot;https://frbservices.org/app/status/serviceStatus.do&quot;&gt;https://frbservices.org/app/status/serviceStatus.do&lt;/a&gt;.&lt;/p&gt;",
+      "month": "2025-01",
+      "day": "9",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal Government offices will be closed on December 24, 2024.&lt;/strong&gt;&lt;br /&gt;&#10;The daily and weekly statistical releases scheduled for today will be released on Thursday, December 26.&lt;/p&gt;",
+      "month": "",
+      "day": "24",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., will open on a 2-hour delay Jan. 19 due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all releases as scheduled, including statistical publications, and Vice Chair for Supervision Barr&#39;s discussion will continue as scheduled.&lt;/p&gt;",
+      "month": "",
+      "day": "19",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;Federal government offices in Washington, D.C., are closed due to inclement weather. The Federal Reserve Board plans to issue all releases as scheduled, including statistical publications, and Governor Waller&#39;s speech, which will be held virtually.&lt;/p&gt;",
+      "month": "",
+      "day": "16",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., will open on a 2-hour delay Jan. 20 due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all daily postings as scheduled.&lt;/p&gt;",
+      "month": "2022-01",
+      "day": "20",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all daily postings as scheduled.&lt;/p&gt;",
+      "month": "2022-01",
+      "day": "7",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., will open on a 3-hour delay Jan. 5 due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all daily postings as scheduled.&lt;/p&gt;",
+      "month": "2022-01",
+      "day": "5",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., will open on a 3-hour delay Jan. 4 due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all daily postings as scheduled.&lt;/p&gt;",
+      "month": "2022-01",
+      "day": "4",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all daily postings as scheduled.&lt;/p&gt;",
+      "month": "2022-01",
+      "day": "3",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., will be closed on Friday, June 18, 2021, in observance of Juneteenth National Independence Day. &lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The H.2A will publish Thursday June 17 at 4:15 p.m. Other scheduled releases will be published on Monday June 21, 2021. Federal Reserve Bank payments systems will operate normally.&lt;/p&gt;",
+      "month": "2021-06",
+      "day": "18",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are operating on a 2 hour delay due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all postings and daily statistical releases as scheduled.&lt;/p&gt;",
+      "month": "2021-02",
+      "day": "19",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed due to inclement weather.&lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The Federal Reserve Board plans to issue all daily statistical releases as scheduled.&lt;/p&gt;",
+      "month": "2021-02",
+      "day": "18",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are operating on a 2 hour delay due to inclement weather. &lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all daily statistical releases as scheduled.&lt;/p&gt;",
+      "month": "2021-02",
+      "day": "2",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal Government offices will be closed on December 24, 2020.&lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The daily and weekly statistical releases scheduled for today will be released on Monday, December 28. Federal Reserve Bank payments systems will operate normally. Reserve Bank cash offices will fulfill orders for currency and coin according to the previously announced holiday currency processing schedule: &lt;a href=&quot;https://www.frbservices.org/about/holiday-schedules/2020-christmas-day.html&quot;&gt;https://www.frbservices.org/about/holiday-schedules/2020-christmas-day.html&lt;/a&gt;.&lt;/p&gt;",
+      "month": "2020-12",
+      "day": "24",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., are closed due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Reserve Board plans to issue all daily statistical releases as scheduled.&lt;/p&gt;",
+      "month": "2020-01",
+      "day": "7",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal Government offices will be closed on December 24, 2019.&lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The daily and weekly statistical releases scheduled for today will be released on Thursday, December 26. Federal Reserve Bank payments systems will operate normally. Reserve Bank cash offices will fulfill orders for currency and coin according to the previously announced holiday currency processing schedule: &lt;a href=&quot;https://www.frbservices.org/about/holiday-schedules/2019-christmas-day.html&quot;&gt;https://www.frbservices.org/about/holiday-schedules/2019-christmas-day.html&lt;/a&gt;.&lt;/p&gt;",
+      "month": "2019-12",
+      "day": "24",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal Reserve Board offices in Washington, D.C. are closed due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The FOMC minutes will be released as scheduled at 2:00 p.m. The daily and weekly statistical releases will be published on the first business day that Federal Reserve Board offices in the Washington, D.C. area reopen.&lt;/p&gt;",
+      "month": "2019-02",
+      "day": "20",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C., will open on a 3-hour delay due to inclement weather.&lt;/strong&gt;&lt;br /&gt;&#10;The Federal Open Market Committee will meet as planned. The FOMC statement will be released as scheduled at 2 p.m. EST, and the Chairman&#39;s news conference will start at 2:30 p.m. EST.&lt;/p&gt;",
+      "month": "2019-01",
+      "day": "30",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal Reserve Board offices in Washington, D.C. are closed due to inclement weather. &lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The daily and weekly releases will be published on the first business day that Federal Reserve Board offices in the Washington, D.C. area reopen.&lt;/p&gt;",
+      "month": "2019-01",
+      "day": "14",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal Government offices will be closed on December 24, 2018. &lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The daily and weekly statistical releases scheduled for today will be released on Wednesday, December 26.&lt;/p&gt;&#10;&#10;&lt;p&gt;Federal Reserve Bank payments systems will operate normally, and Reserve Bank cash offices will fulfill orders for currency and coin according to normal operating procedures.&lt;/p&gt;",
+      "month": "2018-12",
+      "day": "24",
+      "type": "other"
+    },
+    {
+      "title": "&lt;p&gt;&lt;strong&gt;Federal government offices in Washington, D.C. will be closed on Wednesday December 5, 2018 due the national day of mourning. &lt;/strong&gt;&lt;/p&gt;&#10;&#10;&lt;p&gt;The Federal Reserve Board plans to issue the following items as scheduled:&lt;/p&gt;&#10;&#10;&lt;p&gt;2:00 p.m. Beige Book&lt;/p&gt;&#10;&#10;&lt;p&gt;Chairman Powell&#39;s testimony before the Joint Economic Committee has been postponed.&lt;/p&gt;&#10;&#10;&lt;p&gt;All other previously scheduled releases for Wednesday, December 5, 2018 will be postponed until Thursday December 6, 2018.&lt;/p&gt;",
+      "month": "2018-12",
+      "day": "5",
+      "type": "other"
+    },
+    {
+      "title": "The H.10 release was on today&#39;s calendar as a duplicate entry. The correct date is Monday, November 5.",
+      "month": "2018-11",
+      "day": "1",
+      "type": "other"
+    },
+    {}
+  ]
+}

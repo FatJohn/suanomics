@@ -5,6 +5,7 @@ import { runNewsRefresh } from './refresh.js'
 vi.mock('../../db/repos/news-repo.js')
 vi.mock('../external/rss-fetcher.js')
 vi.mock('../external/scraper.js')
+vi.mock('../external/firecrawl.js')
 vi.mock('./categorize.js')
 vi.mock('./tag.js')
 
@@ -210,7 +211,7 @@ describe('runNewsRefresh 對 Google News 代理 feed 的整批跳過', () => {
     expect(result.perSource[0]).toMatchObject({ feedSkipped: 1, bodyDenied: 0 })
     // 列出完整鍵集合：perSource 的欄位是寫進 job metadata 的契約，多一個或少一個都要紅。
     expect(Object.keys(result.perSource[0] ?? {}).sort()).toEqual(
-      ['bodyDenied', 'failed', 'feedSkipped', 'inserted', 'scrapeEmpty', 'scrapeFailed', 'slug'],
+      ['bodyDenied', 'failed', 'feedSkipped', 'httpStatus', 'inserted', 'scrapeEmpty', 'scrapeFailed', 'slug'],
     )
     expect(result.totalInserted).toBe(1)
   })
@@ -278,5 +279,66 @@ describe('runNewsRefresh 的 perSource 每個來源只有一列', () => {
 
     expect(result.perSource).toHaveLength(1)
     expect(result.perSource[0]).toMatchObject({ slug: 'demo-source', inserted: 0, failed: true })
+  })
+})
+
+describe('runNewsRefresh 的 ingest 政策', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  async function setup(slug: string): Promise<{
+    repo: typeof import('../../db/repos/news-repo.js')
+    scraper: typeof import('../external/scraper.js')
+    firecrawl: typeof import('../external/firecrawl.js')
+    rss: typeof import('../external/rss-fetcher.js')
+  }> {
+    const repo = await import('../../db/repos/news-repo.js')
+    const rss = await import('../external/rss-fetcher.js')
+    const scraper = await import('../external/scraper.js')
+    const firecrawl = await import('../external/firecrawl.js')
+    vi.mocked(repo.getActiveSources).mockResolvedValue([{ id: 1, slug, rssUrl: 'https://feed.example/rss' }] as never)
+    vi.mocked(rss.fetchRss).mockResolvedValue('<rss/>')
+    vi.mocked(rss.parseRssXml).mockReturnValue([] as never)
+    vi.mocked(rss.dedupByExternalId).mockReturnValue([{ externalId: 'e1', publishedAt: null }] as never)
+    vi.mocked(repo.getExistingExternalIds).mockResolvedValue(new Set())
+    vi.mocked(repo.buildUpsertRows).mockReturnValue([] as never)
+    vi.mocked(repo.insertNewsItems).mockResolvedValue([11])
+    vi.mocked(repo.getNewsItemsByIds).mockResolvedValue([{ id: 11, url: 'https://news.example/1', title: 't', contentText: null }] as never)
+    return { repo, scraper, firecrawl, rss }
+  }
+
+  it('國際通訊社只取標題與連結，不抓正文', async () => {
+    const { scraper } = await setup('bbc-world')
+    const result = await runNewsRefresh()
+    expect(scraper.scrapeArticle).not.toHaveBeenCalled()
+    expect(result.perSource[0]?.feedSkipped).toBe(1)
+  })
+
+  it('抽不到正文且有 FIRECRAWL_API_KEY 才打 Firecrawl', async () => {
+    const { repo, scraper, firecrawl } = await setup('demo-source')
+    vi.stubEnv('FIRECRAWL_API_KEY', 'k')
+    vi.mocked(scraper.scrapeArticle).mockResolvedValue({ ok: true, text: null })
+    vi.mocked(firecrawl.scrapeWithFirecrawl).mockResolvedValue('備援正文')
+    await runNewsRefresh()
+    expect(firecrawl.scrapeWithFirecrawl).toHaveBeenCalledWith('https://news.example/1', 'k')
+    expect(repo.updateScrapedContent).toHaveBeenCalledWith(11, '備援正文')
+  })
+
+  it('沒有 FIRECRAWL_API_KEY 不打 Firecrawl', async () => {
+    const { scraper, firecrawl } = await setup('demo-source')
+    vi.stubEnv('FIRECRAWL_API_KEY', '')
+    vi.mocked(scraper.scrapeArticle).mockResolvedValue({ ok: false, reason: 'http_error', detail: 'HTTP 403' })
+    const result = await runNewsRefresh()
+    expect(firecrawl.scrapeWithFirecrawl).not.toHaveBeenCalled()
+    expect(result.perSource[0]?.scrapeFailed).toBe(1)
+  })
+
+  it('feed HTTP 失敗時逐來源記錄狀態碼', async () => {
+    const { rss } = await setup('demo-source')
+    vi.mocked(rss.fetchRss).mockRejectedValue(Object.assign(new Error('RSS HTTP 403'), { status: 403 }))
+    const result = await runNewsRefresh()
+    expect(result.perSource[0]).toMatchObject({ failed: true, httpStatus: 403 })
   })
 })

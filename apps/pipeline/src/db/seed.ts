@@ -22,6 +22,9 @@ export interface SeedEntry {
 // distinct 商業網域數，兩邊各自的商業 feed 筆數不是 19），各站有自己的使用條款，
 // 要不要抓、能不能抓由使用者自己確認後再開啟。宣告 `isActive: false`
 // 的來源（壞掉而停用）不受這個 gate 影響，一律維持停用。
+/** 條款只允許標題與連結的來源（ADR 0007：國際通訊社），ingest 不抓其正文。 */
+export const TITLE_ONLY_SOURCE_SLUGS: readonly string[] = ['bbc-business', 'bbc-world', 'aljazeera']
+
 export const SEED: readonly SeedEntry[] = [
   { slug: 'cna', displayName: '中央社財經', rssUrl: 'https://feeds.feedburner.com/rsscna/finance', isActive: true, category: 'tw-equity' },
   { slug: 'google-news-fin', displayName: 'Google News 財經', rssUrl: 'https://news.google.com/rss/search?q=%E5%8F%B0%E8%82%A1+%E8%B2%A1%E7%B6%93&hl=zh-TW&gl=TW&ceid=TW:zh-Hant', isActive: true, category: 'tw-equity' },

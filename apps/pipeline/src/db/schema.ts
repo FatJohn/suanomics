@@ -132,3 +132,32 @@ export const storylines = pgTable('storylines', {
   statusCheck: check('storylines_status_check', sql`${t.status} IN ('open', 'confirmed', 'refuted', 'dormant')`),
   statusIdx: index('idx_storylines_status').on(t.status),
 }))
+
+// TWSE／TPEx 每日重大訊息；端點只回最新一日，靠這張表累積。
+export const materialAnnouncements = pgTable('material_announcements', {
+  id: serial('id').primaryKey(),
+  market: text('market').notNull(), // 'twse' | 'tpex'
+  companyCode: text('company_code').notNull(),
+  companyName: text('company_name').notNull(),
+  announcedAt: timestamp('announced_at', { withTimezone: true }).notNull(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  clause: text('clause').notNull(),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => ({
+  announcementUnique: unique('material_announcements_unique').on(t.market, t.companyCode, t.announcedAt, t.title),
+  announcedAtIdx: index('idx_material_announcements_announced_at').on(t.announcedAt.desc()),
+}))
+
+export const econCalendarEvents = pgTable('econ_calendar_events', {
+  id: serial('id').primaryKey(),
+  date: date('date').notNull(),
+  title: text('title').notNull(),
+  region: text('region').notNull(), // 'US' | 'TW' | 'GLOBAL'
+  importance: text('importance').notNull(), // 'high' | 'medium' | 'low'
+  source: text('source').notNull(), // 'manual' | 'fed-json'
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => ({
+  eventUnique: unique('econ_calendar_events_date_title_unique').on(t.date, t.title),
+  dateIdx: index('idx_econ_calendar_events_date').on(t.date),
+}))
