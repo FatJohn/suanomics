@@ -1,0 +1,1 @@
+ALTER TABLE "daily_briefs" ADD COLUMN "brief_json" jsonb;

@@ -1,0 +1,2 @@
+ALTER TABLE "background_jobs" DROP CONSTRAINT "background_jobs_kind_check";--> statement-breakpoint
+ALTER TABLE "background_jobs" ADD CONSTRAINT "background_jobs_kind_check" CHECK ("background_jobs"."job_kind" IN ('corpus-refresh', 'analyze', 'daily-brief', 'curate'));

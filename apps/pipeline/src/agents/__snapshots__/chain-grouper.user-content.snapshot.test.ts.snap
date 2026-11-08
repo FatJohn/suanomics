@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`chain-grouper buildUserContent snapshot (characterization) > captures a single force name and a single industry label 1`] = `
+"## 今日力場分組（固定、只能從中選）
+- 半導體與先進代工
+
+## 要歸類的產業標籤（1 個）
+- 半導體"
+`;
+
+exports[`chain-grouper buildUserContent snapshot (characterization) > captures multiple force names and multiple distinct industry labels 1`] = `
+"## 今日力場分組（固定、只能從中選）
+- 半導體與先進代工
+- 金融與證券業
+
+## 要歸類的產業標籤（3 個）
+- 半導體
+- 銀行業
+- 生技製藥CDMO"
+`;

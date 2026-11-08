@@ -1,0 +1,95 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`viewpoints-debate inline user content snapshot (characterization) > captures support/risk/net-read userContent with claimLedger and single point each 1`] = `
+{
+  "netRead": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+# 本日已核對的證據（claim ledger、共 1 條）
+[c18] (fact/named-number) 2026年8月11日費城半導體指數收於12,098點。 — 來源：（無）
+
+# 支持論據
+- 支持論據一
+
+# 風險論據
+- 風險論據一
+
+請收斂成一段綜合淨讀、輸出 JSON {netRead:"..."}。",
+  "risk": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+# 本日已核對的證據（claim ledger、共 1 條）
+[c18] (fact/named-number) 2026年8月11日費城半導體指數收於12,098點。 — 來源：（無）
+
+請輸出風險論據 JSON {points:[...]}。",
+  "support": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+# 本日已核對的證據（claim ledger、共 1 條）
+[c18] (fact/named-number) 2026年8月11日費城半導體指數收於12,098點。 — 來源：（無）
+
+請輸出支持論據 JSON {points:[...]}。",
+}
+`;
+
+exports[`viewpoints-debate inline user content snapshot (characterization) > captures support/risk/net-read userContent without claimLedger and multiple points each 1`] = `
+{
+  "netRead": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+# 支持論據
+- 支持論據一
+- 支持論據二
+- 支持論據三
+
+# 風險論據
+- 風險論據一
+- 風險論據二
+
+請收斂成一段綜合淨讀、輸出 JSON {netRead:"..."}。",
+  "risk": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+請輸出風險論據 JSON {points:[...]}。",
+  "support": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+請輸出支持論據 JSON {points:[...]}。",
+}
+`;
