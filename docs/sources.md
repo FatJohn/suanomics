@@ -48,12 +48,12 @@
 | 名稱 | 端點 | 類型 | 條款連結 | 允許用法 |
 |---|---|---|---|---|
 | TWSE OpenAPI | https://openapi.twse.com.tw/v1 底下的 MI_INDEX、MI_QFIIS_cat、MI_MARGN、STOCK_DAY_ALL、t187ap04_L | 官方 OpenAPI | https://www.twse.com.tw/zh/terms/use.html | 數字與事件。OpenAPI 平台歡迎介接 |
-| TWSE 傳統 JSON | https://www.twse.com.tw/rwd/zh/ 底下的 BFI82U、MI_MARGN、TWT93U | 官方 JSON | https://www.twse.com.tw/zh/terms/use.html | 數字。使用條款限制自動化下載，既有序列沿用，待維護者複核 |
+| TWSE 傳統 JSON | https://www.twse.com.tw/rwd/zh/ 底下的 BFI82U、MI_MARGN、TWT93U | 官方 JSON | https://www.twse.com.tw/zh/terms/use.html | 數字。使用條款限制自動化下載，既有序列沿用，維護者 2026-11-08 複核接受 |
 | TPEx OpenAPI | https://www.tpex.org.tw/openapi/v1 底下的 tpex_mainboard_daily_close_quotes、mopsfin_t187ap04_O | 官方 OpenAPI | https://www.tpex.org.tw/zh-tw/gtsm_disclaimer.html?l=zh-tw | 數字與事件。OpenAPI 平台歡迎介接 |
 | Fed 行事曆 | https://www.federalreserve.gov/json/calendar.json | 官方 JSON | https://www.federalreserve.gov/disclaimer.htm | 事件日期。公共領域 |
-| FRED | https://api.stlouisfed.org/fred/series/observations | 官方 API | https://fred.stlouisfed.org/docs/api/terms_of_use.html | 數字。部分序列版權屬第三方，個人使用以外須取得所有者同意，待維護者複核 |
-| TAIFEX | https://www.taifex.com.tw | 官方網站 | https://www.taifex.com.tw/cht/5/copyright | 數字。條款內容待維護者複核 |
-| Nasdaq | https://api.nasdaq.com | 商業 API | https://www.nasdaq.com/legal | 數字。條款內容待維護者複核 |
+| FRED | https://api.stlouisfed.org/fred/series/observations | 官方 API | https://fred.stlouisfed.org/docs/api/terms_of_use.html | 數字。部分序列版權屬第三方，個人使用以外須取得所有者同意，維護者 2026-11-08 複核接受 |
+| TAIFEX | https://www.taifex.com.tw | 官方網站 | https://www.taifex.com.tw/cht/5/copyright | 數字。維護者 2026-11-08 複核接受 |
+| Nasdaq | https://api.nasdaq.com | 商業 API | https://www.nasdaq.com/legal | 數字。維護者 2026-11-08 複核接受 |
 
 ## 不接的來源
 
