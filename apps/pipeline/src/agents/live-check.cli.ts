@@ -1,7 +1,7 @@
 // 對真端點驗證 LLM 呼叫層：haiku 與 sonnet 各打兩次，共 4 次，每次不重試。
 // 同一個 system prompt 第二次呼叫時 cache_read_input_tokens 要 > 0。會實際計費。
 //
-// ANTHROPIC_API_KEY='op://suanomics/suanomics · Anthropic (pipeline)/credential' \
+// ANTHROPIC_API_KEY='op://suanomics/Anthropic API Key/密碼' \
 //   op run --account johnnyhtw.1password.com -- pnpm --filter @suanomics/pipeline run llm:live-check
 
 import type { LlmCallRecord } from './call-agent.js'
