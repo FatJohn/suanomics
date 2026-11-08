@@ -67,21 +67,25 @@ describe('item category taxonomy', () => {
     for (const c of ITEM_CATEGORIES)
       expect(ITEM_CATEGORY_LABEL[c], `label for ${c}`).toBeTruthy()
   })
+  it('is exactly the six categories of ADR 0007', () => {
+    expect([...ITEM_CATEGORIES]).toEqual(['macro', 'geopolitics', 'industry', 'energy', 'disaster-health', 'other'])
+    expect(ITEM_CATEGORIES.map(c => ITEM_CATEGORY_LABEL[c])).toEqual(['總經', '地緣', '產業', '能源', '天災公衛', '其他'])
+  })
   it('itemCategoryFromSource maps the 2 source strata to coarse item buckets', () => {
-    expect(itemCategoryFromSource('tw-equity')).toBe('tw-equity-other')
+    expect(itemCategoryFromSource('tw-equity')).toBe('industry')
     expect(itemCategoryFromSource('macro')).toBe('macro')
   })
 })
 
 describe('resolveItemCategory', () => {
   it('uses a valid item category when present', () => {
-    expect(resolveItemCategory('tech-semi', 'google-news-fin')).toBe('tech-semi')
+    expect(resolveItemCategory('energy', 'cna')).toBe('energy')
   })
   it('falls back to source category when item category is null', () => {
-    expect(resolveItemCategory(null, 'google-news-fin')).toBe('tw-equity-other')
-    expect(resolveItemCategory(null, 'google-news-oil')).toBe('macro')
+    expect(resolveItemCategory(null, 'cna')).toBe('industry')
+    expect(resolveItemCategory(null, 'eia')).toBe('macro')
   })
   it('falls back when item category is an unknown string', () => {
-    expect(resolveItemCategory('garbage', 'google-news-fin')).toBe('tw-equity-other')
+    expect(resolveItemCategory('tech-semi', 'cna')).toBe('industry')
   })
 })

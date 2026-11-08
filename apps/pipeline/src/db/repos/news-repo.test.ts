@@ -142,9 +142,9 @@ describe('getStratifiedCandidates', () => {
     const result = await getStratifiedCandidates(todayIso(), 2, 4)
     const ours = result.filter(c => c.title.startsWith(STRAT_PREFIX))
 
-    expect(ours.filter(c => c.category === 'tw-equity-other').length).toBe(4) // 6 → capped 4（null category 退來源層→tw-equity-other）
+    expect(ours.filter(c => c.category === 'industry').length).toBe(4) // 6 → capped 4（null category 退來源層→industry）
     expect(ours.filter(c => c.category === 'macro').length).toBe(2) // 不足 4 取全部、沒被灌爆
-    expect(ours[0]?.category).toMatch(/tw-equity-other|macro/)
+    expect(ours[0]?.category).toMatch(/industry|macro/)
     expect(ours[0]?.contentText).toContain('body')
   })
 })

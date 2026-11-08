@@ -35,7 +35,7 @@ describe('callEditor', () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     await callEditor({
-      candidates: [{ id: 12, title: '台積電法說', excerpt: '上修全年資本支出', category: 'tw-equity-other' as const }],
+      candidates: [{ id: 12, title: '台積電法說', excerpt: '上修全年資本支出', category: 'industry' as const }],
       storylines: [OPEN_LINE],
       recentBriefs: [{ briefDate: '2026-06-11', headline: '昨日盤勢', summary: '市場觀望' }],
     })
@@ -45,7 +45,7 @@ describe('callEditor', () => {
     expect(call?.systemPrompt).toBe('TEST_EDITOR_PROMPT')
     const userContent = call?.userContent ?? ''
     // 候選帶 item 層分類標籤
-    expect(userContent).toContain('[12][台股其他] 台積電法說')
+    expect(userContent).toContain('[12][產業] 台積電法說')
     expect(userContent).toContain('## 進行中敘事線')
     expect(userContent).toContain('[7] Fed 降息路徑')
     expect(userContent).toContain('## 近三日 brief')
@@ -55,13 +55,13 @@ describe('callEditor', () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     await callEditor({
-      candidates: [{ id: 1, title: '台積電法說', excerpt: 'CoWoS', category: 'tech-semi' }],
+      candidates: [{ id: 1, title: '台積電法說', excerpt: 'CoWoS', category: 'industry' }],
       storylines: [],
       recentBriefs: [],
     })
 
     const userContent = vi.mocked(wrapper.callAgent).mock.calls[0]?.[1]?.userContent ?? ''
-    expect(userContent).toContain('[1][科技半導體]')
+    expect(userContent).toContain('[1][產業]')
   })
 
   it('clamps overlong candidate title and excerpt in user content', async () => {
@@ -71,7 +71,7 @@ describe('callEditor', () => {
     const longExcerpt = '述'.repeat(300)
 
     await callEditor({
-      candidates: [{ id: 12, title: longTitle, excerpt: longExcerpt, category: 'tw-equity-other' as const }],
+      candidates: [{ id: 12, title: longTitle, excerpt: longExcerpt, category: 'industry' as const }],
       storylines: [],
       recentBriefs: [],
     })
@@ -93,7 +93,7 @@ describe('callEditor', () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     const result = await callEditor({
-      candidates: [{ id: 12, title: '台積電法說', excerpt: 'x', category: 'tw-equity-other' as const }],
+      candidates: [{ id: 12, title: '台積電法說', excerpt: 'x', category: 'industry' as const }],
       storylines: [],
       recentBriefs: [],
     })
@@ -112,7 +112,7 @@ describe('callEditor', () => {
     })
 
     const result = await callEditor({
-      candidates: [{ id: 1, title: 't', excerpt: 'x', category: 'tw-equity-other' as const }],
+      candidates: [{ id: 1, title: 't', excerpt: 'x', category: 'industry' as const }],
       storylines: [],
       recentBriefs: [],
     })
@@ -125,7 +125,7 @@ describe('callEditor', () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     await callEditor({
-      candidates: [{ id: 12, title: 't', excerpt: 'x', category: 'tw-equity-other' as const }],
+      candidates: [{ id: 12, title: 't', excerpt: 'x', category: 'industry' as const }],
       storylines: [],
       recentBriefs: [],
       marketSnapshot: 'SNAPSHOT_BLOCK_X',
@@ -143,7 +143,7 @@ describe('callEditor', () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue(VALID_OUTPUT)
 
     await callEditor({
-      candidates: [{ id: 12, title: 't', excerpt: 'x', category: 'tw-equity-other' as const }],
+      candidates: [{ id: 12, title: 't', excerpt: 'x', category: 'industry' as const }],
       storylines: [],
       recentBriefs: [],
     })

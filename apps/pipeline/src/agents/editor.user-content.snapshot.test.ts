@@ -10,11 +10,11 @@ describe('editor formatUserContent snapshot (characterization)', () => {
   it('captures full path: all 5 item categories, multi storylines with unsorted updates, non-empty recent briefs, all optional blocks present', () => {
     const content = formatUserContent({
       candidates: [
-        { id: 1, title: '台積電法說會上修資本支出指引', excerpt: '公司預期明年資本支出將顯著成長', category: 'tech-semi' },
-        { id: 2, title: '大立光第三季營收公布', excerpt: '光學鏡頭需求回升', category: 'tw-equity-other' },
+        { id: 1, title: '台積電法說會上修資本支出指引', excerpt: '公司預期明年資本支出將顯著成長', category: 'industry' },
+        { id: 2, title: '大立光第三季營收公布', excerpt: '光學鏡頭需求回升', category: 'industry' },
         { id: 3, title: '美國CPI數據優於預期', excerpt: '通膨降溫速度加快', category: 'macro' },
         { id: 4, title: '國際油價因地緣衝突走高', excerpt: '布蘭特原油站上每桶90美元', category: 'energy' },
-        { id: 5, title: '歐洲央行維持利率不變', excerpt: '市場預期年底前開始降息', category: 'international' },
+        { id: 5, title: '歐洲央行維持利率不變', excerpt: '市場預期年底前開始降息', category: 'geopolitics' },
       ],
       storylines: [
         {
@@ -64,7 +64,7 @@ describe('editor formatUserContent snapshot (characterization)', () => {
 
   it('captures clampString truncation for overlong candidate title/excerpt', () => {
     const content = formatUserContent({
-      candidates: [{ id: 12, title: '標'.repeat(200), excerpt: '述'.repeat(300), category: 'tw-equity-other' }],
+      candidates: [{ id: 12, title: '標'.repeat(200), excerpt: '述'.repeat(300), category: 'industry' }],
       storylines: [],
       recentBriefs: [],
     })

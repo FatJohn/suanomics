@@ -39,28 +39,30 @@ export function partitionByCategory<T>(
 }
 
 // ── item 層細分類（ingestion LLM 打標、存 news_items.category）──
-export type ItemCategory = 'tech-semi' | 'tw-equity-other' | 'macro' | 'energy' | 'international'
+export type ItemCategory = 'macro' | 'geopolitics' | 'industry' | 'energy' | 'disaster-health' | 'other'
 
 export const ITEM_CATEGORIES: readonly ItemCategory[] = [
-  'tech-semi',
-  'tw-equity-other',
   'macro',
+  'geopolitics',
+  'industry',
   'energy',
-  'international',
+  'disaster-health',
+  'other',
 ]
 
 export const ITEM_CATEGORY_LABEL: Record<ItemCategory, string> = {
-  'tech-semi': '科技半導體',
-  'tw-equity-other': '台股其他',
   'macro': '總經',
+  'geopolitics': '地緣',
+  'industry': '產業',
   'energy': '能源',
-  'international': '國際',
+  'disaster-health': '天災公衛',
+  'other': '其他',
 }
 
 // 來源層 2-strata → item 層粗桶（item category 為 null 時的退路）。
-// 注意：energy / international 無法從來源層細分、null 時暫歸 macro、待 ingestion item 打標補上。
+// 其他類別無法從來源層細分、null 時暫歸這兩桶、待 ingestion item 打標補上。
 export function itemCategoryFromSource(sourceCat: NewsCategory): ItemCategory {
-  return sourceCat === 'tw-equity' ? 'tw-equity-other' : 'macro'
+  return sourceCat === 'tw-equity' ? 'industry' : 'macro'
 }
 
 // 選題時取 item category：DB 有合法值就用、否則退來源層（slug → 來源 category → 粗桶）
