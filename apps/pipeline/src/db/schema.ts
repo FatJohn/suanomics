@@ -106,26 +106,6 @@ export const externalArticles = pgTable('external_articles', {
   fetchedAtIdx: index('idx_external_articles_fetched_at').on(t.fetchedAt.desc()),
 }))
 
-export const backgroundJobs = pgTable('background_jobs', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  jobKind: text('job_kind').notNull(),
-  status: text('status').notNull(),
-  attempts: integer('attempts').notNull().default(0),
-  payloadHash: text('payload_hash').notNull(),
-  resultRef: text('result_ref'),
-  errorMessage: text('error_message'),
-  metadata: jsonb('metadata').notNull().default(sql`'{}'::jsonb`),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  startedAt: timestamp('started_at', { withTimezone: true }),
-  completedAt: timestamp('completed_at', { withTimezone: true }),
-}, t => ({
-  jobKindCheck: check('background_jobs_kind_check', sql`${t.jobKind} IN ('corpus-refresh', 'analyze', 'daily-brief', 'podcast-generate', 'podcast-tts', 'news-refresh', 'prompt-refresh', 'market-data-refresh')`),
-  statusCheck: check('background_jobs_status_check', sql`${t.status} IN ('queued', 'active', 'completed', 'failed')`),
-  payloadHashIdx: index('idx_background_jobs_payload_hash').on(t.payloadHash),
-  statusCreatedIdx: index('idx_background_jobs_status_created').on(t.status, t.createdAt.desc()),
-  kindCreatedIdx: index('idx_background_jobs_kind_created').on(t.jobKind, t.createdAt.desc()),
-}))
-
 // market data：transform 後的數值序列落地
 export const marketDataPoints = pgTable('market_data_points', {
   id: serial('id').primaryKey(),
