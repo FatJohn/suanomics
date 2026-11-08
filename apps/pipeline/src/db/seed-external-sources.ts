@@ -232,6 +232,20 @@ export const AGGREGATOR_PROXY_SLUGS: readonly string[]
   = EXTERNAL_SOURCES_SEED.filter(isAggregatorProxySeed).map(s => s.slug)
 
 /**
+ * 已從 seed 移除的 Google News 代理（#24）。DB 裡既有的文章仍是不透明轉址，
+ * retriever 要繼續排除，所以名單獨立於現役 seed。
+ */
+export const RETIRED_PROXY_SLUGS: readonly string[] = Object.freeze([
+  'brookings',
+  'csis',
+  'iea',
+  'isw',
+  'reuters-biz',
+  'reuters-world',
+  'wsj-markets',
+])
+
+/**
  * 已知「窗內有列、但一篇都不會被 enrich」且**明示接受不告警**的來源。
  *
  * 為什麼需要這一份：`/api/ops/publication-status` 現在除了「有沒有列」也回「窗內有沒有

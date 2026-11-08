@@ -3,7 +3,7 @@ import type { RetrievedArticle } from './types.js'
 import { and, desc, eq, gte, lte, notInArray, or, sql } from 'drizzle-orm'
 import { getDb } from '../db/client.js'
 import { externalArticles, externalSources } from '../db/schema.js'
-import { AGGREGATOR_PROXY_SLUGS } from '../db/seed-external-sources.js'
+import { AGGREGATOR_PROXY_SLUGS, RETIRED_PROXY_SLUGS } from '../db/seed-external-sources.js'
 
 export interface RetrieveQuery {
   entities?: string[]
@@ -89,7 +89,7 @@ export async function retrieveArticles(q: RetrieveQuery): Promise<RetrievedArtic
       or(...conds),
       gte(externalArticles.fetchedAt, since),
       lte(externalArticles.fetchedAt, until),
-      ...(AGGREGATOR_PROXY_SLUGS.length > 0 ? [notInArray(externalSources.slug, [...AGGREGATOR_PROXY_SLUGS])] : []),
+      notInArray(externalSources.slug, [...AGGREGATOR_PROXY_SLUGS, ...RETIRED_PROXY_SLUGS]),
       // 來源層級擋不到的那一批：bloomberg-markets / whitehouse-statements 改成
       // 直連之後它們就不在代理清單裡，但**舊文章**的 url 仍是 google 轉址（2026-08-21
       // prod 實測 2,946 篇）。這一條判的是「這個 url 讀者點不點得到」——是 url 自己的

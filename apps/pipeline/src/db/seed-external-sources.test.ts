@@ -57,7 +57,6 @@ describe('eXTERNAL_SOURCES_SEED', () => {
       expect(s?.config).toHaveProperty('feedUrl')
       expect(s?.config).toHaveProperty('format')
     })
-
   })
 
   describe('停用的來源', () => {

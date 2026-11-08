@@ -83,7 +83,7 @@ describe('isTwseTradingDay', () => {
     expect(isTwseTradingDay('2026-11-07')).toBe(false) // 週六
     expect(isTwseTradingDay('2026-11-08')).toBe(false) // 週日
   })
-  it('TWSE 休市日的平日休市', () => {
+  it('休市表裡的平日休市', () => {
     expect(isTwseTradingDay('2026-09-25')).toBe(false) // 中秋節，週五
   })
   // 補班日是行政機關上班、股市不開：只看「是不是上班日」會把它判成開市。

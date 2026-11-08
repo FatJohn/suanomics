@@ -1,12 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { collectHttpUrls } from './source-policy.js'
 import { EXTERNAL_SOURCES_SEED } from './seed-external-sources.js'
 import { SEED } from './seed.js'
+import { collectHttpUrls } from './source-policy.js'
 
 const doc = readFileSync(new URL('../../../../docs/sources.md', import.meta.url), 'utf-8')
-const dataRows = doc.split('\n').filter(line => line.startsWith('|') && !/^\|[-|\s]+\|$/.test(line) && !line.startsWith('| 名稱') && !line.startsWith('| 用法'))
-  .filter(line => !/^\| (正文|前言|標題連結) \|/.test(line))
+const dataRows = doc.split('\n').filter(line => line.startsWith('|') && !/^\|[-|\s]+\|$/.test(line) && !line.startsWith('| 名稱') && !line.startsWith('| 用法')).filter(line => !/^\| (?:正文|前言|標題連結) \|/.test(line))
 
 function rowFor(url: string): string | undefined {
   return dataRows.find(line => line.split('|').some(cell => cell.trim() === url))
