@@ -1,0 +1,23 @@
+{
+  "name": "@suanomics/web",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "type-check": "astro check",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@suanomics/shared": "workspace:*",
+    "astro": "^7.4.7"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}
