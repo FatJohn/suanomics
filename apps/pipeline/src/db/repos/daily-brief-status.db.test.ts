@@ -2,7 +2,7 @@ import { eq, inArray, like } from 'drizzle-orm'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { getDb } from '../client.js'
 import { dailyBriefs, sourceFetchResults } from '../schema.js'
-import { getDailyBriefByDate, getRecentBriefSummaries, saveDailyBrief, saveIncompleteDailyBrief } from './news-repo.js'
+import { getDailyBriefByDate, getDailyBriefsForDates, getLatestDailyBrief, getRecentBriefSummaries, listDailyBriefDates, saveDailyBrief, saveIncompleteDailyBrief } from './news-repo.js'
 import { getSourceFetchHistory, recordSourceFetchResults } from './source-fetch-repo.js'
 
 const DATE_A = '2096-03-01'
@@ -33,6 +33,27 @@ describe('daily brief status', () => {
     await saveIncompleteDailyBrief(DATE_A, [], { failedStage: 'editor' })
     await saveDailyBrief(DATE_A, [], 'ok', { headline: 'H' })
     expect(await getDailyBriefByDate(DATE_A)).toMatchObject({ status: 'complete', progress: null })
+  })
+
+  it('最新一筆跳過 incomplete', async () => {
+    await saveDailyBrief(DATE_A, [], 'ok', { headline: 'H' })
+    await saveIncompleteDailyBrief(DATE_B, [], {})
+    expect((await getLatestDailyBrief())?.briefDate).not.toBe(DATE_B)
+  })
+
+  it('日期清單排除 incomplete', async () => {
+    await saveDailyBrief(DATE_A, [], 'ok', { headline: 'H' })
+    await saveIncompleteDailyBrief(DATE_B, [], {})
+    const dates = await listDailyBriefDates()
+    expect(dates).toContain(DATE_A)
+    expect(dates).not.toContain(DATE_B)
+  })
+
+  it('指定日期查詢排除 incomplete', async () => {
+    await saveDailyBrief(DATE_A, [], 'ok', { headline: 'H' })
+    await saveIncompleteDailyBrief(DATE_B, [], {})
+    const rows = await getDailyBriefsForDates([DATE_A, DATE_B])
+    expect(rows.map(r => r.briefDate)).toEqual([DATE_A])
   })
 
   it('近日摘要排除 incomplete', async () => {

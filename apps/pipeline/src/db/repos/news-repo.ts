@@ -279,7 +279,7 @@ export async function saveIncompleteDailyBrief(briefDate: string, selectedIds: r
 
 export async function getLatestDailyBrief() {
   const db = getDb()
-  const rows = await db.select().from(dailyBriefs).orderBy(desc(dailyBriefs.briefDate)).limit(1)
+  const rows = await db.select().from(dailyBriefs).where(eq(dailyBriefs.status, 'complete')).orderBy(desc(dailyBriefs.briefDate)).limit(1)
   return rows[0] ?? null
 }
 
@@ -289,6 +289,7 @@ export async function listDailyBriefDates(): Promise<string[]> {
   const rows = await db
     .select({ briefDate: dailyBriefs.briefDate })
     .from(dailyBriefs)
+    .where(eq(dailyBriefs.status, 'complete'))
     .orderBy(desc(dailyBriefs.briefDate))
   return rows.map(r => r.briefDate)
 }
@@ -343,7 +344,7 @@ export async function getDailyBriefsForDates(dates: readonly string[]): Promise<
     briefJson: dailyBriefs.briefJson,
     podcastJson: dailyBriefs.podcastJson,
     podcastAudioPath: dailyBriefs.podcastAudioPath,
-  }).from(dailyBriefs).where(inArray(dailyBriefs.briefDate, [...dates]))
+  }).from(dailyBriefs).where(and(eq(dailyBriefs.status, 'complete'), inArray(dailyBriefs.briefDate, [...dates])))
 }
 
 // freshness signal：窗內 news 進量（news_items 是 brief pipeline 輸入表）。
