@@ -1,0 +1,18 @@
+packages:
+  - apps/*
+  - packages/*
+
+packageExtensions:
+  # @astrojs/astro2tsx 釘了 @emnapi/core 1.11.3，卻沒宣告 @emnapi/runtime；它依賴的
+  # @napi-rs/wasm-runtime 把 runtime 列成 peer（^1.7.1 || 2.0.0-beta），autoInstallPeers
+  # 會挑到 2.0.0-beta.2，跟 core 1.11.3 不合，astro check 一載入就崩潰
+  # （this.bridge.setLastError is not a function）。overrides 管不到自動補的 peer，
+  # 所以直接替 astro2tsx 補上同版號的 runtime。
+  '@astrojs/astro2tsx':
+    dependencies:
+      '@emnapi/runtime': 1.11.3
+# pnpm 11 用 allowBuilds 決定哪些依賴可以跑 install script（pkg → 是否允許）
+allowBuilds:
+  esbuild: true
+  sharp: false
+  unrs-resolver: true

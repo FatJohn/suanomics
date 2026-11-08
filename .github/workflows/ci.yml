@@ -1,0 +1,72 @@
+name: ci
+
+# 程式碼的驗證 gate：build → lint → type-check → db:migrate → test。
+# 真資料庫一律用 Postgres service container；Neon 的連線字串不進 CI。
+
+on:
+  pull_request:
+    branches: [main, rewrite]
+  push:
+    branches: [main, rewrite]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - '5432:5432'
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      # 指向本 job 的 service container（GitHub 把 service port 映射到 localhost）
+      DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/postgres'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # pnpm 版本取自 package.json 的 packageManager 欄位
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # build 先於 type-check／test：@suanomics/shared 的 exports 指向 dist
+      - name: Build
+        run: pnpm -r build
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm -r type-check
+
+      # 從空 DB 套用全部 migration，驗 drizzle migration 機制
+      - name: DB migrate
+        run: pnpm --filter @suanomics/pipeline run db:migrate
+
+      - name: Test
+        run: pnpm -r test
