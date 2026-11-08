@@ -4,7 +4,7 @@
 # 但 Gemini enrichment 對中文新聞 tag 用中文（聯準會 / 台積電）。retriever
 # 的 GIN `entities @> [{name: E}]` 字面比對、字面不一致就 miss。
 #
-# 此 yml 是 alias dict source-of-truth、由 `apps/server/src/agents/
+# 此 yml 是 alias dict source-of-truth、由 `apps/pipeline/src/agents/
 # entity-aliases.ts` 載入、retriever / routing 都用。
 #
 # 結構：

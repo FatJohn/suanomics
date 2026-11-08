@@ -1,7 +1,7 @@
-import { getDb } from '@suanomics/db/client'
-import { externalArticles, externalSources } from '@suanomics/db/schema'
 import { and, eq, gte, inArray, isNotNull, ne, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { getDb } from '../client.js'
+import { externalArticles, externalSources } from '../schema.js'
 
 // I3 fix: DB row jsonb 欄位的 zod schema，在讀取 boundary 驗證，替代裸型別 cast。
 // confidence 在 DB 可能為 null/undefined（舊資料無此欄），預設 0 讓型別符合 EnrichmentSnapshot。

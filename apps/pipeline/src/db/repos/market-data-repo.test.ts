@@ -1,7 +1,7 @@
-import { closeDb, getDb } from '@suanomics/db/client'
-import { marketDataPoints } from '@suanomics/db/schema'
 import { inArray } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { marketDataPoints } from '../schema.js'
 import { getLatestPoints, upsertMarketDataPoints } from './market-data-repo.js'
 
 // test- prefix series 隔離測試資料、避免污染真實序列

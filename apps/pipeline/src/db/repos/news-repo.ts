@@ -1,13 +1,13 @@
 import type { MarketBrief } from '@suanomics/shared'
 import type { ItemCategory } from '../news-categories.js'
-import { getDb } from '@suanomics/db/client'
-import { analyses, dailyBriefs, newsItems, newsSources } from '@suanomics/db/schema'
 import { and, count, desc, eq, gte, inArray, isNull, lt, lte } from 'drizzle-orm'
 import { z } from 'zod'
+import { getDb } from '../client.js'
 import { partitionByCategory, resolveItemCategory } from '../news-categories.js'
+import { analyses, dailyBriefs, newsItems, newsSources } from '../schema.js'
 
 // ParsedEntry was previously imported from apps/server/src/lib/brief/rss-fetcher.ts.
-// Defined locally here to keep @suanomics/db free of inter-app coupling.
+// Defined locally here to keep the db layer free of ingest coupling.
 // Deduplication with rss-fetcher's definition happens in Task 8 when rss-fetcher moves.
 export interface ParsedEntry {
   externalId: string

@@ -1,5 +1,5 @@
 import type { EvidenceClaim, EvidenceRef, SeriesAnchor } from '@suanomics/shared'
-import type { CitableSeries } from '../market-data/snapshot.js'
+import type { CitableSeries } from '../ingest/market-data/snapshot.js'
 import process from 'node:process'
 import { autoAttachSeriesRefs, EvidenceClaimSchema, EvidenceRefSchema } from '@suanomics/shared'
 import { ANALYST_CLAIMS_USER_TEXT } from '../prompts/analyst-claims.user-content.js'

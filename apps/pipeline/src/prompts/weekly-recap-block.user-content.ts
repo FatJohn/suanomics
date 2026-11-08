@@ -1,5 +1,5 @@
 // weekly-recap-block.ts 組給模型的「本週敘事線回顧」區塊文字：標題、valence／status 標籤、
-// 逐行模板。對應 apps/server/src/agents/weekly-recap-block.ts 的 buildWeeklyRecapBlock()；
+// 逐行模板。對應 apps/pipeline/src/agents/weekly-recap-block.ts 的 buildWeeklyRecapBlock()；
 // 獨立成檔是為了讓這份繁中措辭跟區間篩選、排序等邏輯分開，換語言或市場時只需替換這份資料。
 export const WEEKLY_RECAP_BLOCK_USER_TEXT = {
   heading: '## 本週敘事線回顧',

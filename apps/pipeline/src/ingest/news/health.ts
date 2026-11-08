@@ -1,5 +1,5 @@
-import { isGoogleNewsProxySeed } from '@suanomics/db/seed'
 import { hasBodyBeyondTitle } from '@suanomics/shared'
+import { isGoogleNewsProxySeed } from '../../db/seed.js'
 
 /** 一列 `news_sources`（DB 現況，不是 SEED——兩者可能不一致，而不一致本身就是要看的東西）。 */
 export interface HealthSourceInput {

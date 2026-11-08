@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { closeDb, getDb } from '@suanomics/db/client'
-import { newsItems, newsSources } from '@suanomics/db/schema'
 import { inArray, like } from 'drizzle-orm'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { newsItems, newsSources } from '../schema.js'
 import { getNewsSourceActivity } from './news-source-activity.js'
 
 // 真 DB 整合測試。理由同 articles-repo.db.test.ts：這支查詢的窗判定與型別轉換只有真的

@@ -1,6 +1,6 @@
 import type { SeriesAnchor, SeriesFreshness } from '@suanomics/shared'
 import type { SeriesSection, SeriesSpec } from './series-config.js'
-import { buildCrossMarketSignals, classifyFreshness, formatLagLabel, taipeiDateOf } from '@suanomics/shared'
+import { buildCrossMarketSignals, classifyFreshness, formatLagLabel } from '@suanomics/shared'
 import { SERIES_SPECS } from './series-config.js'
 
 export interface SeriesLatest {
@@ -287,9 +287,6 @@ function renderRow(item: SeriesLatest, now: Date, reportDate: string): string {
 function declarationIndex(seriesId: string): number {
   return SERIES_SPECS.findIndex(s => s.seriesId === seriesId)
 }
-
-// 報告日的唯一實作在 `@suanomics/shared`；這裡 re-export 只為了不打斷既有的 import 路徑。
-export { taipeiDateOf }
 
 export interface CitableSeries {
   seriesId: string

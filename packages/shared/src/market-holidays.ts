@@ -46,7 +46,7 @@ export function daysUntilHolidayCoverageExhausted(now: Date): number {
 const TW_HOLIDAY_SET = new Set(TW_MARKET_HOLIDAYS)
 const US_HOLIDAY_SET = new Set(US_MARKET_HOLIDAYS)
 
-// shared 不可依賴 @suanomics/db、故不重用 storylines-repo 的 isoDateMinusDays（接受 8 行重複）。
+// shared 不可依賴 apps/pipeline、故不重用 storylines-repo 的 isoDateMinusDays（接受 8 行重複）。
 function isoDateMinusDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() - days)

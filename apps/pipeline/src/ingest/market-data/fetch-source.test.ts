@@ -68,7 +68,7 @@ describe('fetchSource', () => {
   })
 
   it('init 原樣傳給 fetch、並補上 abort signal', async () => {
-    const spy = vi.fn(async () => ok({}))
+    const spy = vi.fn<typeof fetch>(async () => ok({}))
     vi.stubGlobal('fetch', spy)
     await fetchSource('https://x.test/a', {
       label: 'taifex-client: TXF',

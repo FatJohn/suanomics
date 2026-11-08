@@ -30,6 +30,7 @@ describe('callAnalystTier1', () => {
   it('should pass news + hypotheses + retrieved articles to LLM', async () => {
     vi.mocked(wrapper.callAgentLLM).mockResolvedValue(baseValid)
     await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 'T',
       newsText: 'body',
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
@@ -43,6 +44,7 @@ describe('callAnalystTier1', () => {
   it('should list the primary news url as a citable source even when retrieved is empty', async () => {
     vi.mocked(wrapper.callAgentLLM).mockResolvedValue(baseValid)
     await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 'T',
       newsText: 'body',
       newsUrl: 'https://src.example.com/primary-news',
@@ -66,6 +68,7 @@ describe('callAnalystTier1', () => {
       reasoning: 'r',
     })
     const result = await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 'T',
       newsText: 'b',
       newsUrl: 'https://src.example.com/primary-news',
@@ -93,6 +96,7 @@ describe('callAnalystTier1', () => {
       .mockResolvedValueOnce(baseValid)
 
     const result = await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 'T',
       newsText: 'b',
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
@@ -116,6 +120,7 @@ describe('callAnalystTier1', () => {
       reasoning: 'r',
     })
     const result = await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 'T',
       newsText: 'b',
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
@@ -160,6 +165,7 @@ describe('callAnalystTier1', () => {
     // eslint-disable-next-line ts/no-explicit-any -- test record accumulator, typed at runtime
     const records: any[] = []
     await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 'T',
       newsText: 'b',
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
@@ -192,6 +198,7 @@ describe('callAnalystTier1', () => {
     // eslint-disable-next-line ts/no-explicit-any -- test record accumulator, typed at runtime
     const records: any[] = []
     await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 'T',
       newsText: 'b',
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
@@ -209,6 +216,7 @@ describe('callAnalystTier1 market snapshot injection', () => {
   })
 
   const baseParams = {
+    briefDate: '2026-04-25',
     newsTitle: 'T',
     newsText: 'body',
     decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
@@ -261,6 +269,7 @@ describe('analyst · quote truncation hotfix', () => {
     })
 
     const result = await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 'T',
       newsText: 'b',
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },
@@ -356,7 +365,7 @@ describe('callAnalystTier2', () => {
   })
 
   // empty retrieved 時 prompt 指示 Gemini 留空、單次 call 完成
-  it('returns empty cascadeChains and single call when retrieved is empty (Gemini honors instruction)', async () => {
+  it('returns empty cascadeChains and single call when retrieved is empty (Gemini follows instruction)', async () => {
     vi.mocked(wrapper.callAgentLLM).mockResolvedValue({
       primaryImpact: 'p',
       cascadeChains: [],
@@ -432,6 +441,7 @@ describe('callAnalystTier1 nextTierEntities', () => {
       }
     })
     const result = await callAnalystTier1({
+      briefDate: '2026-04-25',
       newsTitle: 't',
       newsText: 'x',
       decomposed: { primaryEntity: { name: 'X', kind: 'company' }, topicTags: [], cascadeHypotheses: [] },

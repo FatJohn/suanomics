@@ -108,8 +108,8 @@ export function loadTopicAliasMap(yamlPath?: string): TopicAliasMap {
 }
 
 function defaultYamlPath(): string {
-  // dev:   apps/server/src/agents/topic-aliases.ts → up 2 → apps/server/data/topic-aliases.yml
-  // build: apps/server/dist/agents/topic-aliases.js → up 2 → apps/server/data/topic-aliases.yml
+  // dev:   apps/pipeline/src/agents/topic-aliases.ts → up 2 → apps/pipeline/data/topic-aliases.yml
+  // build: apps/pipeline/dist/agents/topic-aliases.js → up 2 → apps/pipeline/data/topic-aliases.yml
   const here = dirname(fileURLToPath(import.meta.url))
   return resolve(here, '../../data/topic-aliases.yml')
 }
@@ -119,7 +119,7 @@ function defaultYamlPath(): string {
 // 出事了——這裡是唯一叫得出來的地方。抽成獨立函式是為了讓兩條分支都驗得到。
 export function warnIfTopicAliasMapEmpty(map: TopicAliasMap): TopicAliasMap {
   if (map.formToGroup.size === 0)
-    console.warn('[topic-aliases] 對照表載入為空，topic 展開已退化成只做正規化；檢查 apps/server/data/topic-aliases.yml 是否有進映像')
+    console.warn('[topic-aliases] 對照表載入為空，topic 展開已退化成只做正規化；檢查 apps/pipeline/data/topic-aliases.yml 是否有進映像')
   return map
 }
 

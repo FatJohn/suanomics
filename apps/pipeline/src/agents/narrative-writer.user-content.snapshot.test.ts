@@ -1,6 +1,5 @@
 import type { EvidenceClaim, MarketBrief } from '@suanomics/shared'
-import type { NewsItem } from './orchestrator.js'
-import type { AnalystOutput } from './types.js'
+import type { AnalystOutput, NewsItem } from './types.js'
 import { describe, expect, it } from 'vitest'
 import { formatUserContent } from './narrative-writer.js'
 

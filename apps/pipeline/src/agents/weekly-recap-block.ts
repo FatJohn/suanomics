@@ -1,5 +1,5 @@
 // 週末回顧：把本週 [start,end] 內的 storyline 進展 render 成回顧 block（對照 buildStorylineBlock 風格）。
-import type { Storyline } from '@suanomics/db/repos/storylines-repo'
+import type { Storyline } from '../db/repos/storylines-repo.js'
 import { WEEKLY_RECAP_BLOCK_USER_TEXT } from '../prompts/weekly-recap-block.user-content.js'
 
 export function buildWeeklyRecapBlock(storylines: Storyline[], start: string, end: string): string | null {

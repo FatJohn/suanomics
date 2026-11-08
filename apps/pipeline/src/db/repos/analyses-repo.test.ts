@@ -1,9 +1,9 @@
 import type { MarketBrief } from '@suanomics/shared'
-import { closeDb, getDb } from '@suanomics/db/client'
-import { analyses } from '@suanomics/db/schema'
 import { MarketBriefDisclaimer } from '@suanomics/shared'
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { analyses } from '../schema.js'
 import {
   findCachedByEntityOverlap,
   findCachedByInputHash,

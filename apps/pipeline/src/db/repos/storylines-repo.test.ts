@@ -1,8 +1,8 @@
 import type { StorylineUpdate } from './storylines-repo.js'
-import { closeDb, getDb } from '@suanomics/db/client'
-import { storylines } from '@suanomics/db/schema'
 import { eq, like, sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { storylines } from '../schema.js'
 import { applyEditorResult, getOpenStorylines, getStorylinesTouchedOn, getStorylinesUpdatedInRange, insertStoryline, isoDateMinusDays, newStorylineQuota, StorylineUpdateSchema } from './storylines-repo.js'
 
 // 「這條測試不驗 open cap」的哨兵值：cap 是全表 count，本機真實資料會決定配額。

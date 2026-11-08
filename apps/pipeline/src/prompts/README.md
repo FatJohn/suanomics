@@ -1,6 +1,6 @@
-# apps/server/src/prompts
+# apps/pipeline/src/prompts
 
-每個 LLM agent 送給模型的文字集中放在這個目錄，與 `apps/server/src/agents/` 底下的 agent runner 邏輯分開。
+每個 LLM agent 送給模型的文字集中放在這個目錄，與 `apps/pipeline/src/agents/` 底下的 agent runner 邏輯分開。
 分兩種檔：
 
 - `*.prompt.ts`：system prompt（與少數配套的 schema／輔助函式）。
@@ -10,7 +10,7 @@
 
 ## 對照表
 
-| Prompt 檔 | 對應 Agent（`apps/server/src/agents/`） | Export |
+| Prompt 檔 | 對應 Agent（`apps/pipeline/src/agents/`） | Export |
 |---|---|---|
 | `analyst-tier1.prompt.ts` | `analyst-tier1.ts` | `ANALYST_TIER1_SYSTEM_PROMPT` |
 | `analyst-tier2.prompt.ts` | `analyst-tier2.ts` | `ANALYST_TIER2_SYSTEM_PROMPT` |
@@ -47,14 +47,14 @@
 
 以下這些地方也是繁中／台灣特化，不在本目錄範圍內，換語言／市場時仍要另外處理：
 
-- **`agents/` 以外、同樣會進到模型輸入的中文區塊**：`apps/server/src/market-data/snapshot.ts`（市場數據快照）、
-  `apps/server/src/market-data/calendar.ts`（行事曆區塊）、`apps/server/src/brief/official-announcements.ts`
+- **`agents/` 以外、同樣會進到模型輸入的中文區塊**：`apps/pipeline/src/ingest/market-data/snapshot.ts`（市場數據快照）、
+  `apps/pipeline/src/ingest/market-data/calendar.ts`（行事曆區塊）、`apps/pipeline/src/brief/official-announcements.ts`
   （官方公告區塊）產生的標題與說明文字寫在各自的資料格式化程式裡，沒有抽到這個目錄。
-- `packages/db/src/news-categories.ts` 的 `ITEM_CATEGORY_LABEL`（新聞類別的中文標籤）會出現在 editor 的輸入裡；
-  它同時被資料層與前端共用，所以留在 `packages/db`。
+- `apps/pipeline/src/db/news-categories.ts` 的 `ITEM_CATEGORY_LABEL`（新聞類別的中文標籤）會出現在 editor 的輸入裡；
+  它同時被資料層與前端共用，所以留在 `apps/pipeline/src/db`。
 - `packages/shared/src/compliance.ts` 的 `FORBIDDEN_PHRASES`（投信投顧法禁用語，例如「建議買」
   「建議賣」）是中文字串，硬式攔截在合規檢查裡。
-- `apps/server/src/market-data/` 有台灣專屬資料源（`twse-client.ts`、`taifex-client.ts`），
+- `apps/pipeline/src/ingest/market-data/` 有台灣專屬資料源（`twse-client.ts`、`taifex-client.ts`），
   與美股/總經資料源（`fred-client.ts`、`nasdaq-client.ts`）並存。
-- `apps/server/data/entity-aliases.yml`、`apps/server/data/topic-aliases.yml` 是中英文
+- `apps/pipeline/data/entity-aliases.yml`、`apps/pipeline/data/topic-aliases.yml` 是中英文
   entity／topic 別名對照表，內容綁定台灣與美國總經場景的具體名稱（如台積電／TSMC、Fed／聯準會）。

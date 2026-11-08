@@ -1,6 +1,6 @@
-import { getDb } from '@suanomics/db/client'
-import { externalArticles, externalSources } from '@suanomics/db/schema'
 import { and, desc, eq, gte, inArray, isNotNull, lte } from 'drizzle-orm'
+import { getDb } from '../client.js'
+import { externalArticles, externalSources } from '../schema.js'
 
 /** 一則官方公告，形狀對齊 worker 的 `OfficialAnnouncement`（那邊是純函式、不依賴 drizzle）。 */
 export interface OfficialAnnouncementRow {

@@ -114,6 +114,7 @@ describe('callSynthesizer', () => {
         primaryImpact: '主衝擊',
         cascadeChains: [{ ...baseChain, speculative: true }],
         reasoning: 'r',
+        claims: [],
       }],
       date: '2026-06-13',
     })
@@ -137,6 +138,7 @@ describe('callSynthesizer', () => {
         primaryImpact: '主衝擊',
         cascadeChains: [baseChain],
         reasoning: 'r',
+        claims: [],
       }],
       date: '2026-06-13',
     })

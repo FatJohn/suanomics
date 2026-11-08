@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { closeDb, getDb } from '@suanomics/db/client'
-import { externalArticles, externalSources } from '@suanomics/db/schema'
 import { like } from 'drizzle-orm'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { externalArticles, externalSources } from '../schema.js'
 import { createArticlesRepo, getExternalArticlesByUrls, getSourceActivity } from './articles-repo.js'
 
 // 真 DB 整合測試。articles-repo.test.ts 是 fake-DB 單元測試，兩者刻意分檔：

@@ -1,7 +1,7 @@
 import { containsForbiddenPhrase, CROSS_MARKET_SIGNAL_GROUPS } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
-import { SERIES_SPECS } from '../market-data/series-config.js'
-import { buildSnapshotBlock } from '../market-data/snapshot.js'
+import { SERIES_SPECS } from '../ingest/market-data/series-config.js'
+import { buildSnapshotBlock } from '../ingest/market-data/snapshot.js'
 import { MACRO_FRAMES, renderMacroFramesSection } from './macro-frames.js'
 
 function seriesSpec(id: string) {

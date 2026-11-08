@@ -95,7 +95,7 @@ describe('daysUntilCalendarExhausted', () => {
 describe('econ-calendar.json seed', () => {
   it('parses cleanly against EconCalendarSchema', async () => {
     const here = dirname(fileURLToPath(import.meta.url))
-    const raw = await readFile(resolve(here, '../../data/econ-calendar.json'), 'utf8')
+    const raw = await readFile(resolve(here, '../../../data/econ-calendar.json'), 'utf8')
     expect(() => EconCalendarSchema.parse(JSON.parse(raw))).not.toThrow()
   })
 })
@@ -106,13 +106,13 @@ describe('econ-calendar.json seed freshness（time-bomb 守門）', () => {
   // 這是預期設計、非 flaky——請勿因為它「有一天會紅」就移除。
   it('種子須覆蓋未來至少 CALENDAR_FRESHNESS_MIN_DAYS 天', async () => {
     const here = dirname(fileURLToPath(import.meta.url))
-    const raw = await readFile(resolve(here, '../../data/econ-calendar.json'), 'utf8')
+    const raw = await readFile(resolve(here, '../../../data/econ-calendar.json'), 'utf8')
     const { events } = EconCalendarSchema.parse(JSON.parse(raw))
     const days = daysUntilCalendarExhausted(events, new Date())
     expect(
       days,
       `econ-calendar 種子最遠事件距今僅 ${days} 天 < ${CALENDAR_FRESHNESS_MIN_DAYS}；`
-      + `請補 apps/server/data/econ-calendar.json 或接自動源`
+      + `請補 apps/pipeline/data/econ-calendar.json 或接自動源`
       + `（自動源可行性見 econ-calendar 的來源探測紀錄）`,
     ).toBeGreaterThanOrEqual(CALENDAR_FRESHNESS_MIN_DAYS)
   })

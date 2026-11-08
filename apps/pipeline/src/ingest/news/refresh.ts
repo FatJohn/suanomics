@@ -6,8 +6,8 @@ import {
   getNewsItemsByIds,
   insertNewsItems,
   updateScrapedContent,
-} from '@suanomics/db/repos/news-repo'
-import { isGoogleNewsProxySeed } from '@suanomics/db/seed'
+} from '../../db/repos/news-repo.js'
+import { isGoogleNewsProxySeed } from '../../db/seed.js'
 import { dedupByExternalId, fetchRss, parseRssXml } from '../external/rss-fetcher.js'
 import { scrapeArticle } from '../external/scraper.js'
 import { isBodyFetchDenied } from './body-fetch-policy.js'

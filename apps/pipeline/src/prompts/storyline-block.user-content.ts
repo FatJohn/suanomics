@@ -1,5 +1,5 @@
 // storyline-block.ts 組給模型的「追蹤中敘事線」區塊文字：標題、valence 標籤、逐行模板。
-// 對應 apps/server/src/agents/storyline-block.ts 的 buildStorylineBlock() /
+// 對應 apps/pipeline/src/agents/storyline-block.ts 的 buildStorylineBlock() /
 // continuityHintFromEntries()；獨立成檔是為了讓這份繁中措辭跟排序、cap、資料整理等邏輯
 // 分開，換語言或市場時只需替換這份資料。
 export const STORYLINE_BLOCK_USER_TEXT = {

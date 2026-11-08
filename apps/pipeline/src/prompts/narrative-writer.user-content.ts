@@ -1,5 +1,5 @@
 // narrative-writer.ts 每次呼叫組給模型的 user content 模板：段落標題與指示句。
-// 對應 apps/server/src/agents/narrative-writer.ts 的 formatUserContent()；獨立成檔是為了讓
+// 對應 apps/pipeline/src/agents/narrative-writer.ts 的 formatUserContent()；獨立成檔是為了讓
 // 「怎麼描述素材給模型看」這份繁中模板，跟組裝順序、截斷、條件分支等邏輯分開，換語言或
 // 市場時只需替換這份資料，不必動 runner 的組裝邏輯。
 export const NARRATIVE_WRITER_USER_TEXT = {

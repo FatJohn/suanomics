@@ -1,6 +1,6 @@
-import { getDb } from '@suanomics/db/client'
-import { marketDataPoints } from '@suanomics/db/schema'
 import { and, desc, eq, lte, sql } from 'drizzle-orm'
+import { getDb } from '../client.js'
+import { marketDataPoints } from '../schema.js'
 
 export interface MarketDataPointInput { seriesId: string, date: string, value: number }
 

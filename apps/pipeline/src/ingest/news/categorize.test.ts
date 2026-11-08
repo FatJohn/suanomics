@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('../agents/news-categorizer.js', () => ({ callNewsCategorizer: vi.fn() }))
-vi.mock('@suanomics/db/repos/news-repo', () => ({ updateNewsItemCategories: vi.fn() }))
+vi.mock('../../agents/news-categorizer.js', () => ({ callNewsCategorizer: vi.fn() }))
+vi.mock('../../db/repos/news-repo.js', () => ({ updateNewsItemCategories: vi.fn() }))
 
-const { callNewsCategorizer } = await import('../agents/news-categorizer.js')
-const { updateNewsItemCategories } = await import('@suanomics/db/repos/news-repo')
+const { callNewsCategorizer } = await import('../../agents/news-categorizer.js')
+const { updateNewsItemCategories } = await import('../../db/repos/news-repo.js')
 const { categorizeAndStore, BATCH_SIZE } = await import('./categorize.js')
 
 afterEach(() => {

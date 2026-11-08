@@ -1,9 +1,9 @@
-import { closeDb, getDb } from '@suanomics/db/client'
-import { externalArticles, externalSources } from '@suanomics/db/schema'
-import { AGGREGATOR_PROXY_SLUGS } from '@suanomics/db/seed-external-sources'
 import { taipeiDateOf } from '@suanomics/shared'
 import { eq, like } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../db/client.js'
+import { externalArticles, externalSources } from '../db/schema.js'
+import { AGGREGATOR_PROXY_SLUGS } from '../db/seed-external-sources.js'
 import { retrieveArticles } from './retriever.js'
 
 // 既有測試用 `daysAgo`（相對 now）鋪資料，所以報告日就是今天的台北日——上界落在

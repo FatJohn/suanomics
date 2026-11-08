@@ -1,4 +1,4 @@
-import type { Storyline } from '@suanomics/db/repos/storylines-repo'
+import type { Storyline } from '../db/repos/storylines-repo.js'
 import { describe, expect, it } from 'vitest'
 
 import { buildStorylineBlock, CAP_CONTINUITY, continuityHintFromEntries, entriesFromEditorResult } from './storyline-block.js'

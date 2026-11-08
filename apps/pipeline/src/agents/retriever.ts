@@ -1,9 +1,9 @@
 import type { SQL } from 'drizzle-orm'
 import type { RetrievedArticle } from './types.js'
-import { getDb } from '@suanomics/db/client'
-import { externalArticles, externalSources } from '@suanomics/db/schema'
-import { AGGREGATOR_PROXY_SLUGS } from '@suanomics/db/seed-external-sources'
 import { and, desc, eq, gte, lte, notInArray, or, sql } from 'drizzle-orm'
+import { getDb } from '../db/client.js'
+import { externalArticles, externalSources } from '../db/schema.js'
+import { AGGREGATOR_PROXY_SLUGS } from '../db/seed-external-sources.js'
 
 export interface RetrieveQuery {
   entities?: string[]

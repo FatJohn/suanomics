@@ -1,5 +1,5 @@
 import type { SeriesAnchor } from '@suanomics/shared'
-import type { CitableSeries } from '../market-data/snapshot.js'
+import type { CitableSeries } from '../ingest/market-data/snapshot.js'
 import type { LlmCallRecord } from './llm-wrapper.js'
 import type { AnalystOutput, CascadeChain, DecomposerOutput, RetrievedArticle } from './types.js'
 import { ANALYST_TIER1_SYSTEM_PROMPT } from '../prompts/analyst-tier1.prompt.js'

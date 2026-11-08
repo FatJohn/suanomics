@@ -1,4 +1,4 @@
-import type { Storyline } from '@suanomics/db/repos/storylines-repo'
+import type { Storyline } from '../db/repos/storylines-repo.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { callEditor, formatUserContent } from './editor.js'
 import * as wrapper from './llm-wrapper.js'

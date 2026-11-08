@@ -6,6 +6,16 @@ import { z } from 'zod'
 export { CascadeChainSchema }
 export type { CascadeChain }
 
+// 進 pipeline 的單則新聞（v0 定義在 orchestrator.ts；orchestrator 由 #25 重寫，型別先放這裡）
+export interface NewsItem {
+  id: string
+  title: string
+  url: string
+  text: string
+  // 時間框架：原始新聞發布時間（UTC ISO）、供 relativeDayLabel 算今日/昨日。缺則 null。
+  publishedAt: string | null
+}
+
 // CascadeHypothesis: Decomposer 輸出每條連動鏈的假設
 export const CascadeHypothesisSchema = z.object({
   industry: z.string().min(1),

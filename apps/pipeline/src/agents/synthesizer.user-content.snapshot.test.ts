@@ -48,8 +48,8 @@ describe('synthesizer formatUserContent snapshot (characterization)', () => {
     vi.mocked(wrapper.callAgentLLM).mockResolvedValue(VALID_SYNTH)
     await callSynthesizer({
       analystOutputs: [
-        { newsId: 'n1', primaryImpact: '主衝擊一', cascadeChains: [], reasoning: '理由一' },
-        { primaryImpact: '主衝擊二（無 newsId）', cascadeChains: [], reasoning: '理由二' },
+        { newsId: 'n1', primaryImpact: '主衝擊一', cascadeChains: [], reasoning: '理由一', claims: [] },
+        { primaryImpact: '主衝擊二（無 newsId）', cascadeChains: [], reasoning: '理由二', claims: [] },
       ],
       date: '2026-06-13',
     })
@@ -82,6 +82,7 @@ describe('synthesizer formatUserContent snapshot (characterization)', () => {
           },
         ],
         reasoning: '綜合理由',
+        claims: [],
       }],
       date: '2026-06-13',
     })

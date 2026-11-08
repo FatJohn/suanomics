@@ -14,7 +14,7 @@ const VALID_SELECTION = {
   selectedNewsIds: [1, 2, 3, 4, 5],
 }
 const VALID_STORYLINE = {
-  storylineTouches: [{ storylineId: 7, valence: 'support', note: 'CPI 低於預期' }],
+  storylineTouches: [{ storylineId: 7, valence: 'support' as const, note: 'CPI 低於預期' }],
   resolveStorylines: [],
   newStorylines: [{ title: '日圓套利平倉', thesis: '日銀升息引發資金回流', entities: ['BOJ'] }],
 }

@@ -9,7 +9,7 @@ import { checkDatedEvent, checkNamedNumbers } from './evidence-number-check.js'
 
 /**
  * 檢查所需的當日事實。全部由呼叫端注入而非在此 import：
- * SERIES_SPECS 住在 apps/server，shared 不該反向依賴它。
+ * SERIES_SPECS 住在 apps/pipeline，shared 不該反向依賴它。
  */
 export interface EvidenceContext {
   /** `brief.citations`——D2 比對 url、D5 比對 quote 文字 */

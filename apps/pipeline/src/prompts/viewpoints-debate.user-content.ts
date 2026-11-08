@@ -1,4 +1,4 @@
-// viewpoints-debate agent（`apps/server/src/agents/viewpoints-debate.ts`）三次呼叫各自
+// viewpoints-debate agent（`apps/pipeline/src/agents/viewpoints-debate.ts`）三次呼叫各自
 // 附加在共用素材（`buildDebateMaterial`，見 viewpoints-debate.prompt.ts）之後的指示句。
 // 放這裡是為了跟 system prompt 一樣，換語言／市場時能整份替換，不必進 runner 邏輯裡挖字面值。
 export const VIEWPOINTS_DEBATE_USER_TEXT = {

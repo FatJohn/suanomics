@@ -1,5 +1,5 @@
 // narrative-shared.ts 的語言相關後處理資料：投信投顧法合規改寫詞對表。
-// 對應 apps/server/src/agents/narrative-shared.ts 的 rewriteText()；獨立成檔是為了讓
+// 對應 apps/pipeline/src/agents/narrative-shared.ts 的 rewriteText()；獨立成檔是為了讓
 // 「這個市場/語言禁用哪些詞、要改寫成什麼」跟「怎麼套用改寫」（迴圈與計數邏輯）分開，
 // 換語言或市場時只需替換這份資料。
 export const NARRATIVE_SHARED_USER_TEXT = {

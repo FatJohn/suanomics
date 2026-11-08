@@ -1,7 +1,7 @@
 import type { MarketBrief } from '@suanomics/shared'
-import { getDb } from '@suanomics/db/client'
-import { analyses } from '@suanomics/db/schema'
 import { and, desc, eq, gte, isNull, or, sql } from 'drizzle-orm'
+import { getDb } from '../client.js'
+import { analyses } from '../schema.js'
 
 export interface CachedAnalysis {
   id: number

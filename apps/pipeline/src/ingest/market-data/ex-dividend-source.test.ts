@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import twt48u from './__fixtures__/twse-twt48u.json'
+import twt48u from './__fixtures__/twse-twt48u.json' with { type: 'json' }
 import { fetchExDividendEvents } from './ex-dividend-source.js'
 
 describe('fetchExDividendEvents', () => {

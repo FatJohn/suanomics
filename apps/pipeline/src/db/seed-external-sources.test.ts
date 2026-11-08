@@ -152,7 +152,7 @@ describe('eXTERNAL_SOURCES_SEED', () => {
         displayName: 'x',
         kind: 'html-selector',
         tier: 2,
-        config: { listingUrl: 'https://news.google.com/x', itemSelector: 'a', titleSelector: 'a', linkSelector: 'a', dateSelector: 'a' },
+        config: { listingUrl: 'https://news.google.com/x', itemSelector: 'a', titleSelector: 'a', linkSelector: 'a', dateSelector: 'a', bodySelector: null },
       })).toBe(false)
     })
 

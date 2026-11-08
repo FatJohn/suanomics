@@ -28,6 +28,8 @@ export default antfu(
       'docs/**',
       'spikes/**',
       '**/migrations/meta/**',
+      // 上游回應的原樣樣本（parser 測試的輸入），不套 formatter
+      '**/__fixtures__/**/*.html',
     ],
   },
   {

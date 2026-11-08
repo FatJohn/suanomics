@@ -132,6 +132,7 @@ function specOf(sourceCode: string): SeriesSpec {
     transform: 'level',
     section: 'us-equity',
     kind: 'level',
+    freshness: { cadence: 'trading-daily', market: 'us', lagTradingDays: 1 },
   }
 }
 

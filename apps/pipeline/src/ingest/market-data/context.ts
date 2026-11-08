@@ -1,15 +1,15 @@
-import type { OfficialAnnouncementRow } from '@suanomics/db/repos/official-announcements-repo'
 import type { CalendarCoverage, SeriesAnchor, SeriesFreshness } from '@suanomics/shared'
+import type { OfficialAnnouncementRow } from '../../db/repos/official-announcements-repo.js'
 import type { EconEvent } from './calendar.js'
 import type { SeriesAsOfMap } from './historical-asof.js'
 import type { CitableSeries, SeriesLatest } from './snapshot.js'
 import { readFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { getLatestPoints } from '@suanomics/db/repos/market-data-repo'
-import { getRecentOfficialAnnouncements } from '@suanomics/db/repos/official-announcements-repo'
 import { classifyFreshness, taipeiDateOf } from '@suanomics/shared'
-import { buildOfficialAnnouncementsBlock, OFFICIAL_BLOCK_SLUGS } from '../brief/official-announcements.js'
+import { buildOfficialAnnouncementsBlock, OFFICIAL_BLOCK_SLUGS } from '../../brief/official-announcements.js'
+import { getLatestPoints } from '../../db/repos/market-data-repo.js'
+import { getRecentOfficialAnnouncements } from '../../db/repos/official-announcements-repo.js'
 import { buildCalendarBlock, CALENDAR_FRESHNESS_MIN_DAYS, CALENDAR_HORIZON_DAYS, COMPANY_CALENDAR_CATEGORY_LABELS, daysUntilCalendarExhausted, EconCalendarSchema, selectCalendarWindow, toDateString } from './calendar.js'
 import { fetchExDividendEvents } from './ex-dividend-source.js'
 import { fetchInvestorConferenceEvents } from './investor-conference-source.js'
@@ -90,11 +90,11 @@ interface LoadDeps {
   seriesAsOf?: SeriesAsOfMap
 }
 
-// dev:   apps/server/src/market-data/context.ts → up 2 → apps/server/data/econ-calendar.json
-// build: apps/server/dist/market-data/context.js → up 2 → apps/server/data/econ-calendar.json
+// dev:   apps/pipeline/src/ingest/market-data/context.ts → up 3 → apps/pipeline/data/econ-calendar.json
+// build: apps/pipeline/dist/ingest/market-data/context.js → up 3 → apps/pipeline/data/econ-calendar.json
 function defaultCalendarPath(): string {
   const here = dirname(fileURLToPath(import.meta.url))
-  return resolve(here, '../../data/econ-calendar.json')
+  return resolve(here, '../../../data/econ-calendar.json')
 }
 
 /**

@@ -1,8 +1,7 @@
 import type { EvidenceClaim, MarketBrief, MarketBriefCitation, Narrative } from '@suanomics/shared'
 import type { LlmCallRecord } from './llm-wrapper.js'
 import type { RetryReason } from './narrative-shared.js'
-import type { NewsItem } from './orchestrator.js'
-import type { AnalystOutput } from './types.js'
+import type { AnalystOutput, NewsItem } from './types.js'
 import process from 'node:process'
 import {
 

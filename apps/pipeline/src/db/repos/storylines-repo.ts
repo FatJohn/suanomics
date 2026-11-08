@@ -1,7 +1,7 @@
-import { getDb } from '@suanomics/db/client'
-import { storylines } from '@suanomics/db/schema'
 import { and, asc, eq, lte, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { getDb } from '../client.js'
+import { storylines } from '../schema.js'
 
 export const StorylineUpdateSchema = z.object({
   briefDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),

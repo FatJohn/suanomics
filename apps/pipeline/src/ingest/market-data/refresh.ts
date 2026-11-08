@@ -1,6 +1,6 @@
 import type { SeriesSpec } from './series-config.js'
 import type { RawPoint } from './transform.js'
-import { getLatestPoints, upsertMarketDataPoints } from '@suanomics/db/repos/market-data-repo'
+import { getLatestPoints, upsertMarketDataPoints } from '../../db/repos/market-data-repo.js'
 import { fetchFredObservations } from './fred-client.js'
 import { fetchNasdaqSeries } from './nasdaq-client.js'
 import { SERIES_SPECS } from './series-config.js'

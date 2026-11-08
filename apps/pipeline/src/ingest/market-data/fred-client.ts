@@ -1,9 +1,6 @@
 import type { RawPoint } from './transform.js'
 import { fetchSource, SOURCE_TIMEOUT_MS } from './fetch-source.js'
 
-// FRED 觀測值與其他來源共用同一 point 型別、避免同構宣告漂移。
-export type FredPoint = RawPoint
-
 const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations'
 
 export interface FetchFredParams { fredId: string, apiKey: string, limit: number, timeoutMs?: number }

@@ -1,5 +1,5 @@
-import { getDb } from '@suanomics/db/client'
-import { storylines } from '@suanomics/db/schema'
+import { getDb } from '../client.js'
+import { storylines } from '../schema.js'
 
 /** 某個報告日被寫進 `updates` 的敘事線數，以及其中真的帶得動敘事的筆數。 */
 export interface StorylineDayActivity {

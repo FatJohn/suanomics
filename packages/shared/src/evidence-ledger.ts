@@ -63,7 +63,7 @@ function mergeClaim(kept: EvidenceClaim, incoming: EvidenceClaim): EvidenceClaim
 /**
  * 把多個來源（實務上是每則新聞一次 analyst 呼叫）的 claim 合併成一份 ledger。
  *
- * 參數刻意是 `EvidenceClaim[][]` 而不是 `AnalystOutput[]`：後者定義在 `apps/server`，
+ * 參數刻意是 `EvidenceClaim[][]` 而不是 `AnalystOutput[]`：後者定義在 `apps/pipeline`，
  * 而本套件是被 apps 依賴的那一層、不能反向 import。這也讓本函式與 tier 完全無關——
  * 今天只有 tier1 產 claim，哪天 tier2 也開始產，呼叫端多傳一組進來就涵蓋了。
  *

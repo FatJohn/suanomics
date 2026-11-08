@@ -42,7 +42,7 @@ describe('fetchFredObservations', () => {
   })
 
   it('builds correct URL with api key + sort desc + limit', async () => {
-    const spy = vi.fn(async () => okJson({ observations: [] }))
+    const spy = vi.fn<typeof fetch>(async () => okJson({ observations: [] }))
     vi.stubGlobal('fetch', spy)
     await fetchFredObservations({ fredId: 'CPIAUCSL', apiKey: 'secret', limit: 15 })
     const url = String(spy.mock.calls[0]?.[0])

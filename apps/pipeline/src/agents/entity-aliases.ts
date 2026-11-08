@@ -125,8 +125,8 @@ export function loadAliasMap(yamlPath?: string): AliasMap {
 }
 
 function defaultYamlPath(): string {
-  // dev:   apps/server/src/agents/entity-aliases.ts → up 2 → apps/server/data/entity-aliases.yml
-  // build: apps/server/dist/agents/entity-aliases.js → up 2 → apps/server/data/entity-aliases.yml
+  // dev:   apps/pipeline/src/agents/entity-aliases.ts → up 2 → apps/pipeline/data/entity-aliases.yml
+  // build: apps/pipeline/dist/agents/entity-aliases.js → up 2 → apps/pipeline/data/entity-aliases.yml
   const here = dirname(fileURLToPath(import.meta.url))
   return resolve(here, '../../data/entity-aliases.yml')
 }

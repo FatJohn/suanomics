@@ -156,7 +156,7 @@ describe('canonicalizeEntities', () => {
 })
 
 describe('loadAliasMap (from yml)', () => {
-  it('should load the seed yml shipped at apps/server/data/entity-aliases.yml', () => {
+  it('should load the seed yml shipped at apps/pipeline/data/entity-aliases.yml', () => {
     const map = loadAliasMap()
     // Spec calls these out explicitly as required coverage
     expect(map.formToCanonical.get('fed')).toBe('fed')
@@ -215,12 +215,13 @@ describe('extractCanonicalEntitiesFromAnalyst', () => {
         { industry: '油價', mechanism: 'm', affectedTickers: [], direction: 'neutral', citations: [] },
       ],
       reasoning: 'r',
+      claims: [],
     }
     const out = extractCanonicalEntitiesFromAnalyst(analyst, map)
     expect(out.sort()).toEqual(['oil-price', 'semiconductor', 'tsmc'].sort())
   })
   it('returns empty array when no cascadeChains', () => {
-    const analyst: AnalystOutput = { primaryImpact: 'p', cascadeChains: [], reasoning: 'r' }
+    const analyst: AnalystOutput = { primaryImpact: 'p', cascadeChains: [], reasoning: 'r', claims: [] }
     expect(extractCanonicalEntitiesFromAnalyst(analyst, map)).toEqual([])
   })
 })

@@ -1,7 +1,7 @@
-import { closeDb, getDb } from '@suanomics/db/client'
-import { storylines } from '@suanomics/db/schema'
 import { like } from 'drizzle-orm'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { storylines } from '../schema.js'
 import { getStorylineActivity, summarizeStorylineRows } from './storyline-activity.js'
 
 // 真 DB 整合測試。理由同 news-source-activity.db.test.ts：這支讀的是 jsonb 陣列，

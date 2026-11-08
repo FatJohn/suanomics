@@ -1,11 +1,17 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreExportsUsedInFile": true,
   "workspaces": {
     "packages/shared": {
       "project": ["src/**/*.ts"]
     },
     "apps/pipeline": {
-      "entry": ["src/index.ts"],
+      "entry": [
+        "src/index.ts",
+        "src/ingest/fixtures/cli.ts",
+        "src/db/repos/*.ts",
+        "src/ingest/market-data/context.ts"
+      ],
       "project": ["src/**/*.ts"]
     },
     "apps/web": {

@@ -1,8 +1,8 @@
 import type { ParsedEntry } from './news-repo.js'
-import { closeDb, getDb } from '@suanomics/db/client'
-import { dailyBriefs, newsItems, newsSources } from '@suanomics/db/schema'
 import { eq, inArray, like } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { dailyBriefs, newsItems, newsSources } from '../schema.js'
 import { buildUpsertRows, countNewsFetchedBetween, getDailyBriefsForDates, getRecentBriefSummaries, getStratifiedCandidates, listDailyBriefDates, saveDailyBrief, selectNewsForBrief } from './news-repo.js'
 
 describe('buildUpsertRows', () => {

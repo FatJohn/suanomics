@@ -1,4 +1,4 @@
-// editor agent（`apps/server/src/agents/editor.ts`）送給 LLM 的 user content 文字。
+// editor agent（`apps/pipeline/src/agents/editor.ts`）送給 LLM 的 user content 文字。
 // 放這裡是為了跟 system prompt 一樣，換語言／市場時能整份替換，不必進 runner 邏輯裡挖字面值。
 export const EDITOR_USER_TEXT = {
   candidatesHeading: (count: number) => `## 候選新聞（${count} 則、只能從這些 id 中選）`,

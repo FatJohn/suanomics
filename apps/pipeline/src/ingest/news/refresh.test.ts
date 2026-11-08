@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { runNewsRefresh } from './refresh.js'
 
-vi.mock('@suanomics/db/repos/news-repo')
+vi.mock('../../db/repos/news-repo.js')
 vi.mock('../external/rss-fetcher.js')
 vi.mock('../external/scraper.js')
 vi.mock('./categorize.js')
@@ -13,7 +13,7 @@ describe('runNewsRefresh', () => {
   })
 
   it('returns 0 inserted when no sources are active', async () => {
-    const repo = await import('@suanomics/db/repos/news-repo')
+    const repo = await import('../../db/repos/news-repo.js')
     vi.mocked(repo.getActiveSources).mockResolvedValue([])
     const result = await runNewsRefresh()
     expect(result.sourcesProcessed).toBe(0)
@@ -34,10 +34,10 @@ describe('runNewsRefresh 對 scrape 結果的分流', () => {
   })
 
   async function setupOneSourceWithTwoItems(): Promise<{
-    repo: typeof import('@suanomics/db/repos/news-repo')
+    repo: typeof import('../../db/repos/news-repo.js')
     scraper: typeof import('../external/scraper.js')
   }> {
-    const repo = await import('@suanomics/db/repos/news-repo')
+    const repo = await import('../../db/repos/news-repo.js')
     const rss = await import('../external/rss-fetcher.js')
     const scraper = await import('../external/scraper.js')
     vi.mocked(repo.getActiveSources).mockResolvedValue([
@@ -119,7 +119,7 @@ describe('runNewsRefresh 落地率不變量', () => {
   })
 
   it('★ inserted 恰好等於寫入次數加上每一類沒寫入的計數器（直連來源）', async () => {
-    const repo = await import('@suanomics/db/repos/news-repo')
+    const repo = await import('../../db/repos/news-repo.js')
     const rss = await import('../external/rss-fetcher.js')
     const scraper = await import('../external/scraper.js')
     vi.mocked(repo.getActiveSources).mockResolvedValue([
@@ -170,10 +170,10 @@ describe('runNewsRefresh 對 Google News 代理 feed 的整批跳過', () => {
   const GN_URL = 'https://news.google.com/rss/articles/CBMiTEST?oc=5'
 
   async function setupProxySource(rssUrl = 'https://news.google.com/rss/search?q=keyword&hl=zh-TW'): Promise<{
-    repo: typeof import('@suanomics/db/repos/news-repo')
+    repo: typeof import('../../db/repos/news-repo.js')
     scraper: typeof import('../external/scraper.js')
   }> {
-    const repo = await import('@suanomics/db/repos/news-repo')
+    const repo = await import('../../db/repos/news-repo.js')
     const rss = await import('../external/rss-fetcher.js')
     const scraper = await import('../external/scraper.js')
     vi.mocked(repo.getActiveSources).mockResolvedValue([{ id: 1, slug: 'google-news-demo', rssUrl }] as never)
@@ -223,8 +223,8 @@ describe('runNewsRefresh 的 perSource 每個來源只有一列', () => {
     vi.resetAllMocks()
   })
 
-  async function setupOneSource(): Promise<typeof import('@suanomics/db/repos/news-repo')> {
-    const repo = await import('@suanomics/db/repos/news-repo')
+  async function setupOneSource(): Promise<typeof import('../../db/repos/news-repo.js')> {
+    const repo = await import('../../db/repos/news-repo.js')
     const rss = await import('../external/rss-fetcher.js')
     vi.mocked(repo.getActiveSources).mockResolvedValue([
       { id: 1, slug: 'demo-source', rssUrl: 'https://feed.example/rss' },

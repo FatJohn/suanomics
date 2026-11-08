@@ -1,5 +1,5 @@
-import { updateNewsItemTopicTags } from '@suanomics/db/repos/news-repo'
-import { callNewsTagger } from '../agents/news-tagger.js'
+import { callNewsTagger } from '../../agents/news-tagger.js'
+import { updateNewsItemTopicTags } from '../../db/repos/news-repo.js'
 
 export const BATCH_SIZE = 15
 

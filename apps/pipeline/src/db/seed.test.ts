@@ -133,7 +133,7 @@ describe('isGoogleNewsProxySeed', () => {
   })
 
   it('壞掉的 rss_url 回 false 而不是拋', () => {
-    expect(isGoogleNewsProxySeed({ slug: 'x', displayName: 'x', rssUrl: 'not a url', isActive: true, category: 'macro' })).toBe(false)
+    expect(isGoogleNewsProxySeed({ rssUrl: 'not a url' })).toBe(false)
   })
 
   // 參數型別只要求 `rssUrl`（判準本來就只看它）。放寬是為了讓 news:health 這種
@@ -146,7 +146,7 @@ describe('isGoogleNewsProxySeed', () => {
 
   // host 精確比對：news.google.com.evil.example 不該被當成代理而拿到豁免。
   it('只認 host 完全相等，不做子字串比對', () => {
-    expect(isGoogleNewsProxySeed({ slug: 'x', displayName: 'x', rssUrl: 'https://news.google.com.evil.example/rss', isActive: true, category: 'macro' })).toBe(false)
+    expect(isGoogleNewsProxySeed({ rssUrl: 'https://news.google.com.evil.example/rss' })).toBe(false)
   })
 })
 

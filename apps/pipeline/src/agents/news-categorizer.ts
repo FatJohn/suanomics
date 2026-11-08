@@ -1,4 +1,4 @@
-import { ITEM_CATEGORIES } from '@suanomics/db/news-categories'
+import { ITEM_CATEGORIES } from '../db/news-categories.js'
 import { NEWS_CATEGORIZER_SYSTEM_PROMPT } from '../prompts/news-categorizer.prompt.js'
 import { callAgentLLM } from './llm-wrapper.js'
 import { clampString } from './narrative-shared.js'

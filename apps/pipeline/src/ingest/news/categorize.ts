@@ -1,5 +1,5 @@
-import { updateNewsItemCategories } from '@suanomics/db/repos/news-repo'
-import { callNewsCategorizer } from '../agents/news-categorizer.js'
+import { callNewsCategorizer } from '../../agents/news-categorizer.js'
+import { updateNewsItemCategories } from '../../db/repos/news-repo.js'
 
 export const BATCH_SIZE = 15
 

@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { closeDb, getDb } from '@suanomics/db/client'
-import { externalArticles, externalSources } from '@suanomics/db/schema'
 import { inArray, like } from 'drizzle-orm'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { externalArticles, externalSources } from '../schema.js'
 import { getRecentOfficialAnnouncements } from './official-announcements-repo.js'
 
 // 真 DB 測試：窗判定的日期 bind、publishedAt 為 null 的排除、以及 slug 過濾，

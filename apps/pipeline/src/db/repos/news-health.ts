@@ -1,6 +1,6 @@
-import { getDb } from '@suanomics/db/client'
-import { newsItems, newsSources } from '@suanomics/db/schema'
 import { count, eq, gte } from 'drizzle-orm'
+import { getDb } from '../client.js'
+import { newsItems, newsSources } from '../schema.js'
 
 /** 一列 `news_sources` 的現況，加上有史以來的則數。 */
 export interface NewsHealthSourceRow {

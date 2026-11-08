@@ -23,10 +23,10 @@ export interface DateCheckResult {
 }
 
 /**
- * 與 `apps/server/src/market-data/nasdaq-client.ts` 的 `closeEnough` 同式。
+ * 與 `apps/pipeline/src/ingest/market-data/nasdaq-client.ts` 的 `closeEnough` 同式。
  * 絕對下限吸收兩位小數的末位進位，相對項讓大指數（如 25,913.90）也有合理餘裕。
  *
- * 在此重寫而非 import：`apps/server` 依賴 `@suanomics/shared`，反向 import 會成套件循環。
+ * 在此重寫而非 import：`apps/pipeline` 依賴 `@suanomics/shared`，反向 import 會成套件循環。
  * 要收攏的話方向是 worker 改用本函式——所以它是 export 的，那條路才走得通。
  */
 export function closeEnough(a: number, b: number): boolean {

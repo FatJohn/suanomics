@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import bfi82u from './__fixtures__/twse-bfi82u-legacy.json'
-import fmtqik from './__fixtures__/twse-fmtqik.json'
-import miMargn from './__fixtures__/twse-mi-margn-legacy.json'
-import twt93u from './__fixtures__/twse-twt93u-legacy.json'
+import bfi82u from './__fixtures__/twse-bfi82u-legacy.json' with { type: 'json' }
+import fmtqik from './__fixtures__/twse-fmtqik.json' with { type: 'json' }
+import miMargn from './__fixtures__/twse-mi-margn-legacy.json' with { type: 'json' }
+import twt93u from './__fixtures__/twse-twt93u-legacy.json' with { type: 'json' }
 import {
   fetchTwseDataset,
   parseInstitutionalNet,

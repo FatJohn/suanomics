@@ -4,9 +4,9 @@
 // 這裡把「讀原版 brief → 逐序列 as-of map」這件事收成一個純函式 + 一個薄載入器，
 // 讓 `loadMarketContext` 的呼叫端（brief:rerun／brief:quality）各自決定要不要覆寫。
 import type { SeriesFreshness } from '@suanomics/shared'
-import { getDailyBriefByDate } from '@suanomics/db/repos/news-repo'
 import { SeriesFreshnessSchema } from '@suanomics/shared'
 import { z } from 'zod'
+import { getDailyBriefByDate } from '../../db/repos/news-repo.js'
 import { SERIES_SPECS } from './series-config.js'
 
 /**

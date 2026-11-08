@@ -1,4 +1,4 @@
-import type { Storyline } from '@suanomics/db/repos/storylines-repo'
+import type { Storyline } from '../db/repos/storylines-repo.js'
 import { STORYLINE_BLOCK_USER_TEXT } from '../prompts/storyline-block.user-content.js'
 
 export interface StorylineBlockEntry {

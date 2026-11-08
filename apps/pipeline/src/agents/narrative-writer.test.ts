@@ -1,7 +1,6 @@
 import type { EvidenceClaim, MarketBrief } from '@suanomics/shared'
 import type { LlmCallRecord } from './llm-wrapper.js'
-import type { NewsItem } from './orchestrator.js'
-import type { AnalystOutput } from './types.js'
+import type { AnalystOutput, NewsItem } from './types.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from '../prompts/narrative-writer.prompt.js'
@@ -33,8 +32,8 @@ const FAKE_BRIEF: MarketBrief = {
 }
 
 const FAKE_ANALYSTS: AnalystOutput[] = [
-  { newsId: 'n1', primaryImpact: 'pi', reasoning: 'r', cascadeChains: [] },
-  { newsId: 'n2', primaryImpact: 'pi', reasoning: 'r', cascadeChains: [] },
+  { newsId: 'n1', primaryImpact: 'pi', reasoning: 'r', cascadeChains: [], claims: [] },
+  { newsId: 'n2', primaryImpact: 'pi', reasoning: 'r', cascadeChains: [], claims: [] },
 ]
 
 const FAKE_NEWS: NewsItem[] = [
@@ -411,7 +410,7 @@ describe('callNarrativeWriter temporal framing', () => {
   it('每則新聞前注入發布相對時間 + header 用 briefDate（非 new Date）', async () => {
     vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
     const news = [{ id: 'n1', title: '台股大跌', url: 'https://example.com/a', text: '台股今日重挫', publishedAt: '2026-06-26T06:37:00Z' }]
-    const analysts = [{ newsId: 'n1', primaryImpact: 'x', cascadeChains: [], reasoning: 'r' }]
+    const analysts = [{ newsId: 'n1', primaryImpact: 'x', cascadeChains: [], reasoning: 'r', claims: [] }]
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: analysts,
@@ -426,7 +425,7 @@ describe('callNarrativeWriter temporal framing', () => {
   it('注入市場收盤時間框架 block', async () => {
     vi.mocked(callAgentLLM).mockResolvedValueOnce(VALID_NARRATIVE)
     const news = [{ id: 'n1', title: '台股大跌', url: 'https://example.com/a', text: '台股今日重挫', publishedAt: '2026-06-26T06:37:00Z' }]
-    const analysts = [{ newsId: 'n1', primaryImpact: 'x', cascadeChains: [], reasoning: 'r' }]
+    const analysts = [{ newsId: 'n1', primaryImpact: 'x', cascadeChains: [], reasoning: 'r', claims: [] }]
     await callNarrativeWriter({
       brief: FAKE_BRIEF,
       analystOutputs: analysts,

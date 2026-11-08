@@ -1,7 +1,7 @@
-import { getDb } from '@suanomics/db/client'
-import { newsItems, newsSources } from '@suanomics/db/schema'
 import { hasBodyBeyondTitle } from '@suanomics/shared'
 import { and, eq, gte, sql } from 'drizzle-orm'
+import { getDb } from '../client.js'
+import { newsItems, newsSources } from '../schema.js'
 
 /** 一個啟用中日報來源的產出量，餵給 `@suanomics/shared` 的 `summarizeSourceSilence`。 */
 export interface NewsSourceActivityRow {

@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { closeDb, getDb } from '@suanomics/db/client'
-import { newsItems, newsSources } from '@suanomics/db/schema'
 import { inArray, like } from 'drizzle-orm'
 import { afterAll, afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { closeDb, getDb } from '../client.js'
+import { newsItems, newsSources } from '../schema.js'
 import { getNewsHealthRaw } from './news-health.js'
 
 // 真 DB 整合測試。窗判定的日期 bind、leftJoin 的 count 對零則來源、以及停用來源會不會

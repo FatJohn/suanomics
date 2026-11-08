@@ -9,7 +9,7 @@ import { expandTopics, getDefaultTopicAliasMap } from './topic-aliases.js'
 // retriever 之前先把每個 hypothesis 的 entity 過 alias map、
 // 展開成同義 form 集合（Fed → [Fed, FOMC, 聯準會, ...]）、餵進 retriever 的
 // OR-within-entities 查詢。aliases 參數用於 unit test 注入；正常路徑用模組
-// 預載的 default map（apps/server/data/entity-aliases.yml）。
+// 預載的 default map（apps/pipeline/data/entity-aliases.yml）。
 //
 // topics 也過一層展開，理由與 entity 那層同構——decomposer 吐中文
 // topic，而 corpus 的 topic_tags 自 2026-08-04（改掉 enricher prompt 的那次）
