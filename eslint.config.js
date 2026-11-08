@@ -5,6 +5,17 @@ import importX from 'eslint-plugin-import-x'
 // 從 subdir 跑 eslint 時 process.cwd() 會落在 workspace dir，zone target 會錯位。
 const REPO_ROOT = import.meta.dirname
 
+// LLM 只經 ai 套件與 @ai-sdk/*（ADR 0004）。ESLint 同名規則後者整條覆蓋前者，
+// 所以 apps/web 的設定要帶上這兩份清單，不能只寫差異。
+const BANNED_LLM_SDK_PATHS = [
+  { name: '@anthropic-ai/sdk', message: 'LLM 呼叫走 ai 套件（ADR 0004）。' },
+  { name: '@google/genai', message: 'LLM 呼叫走 ai 套件（ADR 0004）。' },
+  { name: 'openai', message: 'LLM 呼叫走 ai 套件（ADR 0004）。' },
+]
+const BANNED_LLM_SDK_PATTERNS = [
+  { group: ['@anthropic-ai/sdk/*', '@google/genai/*', 'openai/*'], message: 'LLM 呼叫走 ai 套件（ADR 0004）。' },
+]
+
 export default antfu(
   {
     typescript: true,
@@ -87,6 +98,40 @@ export default antfu(
     rules: {
       'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
       'max-lines-per-function': ['warn', { max: 80, skipBlankLines: true, skipComments: true }],
+    },
+  },
+  {
+    files: ['**/*.{ts,mts,cts,tsx,astro,js,mjs,cjs,jsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          ...BANNED_LLM_SDK_PATHS,
+          { name: 'ai', importNames: ['generateObject'], message: 'generateObject 已 deprecated，用 generateText 加 Output.object。' },
+        ],
+        patterns: BANNED_LLM_SDK_PATTERNS,
+      }],
+    },
+  },
+  {
+    // 網站是靜態產生，LLM 呼叫只在 pipeline。
+    files: ['apps/web/**/*.{ts,mts,cts,tsx,astro,js,mjs,cjs,jsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          ...BANNED_LLM_SDK_PATHS,
+          { name: 'ai', message: 'apps/web 不呼叫 LLM，只讀 pipeline 寫進 Postgres 的結果。' },
+        ],
+        patterns: [
+          ...BANNED_LLM_SDK_PATTERNS,
+          { group: ['ai/*', '@ai-sdk/*'], message: 'apps/web 不呼叫 LLM，只讀 pipeline 寫進 Postgres 的結果。' },
+        ],
+      }],
+    },
+  },
+  {
+    files: ['**/*.astro'],
+    rules: {
+      'ts/no-explicit-any': 'error',
     },
   },
   {

@@ -41,17 +41,13 @@ pre-commit 跑 gitleaks 擋金鑰，commit-msg 跑 commitlint；跳過就等於�
 
 ## LLM 與報告內容
 
-### 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`；不直接 import `@anthropic-ai/sdk`、`@google/genai`、`openai`，也不用 `generateObject`〔待 lint 化〕（HIGH）
+### 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`（HIGH）
 
-provider 由 `@ai-sdk/anthropic` 提供，換 model 只改參數；直接綁某家 SDK 會繞過這層。`generateObject` 在 AI SDK v7 標為 deprecated。決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。
+provider 由 `@ai-sdk/anthropic` 提供，換 model 只改參數；直接綁某家 SDK 會繞過這層。`generateObject` 在 AI SDK v7 標為 deprecated。決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。各家 SDK 與 `generateObject` 的 import 由 ESLint 擋下（見 `AGENTS.md`〈機械守門〉）；`ai` 套件的其他函式與動態 `import()` 要靠本條。
 
-待 lint 化：ESLint `no-restricted-imports` 擋上述三個套件，並用 `importNames` 擋 `ai` 的 `generateObject`。
+### `apps/web` 不 import 任何 LLM SDK，網站只讀 pipeline 寫進 Postgres 的結果（HIGH）
 
-### `apps/web` 不 import `ai`、`@ai-sdk/*` 或任何 LLM SDK，網站只讀 pipeline 寫進 Postgres 的結果〔待 lint 化〕（HIGH）
-
-網站是 build 時產生的靜態 HTML，LLM 呼叫只在 pipeline 內，金鑰也只給 pipeline 那一步。`apps/web` 不得 import `apps/pipeline` 已由 lint 擋下，這條補的是外部套件。
-
-待 lint 化：ESLint 對 `apps/web/**` 加 `no-restricted-imports`，擋的套件與上一條相同，另加 `ai` 與 `@ai-sdk/*`。
+網站是 build 時產生的靜態 HTML，LLM 呼叫只在 pipeline 內，金鑰也只給 pipeline 那一步。ESLint 只擋列名的套件與靜態 import（見 `AGENTS.md`〈機械守門〉）；清單外的 SDK 與動態 `import()` 要靠本條。
 
 ### 每個 agent 用哪家哪個 model 只寫在 `apps/pipeline` 的 model 對照表，agent 程式碼裡不寫死 model ID（MEDIUM）
 
@@ -93,21 +89,9 @@ vitest 預設平行跑測試檔，兩支測試共用前綴做 `beforeEach`／`af
 
 每多一個依賴就多一份授權、更新與供應鏈風險要顧，一人維護的專案負擔不起。
 
-### `packages/shared` 的 runtime 依賴只有 `zod`；要加其他依賴先開 issue〔待 lint 化〕（MEDIUM）
-
-`shared` 同時被 pipeline 與網站引用，多一個依賴兩邊都要背。依賴方向見 [設計依據的〈Workspace 與依賴方向〉](../architecture/design-basis.md#workspace-與依賴方向)。
-
-待 lint 化：CI 加一步檢查 `packages/shared/package.json` 的 `dependencies` 鍵集合等於 `["zod"]`（或為空）。
-
 ### 新增或改名環境變數時，同步更新根目錄 `.env.example`，只寫 key 名不寫值（MEDIUM）
 
 `.env.example` 是本機與 CI 需要哪些變數的唯一清單；值放 GitHub Environment `production` 或本機的 `.env`。
-
-### 修改 `.github/workflows/**` 時，第三方 action 釘 commit SHA、`permissions` 只給需要的最小權限、不使用 `pull_request_target`〔待 lint 化〕（HIGH）
-
-repo 是 public，workflow 是 secrets 最容易外流的路徑。這三條是設計依據〈安全〉的第二層防線。
-
-待 lint 化：CI 加 `zizmor` 或 `actionlint` 掃 `.github/workflows/`。
 
 ### eslint 的函式行數上限 80 行 warn 是刻意設定，不要改成 50 行或 error；寫函式時仍以 50 行為目標（LOW）
 
@@ -119,28 +103,16 @@ prompt builder 這類長 helper 合理地超過 50 行，設成 error 只會換�
 
 讀者是維護者本人與中文讀者；identifier 用英文與套件 API 一致。
 
-### 程式碼與註解不放 emoji〔待 lint 化〕（LOW）
-
-emoji 在終端機、diff 與 log 的顯示不一致，也無助於說明。
-
-待 lint 化：CI 加 `rg` 掃 `apps/`、`packages/` 的 emoji 碼位區段（例如 `[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]`），命中即失敗。
-
 ### 註解寫為什麼這樣做，不重述程式在做什麼（LOW）
 
 程式在做什麼看程式就知道；取捨、外部限制、踩過的坑只能寫在註解裡。
-
-### 新寫或改寫長存文件（README、`AGENTS.md`、`CONTRIBUTING.md`、`docs/**`）後，跑 writing-principles 的 `check_docs.py` 到 RESULT PASS〔待 lint 化〕（MEDIUM）
-
-指令與排除設定見 [CONTRIBUTING 的〈文件〉](../../CONTRIBUTING.md#文件)。`docs/adr/`、`CHANGELOG.md` 與 `docs/history/` 的搬來檔不在掃描範圍。
-
-待 lint 化：把 `check_docs.py` 放進 repo 或以固定版本取得，CI 加一步 `python3 check_docs.py --repo .`。
 
 ## 規則清單怎麼維護
 
 改本頁的 `###` 標題後，在 repo 根目錄跑：
 
 ```bash
-python3 ~/.claude/skills/agent-rules/scripts/rules_index.py --repo . --config docs/rules/agent-rules.conf
+python3 tools/agents-guideline/rules_index.py --repo . --config docs/rules/agent-rules.conf
 ```
 
 它把標題清單寫進 `AGENTS.md` 的生成區塊；加 `--check` 只檢查不寫檔，不同步時以 1 結束。標題要讓人只讀這一行就判斷得出適不適用：寫出觸發情境與做法，不寫「依某判準決定」。

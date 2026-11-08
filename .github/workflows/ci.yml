@@ -58,6 +58,49 @@ jobs:
       - name: Build
         run: pnpm -r build
 
+      - name: Check packages/shared dependencies
+        run: |
+          node -e '
+            const deps = Object.keys(JSON.parse(require("node:fs").readFileSync("packages/shared/package.json", "utf8")).dependencies ?? {});
+            const extra = deps.filter(d => d !== "zod");
+            if (extra.length > 0) { console.error("packages/shared 的 dependencies 只能有 zod，多了：" + extra.join(", ")); process.exit(1); }
+          '
+
+      # 釘版的 release binary，不裝成 npm 依賴
+      - name: Install CI tools
+        run: |
+          mkdir -p "$RUNNER_TEMP/ci-tools/bin"
+          cd "$RUNNER_TEMP/ci-tools"
+          curl -fsSL -o zizmor.tar.gz https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-unknown-linux-gnu.tar.gz
+          echo "bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b  zizmor.tar.gz" | sha256sum -c -
+          curl -fsSL -o ripgrep.tar.gz https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz
+          echo "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c  ripgrep.tar.gz" | sha256sum -c -
+          mkdir extracted
+          tar -xzf zizmor.tar.gz -C extracted
+          tar -xzf ripgrep.tar.gz -C extracted
+          find extracted -type f \( -name zizmor -o -name rg \) -exec install -m 755 {} bin/ \;
+          echo "$RUNNER_TEMP/ci-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Audit workflows
+        run: zizmor --offline .github/workflows
+
+      # ★（U+2605）不是 Unicode emoji，repo 註解用它標重點，所以不掃 U+2600-27BF 整段。
+      # rg 結束碼：0 有命中、1 無命中、2 執行錯誤；只有 1 算通過。
+      - name: Check emoji
+        run: |
+          status=0
+          rg -n '\p{Emoji_Presentation}|\x{FE0F}' apps packages || status=$?
+          test "$status" -eq 1
+
+      - name: Knip
+        run: pnpm knip
+
+      - name: Check docs
+        run: python3 tools/agents-guideline/check_docs.py --repo .
+
+      - name: Check rules index
+        run: python3 tools/agents-guideline/rules_index.py --repo . --config docs/rules/agent-rules.conf --check
+
       - name: Lint
         run: pnpm lint
 

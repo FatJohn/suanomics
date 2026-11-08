@@ -25,7 +25,7 @@ pnpm knip            # 未使用的檔案、export 與依賴
 pnpm --filter @suanomics/pipeline run db:migrate
 ```
 
-CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，資料庫是 Postgres 18 service container；knip 沒有 CI 把關，開 PR 前自己跑。本機起 Postgres 的步驟見 [本機開發](docs/operations/local-dev.md)。
+CI（`.github/workflows/ci.yml`）跑上面全部指令，資料庫是 Postgres 18 service container。本機起 Postgres 的步驟見 [本機開發](docs/operations/local-dev.md)。
 
 ## Tech Stack（已鎖定，要換先開 issue）
 
@@ -39,7 +39,7 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 | 觸發器 | Cloudflare Worker Cron Trigger 為主，Actions `schedule` 為備援 | [0009](docs/adr/0009-cron-trigger-via-cloudflare-worker.md) |
 | 資料庫 | Neon Postgres，drizzle-orm 與 drizzle-kit migration | [0003](docs/adr/0003-neon-postgres.md) |
 | LLM 呼叫層 | Vercel AI SDK（`ai`、`@ai-sdk/anthropic`），不用 agent 框架 | [0004](docs/adr/0004-ai-sdk-no-agent-framework.md) |
-| LLM provider | 目前只用 Anthropic | [0004](docs/adr/0004-ai-sdk-no-agent-framework.md) |
+| LLM provider | Anthropic；judge 用哪家在 #33 決定 | [0004](docs/adr/0004-ai-sdk-no-agent-framework.md) |
 | Schema 驗證 | Zod，契約放 `packages/shared` | [設計依據的〈Workspace 與依賴方向〉](docs/architecture/design-basis.md#workspace-與依賴方向) |
 | 網站 | Astro 靜態產生、Tailwind，部署到 Cloudflare Pages | [0005](docs/adr/0005-astro-static-site.md) |
 | 新聞來源 | 官方機構與發行商自己的 feed，正文在 pipeline 內抽取；不買新聞 API | [0007](docs/adr/0007-news-sources.md) |
@@ -57,7 +57,12 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 | 金鑰不進 repo | husky pre-commit 與 CI 各跑 gitleaks；GitHub push protection |
 | 單檔 300 行（不含空行與註解，測試檔除外） | ESLint `max-lines` error |
 | `apps/web` 不 import `apps/pipeline`；`packages/*` 不 import `apps/*` | ESLint `import-x/no-restricted-paths` |
-| `.ts` 不用 `any`、不用非空斷言 `!`，型別 import 用 `import type` | ESLint `ts/no-explicit-any`、`ts/no-non-null-assertion`、`ts/consistent-type-imports` |
+| `.ts` 與 `.astro` 不用 `any`；`.ts` 不用非空斷言 `!`，型別 import 用 `import type` | ESLint `ts/no-explicit-any`、`ts/no-non-null-assertion`、`ts/consistent-type-imports` |
+| 不 import `@anthropic-ai/sdk`、`@google/genai`、`openai`，也不 import `ai` 的 `generateObject`；`apps/web` 另不 import `ai`、`@ai-sdk/*`（只涵蓋靜態 import） | ESLint `no-restricted-imports` |
+| `packages/shared` 的 runtime 依賴只有 `zod` | CI `Check packages/shared dependencies` |
+| workflow 的 action 釘 commit SHA、最小 `permissions`、不用 `pull_request_target` | CI `Audit workflows`（zizmor） |
+| `apps/`、`packages/` 不放 emoji | CI `Check emoji` |
+| 長存文件通過 `check_docs.py`，`AGENTS.md` 規則清單與 `docs/rules/coding.md` 同步 | CI `Check docs`、`Check rules index`（`tools/agents-guideline/`） |
 | `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`（shared、pipeline）與 `apps/web/tsconfig.json`，`pnpm -r type-check` |
 | `rewrite` 要走 PR、`gitleaks` 與 `ci` 兩個 check 通過、commit 要簽章、禁 force push 與刪除 | GitHub ruleset |
 
@@ -79,8 +84,8 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 - 實作碰到設計依據〈不做的事〉列出的項目（線上即時分析、註冊登入、agent 框架、OpenAI 相容端點、向量檢索、換後端語言等）時，停下來開 issue 或問維護者（HIGH）
 - agent 不 merge PR，也不 push 到 `rewrite` 或 `main`；PR 開進 `rewrite`，由維護者以 merge commit 合併（HIGH）
 **LLM 與報告內容**
-- 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`；不直接 import `@anthropic-ai/sdk`、`@google/genai`、`openai`，也不用 `generateObject`〔待 lint 化〕（HIGH）
-- `apps/web` 不 import `ai`、`@ai-sdk/*` 或任何 LLM SDK，網站只讀 pipeline 寫進 Postgres 的結果〔待 lint 化〕（HIGH）
+- 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`（HIGH）
+- `apps/web` 不 import 任何 LLM SDK，網站只讀 pipeline 寫進 Postgres 的結果（HIGH）
 - 每個 agent 用哪家哪個 model 只寫在 `apps/pipeline` 的 model 對照表，agent 程式碼裡不寫死 model ID（MEDIUM）
 - 新增或修改 agent 的 system prompt 時，帶入 `packages/shared` 的 compliance 禁用語清單（「建議買／賣／持有」「明牌」等投信投顧法禁用語），不在 prompt 內另寫一份（CRITICAL）
 - 連動鏈的每個數字、事件與因果都要帶可追溯的來源 URL，找不到來源的條目不寫進 brief（CRITICAL）
@@ -92,15 +97,11 @@ CI（`.github/workflows/ci.yml`）跑上面除了 `pnpm knip` 以外的指令，
 **依賴與設定**
 - 新增 dependency 前確認授權與 Apache-2.0 相容（例如 AGPL 不相容）（MEDIUM）
 - 能用 Node 原生 API（`fetch`、`node:*` 模組）解決的，不引入第三方套件（LOW）
-- `packages/shared` 的 runtime 依賴只有 `zod`；要加其他依賴先開 issue〔待 lint 化〕（MEDIUM）
 - 新增或改名環境變數時，同步更新根目錄 `.env.example`，只寫 key 名不寫值（MEDIUM）
-- 修改 `.github/workflows/**` 時，第三方 action 釘 commit SHA、`permissions` 只給需要的最小權限、不使用 `pull_request_target`〔待 lint 化〕（HIGH）
 - eslint 的函式行數上限 80 行 warn 是刻意設定，不要改成 50 行或 error；寫函式時仍以 50 行為目標（LOW）
 **程式碼與文件風格**
 - 文件與註解用繁體中文（台灣用語），程式碼 identifier 用英文（LOW）
-- 程式碼與註解不放 emoji〔待 lint 化〕（LOW）
 - 註解寫為什麼這樣做，不重述程式在做什麼（LOW）
-- 新寫或改寫長存文件（README、`AGENTS.md`、`CONTRIBUTING.md`、`docs/**`）後，跑 writing-principles 的 `check_docs.py` 到 RESULT PASS〔待 lint 化〕（MEDIUM）
 
 <!-- END GENERATED RULES -->
 
