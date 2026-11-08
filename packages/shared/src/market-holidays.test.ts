@@ -4,6 +4,7 @@ import {
   daysUntilHolidayCoverageExhausted,
   HOLIDAY_COVERAGE_END,
   HOLIDAY_FRESHNESS_MIN_DAYS,
+  isTwseTradingDay,
   TW_MARKET_HOLIDAYS,
   US_MARKET_HOLIDAYS,
 } from './market-holidays.js'
@@ -71,5 +72,22 @@ describe('假日表 time-bomb 守門', () => {
       expect(dow, `${d} 是週末、不應列入假日表`).toBeGreaterThanOrEqual(1)
       expect(dow).toBeLessThanOrEqual(5)
     }
+  })
+})
+
+describe('isTwseTradingDay', () => {
+  it('一般平日開市', () => {
+    expect(isTwseTradingDay('2026-11-09')).toBe(true) // 週一
+  })
+  it('週末休市', () => {
+    expect(isTwseTradingDay('2026-11-07')).toBe(false) // 週六
+    expect(isTwseTradingDay('2026-11-08')).toBe(false) // 週日
+  })
+  it('TWSE 休市日的平日休市', () => {
+    expect(isTwseTradingDay('2026-09-25')).toBe(false) // 中秋節，週五
+  })
+  // 補班日是行政機關上班、股市不開：只看「是不是上班日」會把它判成開市。
+  it('週六補班日不開市', () => {
+    expect(isTwseTradingDay('2025-02-08')).toBe(false)
   })
 })

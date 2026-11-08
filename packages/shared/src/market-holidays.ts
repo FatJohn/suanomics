@@ -53,6 +53,13 @@ function isoDateMinusDays(date: string, days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
+// 只看週末與休市表：補班日是行政機關上班，TWSE 仍不開市，所以週六一律休市。
+// 超出 HOLIDAY_COVERAGE_END 的日期由上方 time-bomb 測試逼更新。
+export function isTwseTradingDay(date: string): boolean {
+  const dow = new Date(`${date}T00:00:00Z`).getUTCDay()
+  return dow !== 0 && dow !== 6 && !TW_HOLIDAY_SET.has(date)
+}
+
 export function classifyPublicationDay(date: string): PublicationDay {
   const dow = new Date(`${date}T00:00:00Z`).getUTCDay() // 0=日、6=六
   if (dow === 6)
