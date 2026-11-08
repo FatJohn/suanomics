@@ -34,6 +34,10 @@ describe('parseMarginTotals', () => {
       { seriesId: 'twse-short-lots-total', date: '2026-11-06', value: 20 },
     ])
   })
+  it('空回應或欄位改名時不產生 0，避免覆蓋當日正確值', () => {
+    expect(parseMarginTotals([], '2026-11-06')).toEqual([])
+    expect(parseMarginTotals([{ 融資餘額: '1' }], '2026-11-06')).toEqual([])
+  })
   it('真實回應的欄位名對得上', () => {
     const out = parseMarginTotals(fixture('twse-mi-margn-openapi.json') as unknown[], '2026-11-06')
     expect(out[0]?.value).toBeGreaterThan(0)

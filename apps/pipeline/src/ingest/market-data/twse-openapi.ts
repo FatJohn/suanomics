@@ -59,6 +59,9 @@ export function parseQfiiCategory(rows: readonly unknown[], date: string): Serie
 }
 
 export function parseMarginTotals(rows: readonly unknown[], date: string): SeriesPoint[] {
+  // 空回應或欄位改名時若當 0 寫入，會把當日正確值覆蓋成融資餘額歸零。
+  if (!(rows as Row[]).some(row => text(row, '融資今日餘額') !== ''))
+    return []
   const sum = (key: string): number => (rows as Row[]).reduce((total, row) => {
     const value = toNumber(text(row, key))
     return Number.isFinite(value) ? total + value : total

@@ -85,7 +85,7 @@ export type ExternalSourceSeed = z.input<typeof ExternalSourceSeedSchema>
 // 乾淨 clone 跑 `seed:external-sources` 實際寫進 DB 的啟用狀態改由
 // CLI entry 透過 `effectiveEnabled()` 算：宣告 enabled 的來源裡，只有 config 內
 // 每一個 URL 都落在 `source-policy.ts` `OFFICIAL_SOURCE_DOMAINS` 的官方網域
-// （`cbc-press`、`eia`、`ey-press`、`fomc-statements`、`fsc-news`、
+// （`cbc-press`、`ey-press`、`fomc-statements`、`fsc-news`、
 // `twse-mops-news`、`twse-announcements`、`whitehouse-statements`）會照常啟用；
 // 其餘商業媒體來源預設停用，需要設 `SEED_THIRD_PARTY_SOURCES=true` 才會被啟用。
 // `enabled: false` 的來源（壞掉而停用，如 `commercial-times`／`moneydj`）不受這個
@@ -232,6 +232,34 @@ export const AGGREGATOR_PROXY_SLUGS: readonly string[]
   = EXTERNAL_SOURCES_SEED.filter(isAggregatorProxySeed).map(s => s.slug)
 
 /**
+ * 因條款或代理移除而從 seed 拿掉的來源（#24）。seed 只做 upsert，已存在的列要明確停用。
+ */
+export const RETIRED_EXTERNAL_SLUGS: readonly string[] = Object.freeze([
+  'anue',
+  'moneydj',
+  'udn-money',
+  'cnyes-global',
+  'commercial-times',
+  'liberty-finance',
+  'reuters-biz',
+  'bloomberg-markets',
+  'wsj-markets',
+  'cnbc-markets',
+  'reuters-world',
+  'bbc-world',
+  'udn-main',
+  'liberty-international',
+  'aljazeera',
+  'isw',
+  'scmp-world',
+  'csis',
+  'brookings',
+  'eia',
+  'iea',
+  'oilprice',
+])
+
+/**
  * 已從 seed 移除的 Google News 代理（#24）。DB 裡既有的文章仍是不透明轉址，
  * retriever 要繼續排除，所以名單獨立於現役 seed。
  */
@@ -275,6 +303,10 @@ export const ACCEPTED_ZERO_ENRICHMENT_SLUGS: readonly string[] = Object.freeze([
  * 參數只為了測試而存在：預設就是整份 EXTERNAL_SOURCES_SEED，CLI 與 prod 都不會傳。
  * 有它才能用合成來源驗 upsert 的 set 子句，而不必把 30 筆真來源寫進測試用的 DB。
  */
+export async function retireExternalSources(slugs: readonly string[] = RETIRED_EXTERNAL_SLUGS): Promise<void> {
+  await getDb().update(externalSources).set({ enabled: false }).where(inArray(externalSources.slug, [...slugs]))
+}
+
 export async function seedExternalSources(
   sources: readonly ExternalSourceSeed[] = EXTERNAL_SOURCES_SEED,
 ): Promise<{ upserted: number }> {
@@ -371,7 +403,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       )
       process.exit(1)
     }
-    return seedExternalSources(finalSeeds)
+    const result = await seedExternalSources(finalSeeds)
+    await retireExternalSources()
+    return result
   })().then((r) => {
     // eslint-disable-next-line no-console -- deliberate CLI stdout output; result is piped/read by callers
     console.log(JSON.stringify(r))

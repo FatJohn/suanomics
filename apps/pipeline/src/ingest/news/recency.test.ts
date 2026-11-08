@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { filterRecentEntries } from './recency.js'
+import { FEED_WINDOW_HOURS, filterRecentEntries } from './recency.js'
 
 const now = new Date('2026-11-08T00:00:00Z')
 const entry = (publishedAt: Date | null) => ({ publishedAt })
+
+describe('fEED_WINDOW_HOURS', () => {
+  // 非交易日不跑 ingest，窗要大於最長休市（2026 春節 02-12 到 02-22，共 11 天）。
+  it('涵蓋最長連休', () => {
+    expect(FEED_WINDOW_HOURS).toBeGreaterThanOrEqual(11 * 24)
+  })
+})
 
 describe('filterRecentEntries', () => {
   it('窗外的舊聞不收，官方 feed 動輒數百則歷史稿', () => {

@@ -57,5 +57,7 @@ export function filterAnnouncements(
 
 export function companiesMentioned(texts: readonly string[], companies: readonly ListedCompany[]): Set<string> {
   const corpus = texts.join('\n')
-  return new Set(companies.filter(c => corpus.includes(c.name) || corpus.includes(c.code)).map(c => c.code))
+  // 裸四位數多半是年份或點數，代號只認括號內或「代號」之後的寫法。
+  const mentionsCode = (code: string): boolean => new RegExp(`(?:[（(]|代號\\s*)${code}(?!\\d)`).test(corpus)
+  return new Set(companies.filter(c => corpus.includes(c.name) || mentionsCode(c.code)).map(c => c.code))
 }

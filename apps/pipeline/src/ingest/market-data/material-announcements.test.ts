@@ -36,6 +36,10 @@ describe('companiesMentioned', () => {
   it('以公司簡稱或代號比對入選新聞內文', () => {
     expect(companiesMentioned(['台積電上修資本支出', '代號 6488 公告'], companies)).toEqual(new Set(['2330', '6488']))
   })
+  it('年份與點數這類四位數不算提到代號', () => {
+    expect(companiesMentioned(['2330 點大關，6488 年'], companies)).toEqual(new Set())
+    expect(companiesMentioned(['台達電（2330）公告'], companies)).toEqual(new Set(['2330']))
+  })
   it('沒提到就是空集合', () => {
     expect(companiesMentioned(['央行維持利率不變'], companies)).toEqual(new Set())
   })

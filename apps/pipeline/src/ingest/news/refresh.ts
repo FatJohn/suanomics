@@ -15,13 +15,11 @@ import { dedupByExternalId, fetchRss, parseRssXml } from '../external/rss-fetche
 import { scrapeArticle } from '../external/scraper.js'
 import { isBodyFetchDenied } from './body-fetch-policy.js'
 import { categorizeAndStore } from './categorize.js'
-import { filterRecentEntries } from './recency.js'
+import { FEED_WINDOW_HOURS, filterRecentEntries } from './recency.js'
 import { tagAndStore } from './tag.js'
 
 // 逐篇失敗只印這麼多筆，其餘靠彙總行。理由見呼叫處。
 const SCRAPE_FAILURE_LOG_SAMPLE = 3
-
-const FEED_WINDOW_HOURS = 48
 
 export interface RunNewsRefreshResult {
   sourcesProcessed: number

@@ -126,7 +126,7 @@ function requestedNonClaudeProviders(env: EnvSnapshot): Set<NonClaudeProvider> {
 export function checkStartupConfig(service: StartupService, env: EnvSnapshot): StartupConfigResult {
   const issues: ConfigIssue[] = []
   const requireKey = (key: string, severity: ConfigSeverity, impact: string): void => {
-    if (!present(env, key))
+    if (!present(env, key) && !issues.some(i => i.key === key))
       issues.push({ key, severity, kind: 'missing', impact })
   }
   const contradiction = (key: string, impact: string): void => {
@@ -149,6 +149,9 @@ export function checkStartupConfig(service: StartupService, env: EnvSnapshot): S
   const anthropicRouteRequested = wantsClaude || globalWantsAnthropic
 
   const requestedProviders = requestedNonClaudeProviders(env)
+  // v1 所有 agent 預設走 Anthropic；只有全域換成 openai 時才不需要。
+  if (globalProviderFromEnv(env) !== 'openai')
+    requireKey('ANTHROPIC_API_KEY', 'required', 'agent 預設都走 Anthropic；缺了要等到第一次 LLM 呼叫才 throw')
 
   // openai（自架／OpenRouter）：OPENAI_API_KEY 或 LLM_API_KEY 至少一把，缺兩把才算 required。
   if (requestedProviders.has('openai') && !present(env, 'OPENAI_API_KEY') && !present(env, 'LLM_API_KEY')) {
@@ -180,8 +183,7 @@ export function checkStartupConfig(service: StartupService, env: EnvSnapshot): S
   // ★ 2026-09-10 更正：舊版只看 wantsClaude，漏了 globalWantsAnthropic 這條路——
   //   LLM_PROVIDER=anthropic + gate 未開的組態，舊版誤判成「保底」fatal（見下面已移除
   //   的 requestedProviders.size===0 分支），但 resolveAgentModel 實際上會把所有 agent
-  //   靜默 fallback 回 Gemini、pipeline 跑得動，真正需要的是 GEMINI_API_KEY（已經在上面
-  //   requestedNonClaudeProviders 反映），這裡只需要用 contradiction（不擋啟動）出聲，
+  //   靜默 fallback 回 Gemini、pipeline 跑得動，這裡只需要用 contradiction（不擋啟動）出聲，
   //   不該再額外 fatal 掉 LLM_PROVIDER 本身。
   if (anthropicGateOn && anthropicRouteRequested) {
     // 這個組合下 resolveAgentModel 會靜默 fallback 回 Gemini、只留一行 log。
@@ -199,7 +201,7 @@ export function checkStartupConfig(service: StartupService, env: EnvSnapshot): S
   }
   else if (globalWantsAnthropic) {
     // 同上一支的鏡像：LLM_PROVIDER=anthropic 但總開關沒開，不是「整個 pipeline 跑不了」
-    // （已由上面 requestedNonClaudeProviders 把 gemini 標成需要的 key），只是使用者要的
+    // ，只是使用者要的
     // anthropic 沒有真的生效，值得出聲但不擋啟動。
     contradiction('LLM_PROVIDER', 'LLM_PROVIDER=anthropic，但總開關 AI_PROVIDER 未開到 anthropic（或缺 ANTHROPIC_API_KEY）：resolveAgentModel 會把所有沒有顯式 provider 前綴的 agent 靜默 fallback 回 Gemini，並非整個 pipeline 都跑不動')
   }

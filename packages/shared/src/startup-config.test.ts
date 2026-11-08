@@ -7,6 +7,7 @@ import { checkStartupConfig, formatStartupConfigReport } from './startup-config.
 const PROD_SERVER_ENV = {
   NODE_ENV: 'production',
   DATABASE_URL: 'postgres://x',
+  ANTHROPIC_API_KEY: 'a',
   FRED_API_KEY: 'f',
   PODCAST_TTS_PROVIDER: 'azure',
   AZURE_SPEECH_KEY: 'k',
@@ -49,6 +50,16 @@ describe('checkStartupConfig：主線缺就是 fatal', () => {
     expect(r.ok).toBe(false)
   })
 
+  it('缺 ANTHROPIC_API_KEY（v1 所有 agent 都走 Anthropic）', () => {
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, ANTHROPIC_API_KEY: '' })
+    expect(keys(r.fatal)).toEqual(['ANTHROPIC_API_KEY'])
+  })
+
+  it('aGENT_MODELS 用 v1 的 anthropic/claude-* 格式時也要有 ANTHROPIC_API_KEY', () => {
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, ANTHROPIC_API_KEY: '', AGENT_MODELS: 'editor:anthropic/claude-sonnet-5-5' })
+    expect(keys(r.fatal)).toEqual(['ANTHROPIC_API_KEY'])
+  })
+
   // v1 全部走 Anthropic，沒有任何 agent 或 TTS 路徑需要 Gemini。
   it('沒有 GEMINI_API_KEY 不叫', () => {
     const r = checkStartupConfig('server', PROD_SERVER_ENV)
@@ -68,7 +79,7 @@ describe('checkStartupConfig：主線缺就是 fatal', () => {
 
 describe('checkStartupConfig：LLM provider 的靜默 fallback', () => {
   it('總開關開到 anthropic、有 agent 指向 claude* 但沒金鑰是 fatal（會靜默換 provider）', () => {
-    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, AI_PROVIDER: 'anthropic', AGENT_MODELS: 'synthesizer:claude-sonnet-4-6' })
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, ANTHROPIC_API_KEY: '', AI_PROVIDER: 'anthropic', AGENT_MODELS: 'synthesizer:claude-sonnet-4-6' })
     expect(keys(r.fatal)).toEqual(['ANTHROPIC_API_KEY'])
   })
 
@@ -125,7 +136,7 @@ describe('checkStartupConfig：LLM provider 的靜默 fallback', () => {
   // LLM_PROVIDER=anthropic + AI_PROVIDER=anthropic（半開）但沒有 ANTHROPIC_API_KEY：
   // 使用者以為在用 Claude 其實沒有金鑰，要擋。
   it('用 LLM_PROVIDER=anthropic + AI_PROVIDER=anthropic 但缺 ANTHROPIC_API_KEY → fatal', () => {
-    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, LLM_PROVIDER: 'anthropic', AI_PROVIDER: 'anthropic' })
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, ANTHROPIC_API_KEY: '', LLM_PROVIDER: 'anthropic', AI_PROVIDER: 'anthropic' })
     expect(keys(r.fatal)).toEqual(['ANTHROPIC_API_KEY'])
   })
 })
@@ -267,5 +278,12 @@ describe('formatStartupConfigReport', () => {
   it('訊息裡不含任何設定值', () => {
     const lines = formatStartupConfigReport(checkStartupConfig('server', { ...PROD_SERVER_ENV, PODCAST_STORAGE_KIND: 'sekrit-typo' }))
     expect(lines.map(l => l.message).join('\n')).not.toContain('sekrit-typo')
+  })
+})
+
+describe('checkStartupConfig：只走 openai 時不要求 Anthropic', () => {
+  it('lLM_PROVIDER=openai 且有 OPENAI_API_KEY → 不要 ANTHROPIC_API_KEY', () => {
+    const r = checkStartupConfig('server', { ...PROD_SERVER_ENV, ANTHROPIC_API_KEY: '', LLM_PROVIDER: 'openai', OPENAI_API_KEY: 'k', AGENT_MODELS: 'editor:openai/x' })
+    expect(r.fatal).toEqual([])
   })
 })
