@@ -138,7 +138,6 @@ export const storylines = pgTable('storylines', {
   statusIdx: index('idx_storylines_status').on(t.status),
 }))
 
-// TWSE／TPEx 每日重大訊息；端點只回最新一日，靠這張表累積。
 // 每日各新聞來源的抓取結果，用來判斷連續失敗（ADR 0002）。
 export const sourceFetchResults = pgTable('source_fetch_results', {
   id: serial('id').primaryKey(),
@@ -152,6 +151,7 @@ export const sourceFetchResults = pgTable('source_fetch_results', {
   runDateIdx: index('idx_source_fetch_results_run_date').on(t.runDate.desc()),
 }))
 
+// TWSE／TPEx 每日重大訊息；端點只回最新一日，靠這張表累積。
 export const materialAnnouncements = pgTable('material_announcements', {
   id: serial('id').primaryKey(),
   market: text('market').notNull(), // 'twse' | 'tpex'
