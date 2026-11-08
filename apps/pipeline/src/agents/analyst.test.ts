@@ -483,12 +483,25 @@ describe('callAnalystTier2 market snapshot injection', () => {
 })
 
 describe('normalizeForAnalystSchema 的數量上限', () => {
-  it('anthropic 不強制 maxItems：citations 與 nextTierEntities 截到 5 筆', () => {
-    const citation = { url: 'u', title: 't', quote: 'q' }
+  const allowed = new Set(['real-1', 'real-2'])
+  const cite = (url: string) => ({ url, title: 't', quote: 'q' })
+
+  it('超量時 nextTierEntities 截到 5 筆', () => {
     const out = normalizeForAnalystSchema({
-      cascadeChains: [{ citations: Array.from({ length: 7 }).fill(citation), nextTierEntities: ['a', 'b', 'c', 'd', 'e', 'f'] }],
-    }) as { cascadeChains: { citations: unknown[], nextTierEntities: unknown[] }[] }
-    expect(out.cascadeChains[0]?.citations).toHaveLength(5)
+      cascadeChains: [{ citations: [], nextTierEntities: ['a', 'b', 'c', 'd', 'e', 'f'] }],
+    }, allowed) as { cascadeChains: { nextTierEntities: unknown[] }[] }
     expect(out.cascadeChains[0]?.nextTierEntities).toHaveLength(5)
+  })
+
+  it('超量時優先留有來源的 citation，真來源不被幻覺 url 擠掉', () => {
+    const urls = ['f1', 'f2', 'f3', 'f4', 'f5', 'real-1', 'real-2']
+    const out = normalizeForAnalystSchema({ cascadeChains: [{ citations: urls.map(cite) }] }, allowed) as { cascadeChains: { citations: { url: string }[] }[] }
+    expect(out.cascadeChains[0]?.citations.map(c => c.url)).toEqual(['real-1', 'real-2', 'f1', 'f2', 'f3'])
+  })
+
+  it('沒超量時順序不變', () => {
+    const urls = ['f1', 'real-1']
+    const out = normalizeForAnalystSchema({ cascadeChains: [{ citations: urls.map(cite) }] }, allowed) as { cascadeChains: { citations: { url: string }[] }[] }
+    expect(out.cascadeChains[0]?.citations.map(c => c.url)).toEqual(['f1', 'real-1'])
   })
 })

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DailyCostGate, DailyCostLimitExceededError, parseDailyCostLimit } from './cost-gate.js'
+import { CostGateError, DailyCostGate, DailyCostLimitExceededError, parseDailyCostLimit } from './cost-gate.js'
 
 describe('dailyCostGate', () => {
   it('累計低於上限時通過', () => {
@@ -42,5 +42,6 @@ describe('parseDailyCostLimit', () => {
 
   it.each([undefined, '', 'abc', '0', '-1', 'Infinity'])('未設定或不是正數時拒絕：%s', (raw) => {
     expect(() => parseDailyCostLimit(raw)).toThrow(/DAILY_COST_LIMIT_USD/)
+    expect(() => parseDailyCostLimit(raw)).toThrow(CostGateError)
   })
 })

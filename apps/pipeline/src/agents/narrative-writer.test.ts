@@ -2,9 +2,10 @@ import type { EvidenceClaim, MarketBrief } from '@suanomics/shared'
 import type { LlmCallRecord } from './call-agent.js'
 import type { AnalystOutput, NewsItem } from './types.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from '../prompts/narrative-writer.prompt.js'
+
 import { callAgent } from './call-agent.js'
+import { DailyCostLimitExceededError } from './cost-gate.js'
 import { buildMarketCloseFraming } from './market-close-framing.js'
 import { callNarrativeWriter } from './narrative-writer.js'
 
@@ -165,7 +166,7 @@ describe('callNarrativeWriter', () => {
     })
     expect(result.narrative).toBeNull()
     expect(result.audit.failed).toBe(true)
-    expect(result.audit.retryReason).toBe('gemini-api')
+    expect(result.audit.retryReason).toBe('llm-api')
   })
 
   it('emits LlmCallRecord with narrativeFailed=true and retryReason on null result', async () => {
@@ -183,7 +184,7 @@ describe('callNarrativeWriter', () => {
     // 最後一筆 record 應該被 wrapper 標記 narrativeFailed
     const lastCall = onCall.mock.calls.at(-1)?.[0] as LlmCallRecord | undefined
     expect(lastCall?.narrativeFailed).toBe(true)
-    expect(lastCall?.narrativeRetryReason).toBe('gemini-api')
+    expect(lastCall?.narrativeRetryReason).toBe('llm-api')
   })
 
   it('drops hallucinated relatedNewsIds not in input news (preNormalize)', async () => {
@@ -835,5 +836,20 @@ describe('callNarrativeWriter claim ledger prompt', () => {
     const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.systemPrompt.startsWith(NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT)).toBe(true)
     expect(args?.systemPrompt).toContain('claimIds')
+  })
+})
+
+describe('callNarrativeWriter 的花費閘', () => {
+  it('超限時往外丟且不再重試', async () => {
+    vi.mocked(callAgent).mockReset()
+    vi.mocked(callAgent).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    await expect(callNarrativeWriter({
+      brief: FAKE_BRIEF,
+      analystOutputs: FAKE_ANALYSTS,
+      news: FAKE_NEWS,
+      citations: FAKE_BRIEF.citations,
+      briefDate: '2026-06-27',
+    })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(callAgent).toHaveBeenCalledTimes(1)
   })
 })

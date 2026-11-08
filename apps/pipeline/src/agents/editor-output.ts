@@ -73,10 +73,15 @@ function parseEachTolerant<T>(schema: z.ZodType<T>, value: unknown): { kept: T[]
 }
 
 export function parseEditorOutput(raw: unknown): EditorParseResult {
-  const selection = EditorSelectionSchema.safeParse(raw)
   const obj = typeof raw === 'object' && raw !== null && !Array.isArray(raw)
     ? raw as Record<string, unknown>
     : {}
+  // Anthropic 的 structured output 不強制 maxItems，超量時截斷，不讓選稿層整層回退。
+  const selection = EditorSelectionSchema.safeParse({
+    ...obj,
+    mainThemes: Array.isArray(obj.mainThemes) ? obj.mainThemes.slice(0, 2) : obj.mainThemes,
+    selectedNewsIds: Array.isArray(obj.selectedNewsIds) ? obj.selectedNewsIds.slice(0, 8) : obj.selectedNewsIds,
+  })
   const touches = parseEachTolerant(StorylineTouchSchema, obj.storylineTouches)
   const resolves = parseEachTolerant(ResolveStorylineSchema, obj.resolveStorylines)
   const newLines = parseEachTolerant(NewStorylineSchema, obj.newStorylines)

@@ -93,7 +93,7 @@ export async function callAnalystTier1(p: CallAnalystTier1Params): Promise<Analy
     // claims 一律由 code 覆寫：關閉時強制空陣列、開啟時走 normalizeClaims。
     // 直接把 LLM 的原始 claims 餵進 schema 會讓一條壞 claim throw 掉整份分析——
     // 那正是這裡要避免的事。
-    const normalized = normalizeForAnalystSchema(raw)
+    const normalized = normalizeForAnalystSchema(raw, allowedUrls)
     const rawClaims = raw && typeof raw === 'object' ? (raw as { claims?: unknown }).claims : undefined
     const parsed = AnalystOutputSchema.parse({
       ...(normalized as Record<string, unknown>),

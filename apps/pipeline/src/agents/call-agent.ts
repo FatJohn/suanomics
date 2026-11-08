@@ -58,6 +58,7 @@ const MAX_OUTPUT_TOKENS = 16_000
 const DEFAULT_TIMEOUT_MS = 180_000
 const DEFAULT_MAX_ATTEMPTS = 3
 const DEFAULT_RETRY_DELAY_MS = 1_000
+const MAX_RETRY_AFTER_SECONDS = 60
 
 // SDK 內建的 retry 另含 408／409，範圍比這裡要的寬，所以關掉自己判斷。
 // timeout 不是 APICallError，不會重試。
@@ -67,6 +68,14 @@ function isRetryable(error: unknown): boolean {
   if (error.statusCode === undefined)
     return error.isRetryable
   return error.statusCode === 429 || error.statusCode >= 500
+}
+
+// 關掉 SDK 內建 retry 後要自己遵守 retry-after；不合理的值（負數、超過 60 秒）照 SDK 的做法忽略。
+function retryAfterMs(error: unknown): number {
+  if (!APICallError.isInstance(error))
+    return 0
+  const seconds = Number(error.responseHeaders?.['retry-after'])
+  return Number.isFinite(seconds) && seconds >= 0 && seconds <= MAX_RETRY_AFTER_SECONDS ? seconds * 1_000 : 0
 }
 
 interface SdkUsage {
@@ -105,6 +114,24 @@ export async function callAgent<T>(
   const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS
   const startedAt = Date.now()
 
+  const report = (sdkUsage: SdkUsage, attempts: number): void => {
+    const usage = toTokenUsage(sdkUsage)
+    const costUsd = computeCost(agentModel.model, usage)
+    gate.record(costUsd)
+    options.onCallRecord?.({
+      agentName: name,
+      ...(options.newsId !== undefined ? { newsId: options.newsId } : {}),
+      provider: agentModel.provider,
+      tokensIn: usage.noCacheInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens,
+      tokensOut: usage.outputTokens,
+      cachedReadTokens: usage.cacheReadTokens,
+      cacheWriteTokens: usage.cacheWriteTokens,
+      costUsd,
+      latencyMs: Date.now() - startedAt,
+      attempts,
+    })
+  }
+
   for (let attempt = 1; ; attempt++) {
     gate.assertWithinLimit()
     try {
@@ -121,30 +148,16 @@ export async function callAgent<T>(
         maxRetries: 0,
         timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
       })
-      const usage = toTokenUsage(result.usage)
-      const costUsd = computeCost(agentModel.model, usage)
-      gate.record(costUsd)
-      options.onCallRecord?.({
-        agentName: name,
-        ...(options.newsId !== undefined ? { newsId: options.newsId } : {}),
-        provider: agentModel.provider,
-        tokensIn: usage.noCacheInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens,
-        tokensOut: usage.outputTokens,
-        cachedReadTokens: usage.cacheReadTokens,
-        cacheWriteTokens: usage.cacheWriteTokens,
-        costUsd,
-        latencyMs: Date.now() - startedAt,
-        attempts: attempt,
-      })
+      report(result.usage, attempt)
       return result.output
     }
     catch (error) {
       // 輸出不符 schema 時 token 已經計費，沒記到就會讓花費閘少算。
       if (NoObjectGeneratedError.isInstance(error) && error.usage)
-        gate.record(computeCost(agentModel.model, toTokenUsage(error.usage)))
+        report(error.usage, attempt)
       if (attempt >= maxAttempts || !isRetryable(error))
         throw error
-      await delay(retryDelayMs * 2 ** (attempt - 1))
+      await delay(Math.max(retryDelayMs * 2 ** (attempt - 1), retryAfterMs(error)))
     }
   }
 }

@@ -11,6 +11,7 @@ import { VIEWPOINTS_DEBATE_USER_TEXT } from '../prompts/viewpoints-debate.user-c
 import { stripViolatingProse } from './_compliance-strip.js'
 import { hasGarbledChars } from './_garbled-text.js'
 import { callAgent } from './call-agent.js'
+import { CostGateError } from './cost-gate.js'
 import { ViewpointsNetReadResponse, ViewpointsPointsResponse } from './response-schemas.js'
 
 export interface RunViewpointsDebateParams {
@@ -93,6 +94,8 @@ export async function runViewpointsDebate(
     return parsed.data
   }
   catch (err) {
+    if (err instanceof CostGateError)
+      throw err
     console.warn(`[viewpoints-debate] degrade reason=error err=${err instanceof Error ? err.message : String(err)}`)
     return null
   }

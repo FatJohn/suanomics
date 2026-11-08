@@ -1,6 +1,9 @@
 import process from 'node:process'
 
-export class DailyCostLimitExceededError extends Error {
+/** 花費閘的錯誤一律要讓 pipeline 停下，agent 的降級 catch 必須往外丟。 */
+export class CostGateError extends Error {}
+
+export class DailyCostLimitExceededError extends CostGateError {
   constructor(readonly limitUsd: number, readonly spentUsd: number) {
     super(`每日花費已超過上限：累計 $${spentUsd.toFixed(4)}，上限 $${limitUsd.toFixed(4)}`)
     this.name = 'DailyCostLimitExceededError'
@@ -31,7 +34,7 @@ export class DailyCostGate {
 export function parseDailyCostLimit(raw: string | undefined): number {
   const limit = Number(raw)
   if (raw === undefined || raw === '' || !Number.isFinite(limit) || limit <= 0)
-    throw new Error(`DAILY_COST_LIMIT_USD 必須是正數，收到 ${raw ?? '（未設定）'}`)
+    throw new CostGateError(`DAILY_COST_LIMIT_USD 必須是正數，收到 ${raw ?? '（未設定）'}`)
   return limit
 }
 

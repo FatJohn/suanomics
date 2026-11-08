@@ -13,6 +13,7 @@ import {
 import { NARRATIVE_CLAIM_LEDGER_INSTRUCTION, NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from '../prompts/narrative-writer.prompt.js'
 import { NARRATIVE_WRITER_USER_TEXT } from '../prompts/narrative-writer.user-content.js'
 import { callAgent } from './call-agent.js'
+import { CostGateError } from './cost-gate.js'
 import { READER_SNAPSHOT_HEADING } from './market-snapshot-section.js'
 import { checkNarrativeClaimBinding, warnClaimBindingIssues } from './narrative-claim-binding.js'
 import {
@@ -206,6 +207,8 @@ export async function callNarrativeWriter(
       }
     }
     catch (err) {
+      if (err instanceof CostGateError)
+        throw err
       const reason = classifyError(err)
       const e = err as { message?: string, issues?: unknown }
       // log Zod issues 給 prod debug、攻擊面：narrative 字數 / citation subset / sections 數

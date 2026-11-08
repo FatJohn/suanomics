@@ -1,6 +1,7 @@
 import type { EvidenceClaim } from '@suanomics/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as wrapper from './call-agent.js'
+import { DailyCostLimitExceededError } from './cost-gate.js'
 import { runViewpointsDebate } from './viewpoints-debate.js'
 
 vi.mock('./call-agent.js')
@@ -133,5 +134,10 @@ describe('runViewpointsDebate', () => {
     await runViewpointsDebate(PARAMS)
     const names = llm.mock.calls.map(c => c[0])
     expect(names).toEqual(['viewpoints-debate', 'viewpoints-debate', 'viewpoints-debate'])
+  })
+
+  it('花費閘超限時往外丟，不降級成 null', async () => {
+    llm.mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    await expect(runViewpointsDebate(PARAMS)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
   })
 })

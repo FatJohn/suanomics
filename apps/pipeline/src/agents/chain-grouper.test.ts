@@ -2,6 +2,7 @@ import type { CascadeChain } from '@suanomics/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as wrapper from './call-agent.js'
 import { tagChainForceGroups } from './chain-grouper.js'
+import { DailyCostLimitExceededError } from './cost-gate.js'
 
 vi.mock('./call-agent.js')
 
@@ -97,5 +98,10 @@ describe('tagChainForceGroups', () => {
     const sent = String(llm.mock.calls[0]?.[1]?.userContent ?? '')
     expect(sent).toContain('- 半導體與先進代工\n')
     expect(sent).not.toMatch(/半導體與先進代工[（(]/)
+  })
+
+  it('花費閘超限時往外丟，不當成分組失敗', async () => {
+    llm.mockRejectedValueOnce(new DailyCostLimitExceededError(1, 2))
+    await expect(tagChainForceGroups({ chains: [chain('銀行業')], forceNames: FORCES })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
   })
 })

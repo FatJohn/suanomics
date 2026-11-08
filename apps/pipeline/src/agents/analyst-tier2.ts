@@ -58,7 +58,7 @@ export async function callAnalystTier2(p: CallAnalystTier2Params): Promise<Analy
     // tier2 不產 claim，但與 tier1 共用 AnalystOutputSchema。供應商若自行回了 claims，
     // 一條壞 claim 會 throw 掉整份 tier2 分析——強制覆寫成空陣列，讓那條路徑不存在。
     const parsed = AnalystOutputSchema.parse({
-      ...(normalizeForAnalystSchema(raw) as Record<string, unknown>),
+      ...(normalizeForAnalystSchema(raw, allowedUrls) as Record<string, unknown>),
       claims: [],
     })
     if (parsed.newsId === undefined && p.newsId !== undefined)

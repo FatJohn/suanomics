@@ -1,9 +1,11 @@
+import { setTimeout as delay } from 'node:timers/promises'
 import { APICallError, generateText, NoObjectGeneratedError } from 'ai'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 import { callAgent } from './call-agent.js'
 import { DailyCostGate, DailyCostLimitExceededError } from './cost-gate.js'
 
+vi.mock('node:timers/promises', () => ({ setTimeout: vi.fn(async () => undefined) }))
 vi.mock('ai', async importOriginal => ({
   ...await importOriginal<typeof import('ai')>(),
   generateText: vi.fn(),
@@ -21,18 +23,20 @@ const usage = {
 function succeed(): void {
   generate.mockResolvedValueOnce({ output: { ok: true }, usage } as never)
 }
-function apiError(statusCode: number | undefined, isRetryable: boolean): APICallError {
+function apiError(statusCode: number | undefined, isRetryable: boolean, responseHeaders?: Record<string, string>): APICallError {
   return new APICallError({
     message: 'boom',
     url: 'https://example.test',
     requestBodyValues: {},
     isRetryable,
     ...(statusCode !== undefined ? { statusCode } : {}),
+    ...(responseHeaders ? { responseHeaders } : {}),
   })
 }
 
 beforeEach(() => {
   generate.mockReset()
+  vi.mocked(delay).mockClear()
 })
 
 describe('callAgent 的 AI SDK 呼叫', () => {
@@ -73,9 +77,11 @@ describe('callAgent 的花費閘', () => {
       usage: usage as never,
       finishReason: 'stop',
     }))
-    await expect(callAgent('news-tagger', input, schema, { gate })).rejects.toBeInstanceOf(NoObjectGeneratedError)
+    const onCallRecord = vi.fn()
+    await expect(callAgent('news-tagger', input, schema, { gate, onCallRecord })).rejects.toBeInstanceOf(NoObjectGeneratedError)
     expect(gate.totalUsd).toBeCloseTo(0.1, 10)
     expect(generate).toHaveBeenCalledTimes(1)
+    expect(onCallRecord.mock.calls[0]?.[0]).toMatchObject({ agentName: 'news-tagger', costUsd: expect.closeTo(0.1, 10), attempts: 1 })
   })
 
   it('沒有價格的 model 在呼叫前拒絕', async () => {
@@ -87,6 +93,18 @@ describe('callAgent 的花費閘', () => {
 })
 
 describe('callAgent 的 retry', () => {
+  it.each([
+    ['採用較長的 retry-after', '30', 30_000],
+    ['retry-after 短於 backoff 時用 backoff', '0', 1_000],
+    ['超過 60 秒的值不採用', '120', 1_000],
+    ['不是數字的值不採用', 'soon', 1_000],
+  ])('%s', async (_label, header, expectedMs) => {
+    generate.mockRejectedValueOnce(apiError(429, true, { 'retry-after': header }))
+    succeed()
+    await callAgent('news-tagger', input, schema, { gate: new DailyCostGate(1) })
+    expect(delay).toHaveBeenCalledWith(expectedMs)
+  })
+
   it.each([
     ['429', apiError(429, true)],
     ['500', apiError(500, true)],

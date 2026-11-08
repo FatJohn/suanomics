@@ -3,6 +3,7 @@ import type { LlmCallRecord } from './call-agent.js'
 import { CHAIN_GROUPER_SYSTEM_PROMPT } from '../prompts/chain-grouper.prompt.js'
 import { CHAIN_GROUPER_USER_TEXT } from '../prompts/chain-grouper.user-content.js'
 import { callAgent } from './call-agent.js'
+import { CostGateError } from './cost-gate.js'
 import { ChainGrouperResponse } from './response-schemas.js'
 
 /**
@@ -51,7 +52,9 @@ export async function tagChainForceGroups(p: CallChainGrouperParams): Promise<Ca
     })
     mapping = out.mapping ?? []
   }
-  catch {
+  catch (err) {
+    if (err instanceof CostGateError)
+      throw err
     // 分組是加分項不是必需品：grouper 掛掉不該讓整份 brief 產不出來
     return p.chains
   }
