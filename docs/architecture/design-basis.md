@@ -31,7 +31,7 @@ flowchart LR
   end
   P <-->|drizzle| PG[(Neon Postgres)]
   B -->|build 時讀| PG
-  P -->|AI SDK| LLM["Anthropic（主）<br/>Gemini（judge）"]
+  P -->|AI SDK| LLM["Anthropic"]
   P -->|RSS / OpenAPI / 正文抽取| SRC["資料來源"]
   D --> CF["Cloudflare Pages<br/>suanomics.everbegin.net"]
 ```
@@ -60,17 +60,17 @@ pnpm workspace 三個成員：
 
 ## LLM 呼叫層
 
-所有 LLM 呼叫走 Vercel AI SDK 的 `generateText` 加 `Output.object({ schema })`。provider 由 `@ai-sdk/anthropic` 與 `@ai-sdk/google` 提供。不引入 agent 框架，決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。
+所有 LLM 呼叫走 Vercel AI SDK 的 `generateText` 加 `Output.object({ schema })`。provider 目前只接 `@ai-sdk/anthropic`。不引入 agent 框架，決策見 [LLM 呼叫層用 Vercel AI SDK、不用 agent 框架](../adr/0004-ai-sdk-no-agent-framework.md)。
 
-每個 agent 用哪家哪個 model 由 `apps/pipeline` 的一張對照表決定，環境變數可逐 agent 覆寫：
+每個 agent 用哪家哪個 model 由 `apps/pipeline/src/agents/models.ts` 的對照表決定，具體型號以那裡為準，環境變數 `AGENT_MODELS` 可逐 agent 覆寫：
 
-| 分層 | 預設 model | 適用 agent |
+| 分層 | 預設 model 等級 | 適用 agent |
 |---|---|---|
-| 高量、低複雜度 | `claude-haiku-5-5` | news-categorizer、news-tagger、chain-grouper、corpus-entity-summary |
-| 分析與綜合 | `claude-sonnet-5-5` | decomposer、analyst-tier1、analyst-tier2、synthesizer、editor、viewpoints-debate、narrative-writer、podcast-writer |
-| 品質評審（judge） | Gemini 免費層 | brief-judge、brief-quality-judge、brief-continuity-judge |
+| 高量、低複雜度 | 便宜、快速的等級 | news-categorizer、news-tagger、chain-grouper、corpus-entity-summary |
+| 分析與綜合 | 能力較高的等級 | decomposer、analyst-tier1、analyst-tier2、synthesizer、editor、viewpoints-debate、narrative-writer、podcast-writer |
+| 品質評審（judge） | 與分析綜合同等級 | brief-judge、brief-quality-judge、brief-continuity-judge |
 
-judge 刻意用不同家族的模型，避免同家族評自己的輸出。system prompt 透過 `providerOptions.anthropic.cacheControl` 開 prompt caching。
+judge 用不同家族的 model 可避免同家族評自己的輸出；目前全部用 Anthropic，是否換家族在接回 judge 時（#33）決定。system prompt 透過 `providerOptions.anthropic.cacheControl` 開 prompt caching。
 
 ## 資料來源
 

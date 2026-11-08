@@ -5,7 +5,7 @@ date: 2026-11-07
 
 # LLM 呼叫層用 Vercel AI SDK、不用 agent 框架
 
-pipeline 是固定的 DAG：15 個階段各自「給 system prompt 與結構化輸入，要一份符合 schema 的 JSON」，沒有「模型自己決定下一步查什麼」的迴圈。需求是「每個階段可換 model、可換 provider」。v0 自寫三個 provider adapter，另有 7 個檔直接綁 `@google/genai` 繞過抽象，OpenAI 相容路徑從未對真端點跑過。決定改用 Vercel AI SDK（`ai` v7：`generateText` 加 `Output.object({ schema })`；`generateObject` 已標 deprecated 不採用），provider 用 `@ai-sdk/anthropic` 與 `@ai-sdk/google`；Anthropic 為預設 provider，Gemini 只給三個 judge。
+pipeline 是固定的 DAG：15 個階段各自「給 system prompt 與結構化輸入，要一份符合 schema 的 JSON」，沒有「模型自己決定下一步查什麼」的迴圈。需求是「每個階段可換 model、可換 provider」。v0 自寫三個 provider adapter，另有 7 個檔直接綁 `@google/genai` 繞過抽象，OpenAI 相容路徑從未對真端點跑過。決定改用 Vercel AI SDK（`ai` v7：`generateText` 加 `Output.object({ schema })`；`generateObject` 已標 deprecated 不採用），provider 目前只用 `@ai-sdk/anthropic`。
 
 ## Considered Options
 
@@ -16,6 +16,6 @@ pipeline 是固定的 DAG：15 個階段各自「給 system prompt 與結構化�
 ## Consequences
 
 - OpenAI 相容路徑刪除，不帶進新架構。
-- judge 刻意留在 Gemini：用不同家族評自己的輸出，避免同家族偏差；judge 不在每日路徑上，可用免費層。
+- judge 用與產出不同家族的 model，可避免同家族評自己的輸出；judge 不在每日路徑上。目前全部用 Anthropic，judge 用哪一家在接回 judge 時（#33）決定。
 - 每日花費硬閘沿用 v0 的 `totalCostUsd` 計量，加上 Anthropic Console 的 workspace spend limit。
 - Anthropic 的 prompt caching 走 `providerOptions.anthropic.cacheControl`。
