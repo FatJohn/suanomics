@@ -1,0 +1,159 @@
+# Topic 詞彙對照。
+#
+# 為什麼需要這份表：
+# 2026-08-04 那次把 corpus enricher 的 prompt 改成「topicTags 一律英文
+# 小寫 kebab-case」，external_articles.topic_tags 的 CJK 佔比因此從 7 月各週的
+# 約 48% 掉到 8/10 當週的 0.1%、8/17 的 0.2%（prod 實測，以 fetched_at 分週）。
+# decomposer 那邊沒有對應改動，仍照中文新聞吐中文 topic。字面比對的
+# `topic_tags @>` 於是幾乎全空——2026-08-21 實跑三則真新聞，11 條 hypothesis
+# 共 32 個 distinct topic，只有 3 個對得上 corpus（地緣政治 2 筆、logistics 2
+# 筆、tariffs 13 筆）。
+#
+# 結構：
+#   groups:
+#     - canonical: <corpus 實際在用的 tag，英文小寫 kebab-case>
+#       aliases: [<decomposer 可能吐出的其他 form，中英文皆可>]
+#
+# 與 entity-aliases.yml 的差異（不要照抄那邊的語意）：
+# - 這裡的 canonical **就是 corpus 的 tag 本身**，不是內部 slug，會被拿去查詢。
+# - 展開是加法：原字串永遠留著，再加上正規化形式與同組其他 form。corpus 有
+#   字面大寫的 tag（實測 AI:55 筆），取代式展開會弄丟現在命中的查詢。
+#
+# 維護方式：
+# - canonical 一律先確認「corpus 裡真的有這個 tag 且非零」再寫進來。
+# - 對照的中文詞取自 corpus 自己的 legacy CJK tag（2026-08-04 之前同一個
+#   enricher 對同樣概念用的中文），不是憑空翻譯。
+
+groups:
+  - canonical: geopolitics
+    aliases: [地緣政治, 地緣風險, 地緣政治風險]
+  - canonical: supply-chain
+    aliases: [供應鏈, 供應鏈韌性, 本土化供應鏈, 在地供應鏈, 在地化生產, supply chain resilience, friend-shoring, 友岸外包]
+  - canonical: semiconductor
+    aliases: [半導體, 晶片, 晶圓, 晶圓代工, 先進製程, 先進封裝, 封裝材料, 半導體材料, chips]
+  - canonical: memory
+    aliases: [記憶體, DRAM, NAND]
+  - canonical: artificial-intelligence
+    aliases: [人工智慧, AI, 生成式 AI]
+  - canonical: technology
+    aliases: [科技, 科技業, 科技股]
+  - canonical: robotics
+    aliases: [機器人]
+  - canonical: policy
+    aliases: [政策, 產業政策]
+  - canonical: regulation
+    aliases: [監管, 法規, 監理]
+  - canonical: government
+    aliases: [政府, 白宮]
+  - canonical: politics
+    aliases: [政治, 美國政治]
+  - canonical: election
+    aliases: [選舉, 大選]
+  - canonical: diplomacy
+    aliases: [外交, 外交政策, foreign policy]
+  - canonical: military
+    aliases: [軍事, 國防, defense]
+  - canonical: conflict
+    aliases: [軍事衝突, 戰爭, 衝突]
+  - canonical: middle-east
+    aliases: [中東, 中東局勢]
+  - canonical: russia
+    aliases: [俄羅斯, 俄烏戰爭, 烏俄戰爭, 烏克蘭]
+  - canonical: china
+    aliases: [中國, 兩岸, 兩岸關係, 台海]
+  - canonical: us-china
+    aliases: [美中關係, 美中, 中美關係, 美中貿易戰, 美中科技戰]
+  - canonical: japan
+    aliases: [日本]
+  - canonical: india
+    aliases: [印度]
+  - canonical: europe
+    aliases: [歐洲, 歐盟]
+  - canonical: hong-kong
+    aliases: [香港]
+  - canonical: sanctions
+    aliases: [制裁, 經濟制裁]
+  - canonical: security
+    aliases: [國家安全]
+  - canonical: cybersecurity
+    aliases: [資安, 網路安全]
+  - canonical: energy
+    aliases: [能源, 能源轉型]
+  - canonical: oil
+    aliases: [油價, 原油, 石油]
+  - canonical: shipping
+    aliases: [航運, 海運, 物流, logistics]
+  - canonical: aviation
+    aliases: [航空]
+  - canonical: trade
+    aliases: [貿易, 貿易戰, 出口管制]
+  - canonical: tariffs
+    aliases: [關稅, tariff, 川普關稅]
+  - canonical: monetary-policy
+    aliases: [貨幣政策, 央行政策]
+  - canonical: central-bank
+    aliases: [央行, 中央銀行, 聯準會]
+  - canonical: interest-rates
+    aliases: [利率, 升息, 降息]
+  - canonical: inflation
+    aliases: [通膨, 通貨膨脹, 物價]
+  - canonical: stock-market
+    aliases: [股市, 美股, 台股, 股票市場, stocks, markets]
+  - canonical: earnings
+    aliases: [財報, 財務業績, 業績, 法說會, financial results]
+  - canonical: macroeconomics
+    aliases: [總體經濟, 宏觀經濟]
+  - canonical: economy
+    aliases: [經濟, 景氣]
+  - canonical: forex
+    aliases: [匯率, 外匯, 匯市, currency, currencies]
+  - canonical: bonds
+    aliases: [債券, 公債, 殖利率, treasury]
+  - canonical: debt
+    aliases: [債務]
+  - canonical: commodities
+    aliases: [大宗商品, 原物料, commodity]
+  - canonical: gold
+    aliases: [黃金, 金價]
+  - canonical: mining
+    aliases: [礦業]
+  - canonical: agriculture
+    aliases: [農業, 糧食]
+  - canonical: real-estate
+    aliases: [房地產, 房市, housing]
+  - canonical: infrastructure
+    aliases: [基礎建設, 基建]
+  - canonical: manufacturing
+    aliases: [製造業, 產能]
+  - canonical: automotive
+    aliases: [汽車, 車輛, 電動車, 機車]
+  - canonical: retail
+    aliases: [零售, 電商, 消費]
+  - canonical: investment
+    aliases: [投資, 資本支出]
+  - canonical: banking
+    aliases: [銀行, 金融業]
+  - canonical: finance
+    aliases: [金融, 金融市場]
+  - canonical: mergers-and-acquisitions
+    aliases: [併購, 收購, M&A]
+  - canonical: employment
+    aliases: [就業, 失業率, 勞動市場, labor market]
+  - canonical: healthcare
+    aliases: [醫療, 生技, 健康]
+  - canonical: climate
+    aliases: [氣候, 氣候變遷, 環境]
+  - canonical: natural-disaster
+    aliases: [天災, 災害]
+  - canonical: earthquake
+    aliases: [地震]
+  - canonical: legal
+    aliases: [法律, 訴訟]
+  - canonical: media
+    aliases: [媒體]
+  - canonical: social-media
+    aliases: [社群媒體]
+  - canonical: human-rights
+    aliases: [人權]
+  - canonical: tourism
+    aliases: [觀光, 旅遊]

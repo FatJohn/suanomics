@@ -1,0 +1,79 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`synthesizer formatUserContent snapshot (characterization) > captures cascadeChains with tier/parentChainId/speculative present and absent in the same output 1`] = `
+"# 日期: 2026-06-13
+
+# Analyst 輸出（1 篇）
+
+## newsId: n1
+primaryImpact: 主衝擊
+cascadeChains:
+  - industry: 半導體
+    mechanism: 需求傳導
+    direction: positive
+    affectedTickers: 2330
+    citations:
+      - https://example.com/a
+  - industry [tier 2]: 封測 (傳導自 t1-0) [推測]
+    mechanism: 訂單轉移
+    direction: neutral
+    affectedTickers: 3711, 2317
+    citations:
+reasoning: 綜合理由
+
+註：標 [推測] 的傳導鏈無來源佐證、請以「若…則…」條件語氣呈現、不得作為 highlights 依據。"
+`;
+
+exports[`synthesizer formatUserContent snapshot (characterization) > captures compliance-violation retry feedback text appended to second call 1`] = `
+"# 日期: 2026-06-13
+
+# Analyst 輸出（0 篇）
+
+
+# 你上次輸出違反合規鐵線（類型: ticker-direction）
+請重寫整段、不要修補、避免任何個股 + 方向性買賣或多空組合、避免投信投顧法 44 條禁用詞、改用中性財經分析語言。"
+`;
+
+exports[`synthesizer formatUserContent snapshot (characterization) > captures continuityHint present 1`] = `
+"# 日期: 2026-06-13
+
+# Analyst 輸出（0 篇）
+
+# 延續追蹤線（標題參考）
+延續主線「能源通膨」（已追蹤 3 天）：原油庫存意外增加
+若此主線壓倒性主導今日、headline 可帶跨日訊號（例「能源通膨追蹤：…」）；否則維持 stateless、勿硬連、勿為連而連。"
+`;
+
+exports[`synthesizer formatUserContent snapshot (characterization) > captures marketCloseFraming + marketSnapshot present together 1`] = `
+"# 日期: 2026-06-13
+
+# Analyst 輸出（0 篇）
+
+# 市場收盤時間框架
+台股收盤 13:30、美股收盤 05:00
+描述台股行情的今日/昨日以上表為準；其他市場（美股等）依各新聞的發布時間。
+
+# 市場數據參考（僅供宏觀脈絡；引用數字時照抄、不得推算未提供的數字）
+## 今日市場數據
+- 加權指數：23,150 點"
+`;
+
+exports[`synthesizer formatUserContent snapshot (characterization) > captures multiple analystOutputs with newsId present/absent, empty cascadeChains 1`] = `
+"# 日期: 2026-06-13
+
+# Analyst 輸出（2 篇）
+
+## newsId: n1
+primaryImpact: 主衝擊一
+reasoning: 理由一
+
+## newsId: (none)
+primaryImpact: 主衝擊二（無 newsId）
+reasoning: 理由二"
+`;
+
+exports[`synthesizer formatUserContent snapshot (characterization) > captures zero analystOutputs, no optional blocks 1`] = `
+"# 日期: 2026-06-13
+
+# Analyst 輸出（0 篇）"
+`;

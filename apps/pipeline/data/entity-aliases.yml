@@ -1,0 +1,381 @@
+# Entity normalization seed.
+#
+# decomposer 出英文 entity（Fed / FOMC / TSMC）、
+# 但 Gemini enrichment 對中文新聞 tag 用中文（聯準會 / 台積電）。retriever
+# 的 GIN `entities @> [{name: E}]` 字面比對、字面不一致就 miss。
+#
+# 此 yml 是 alias dict source-of-truth、由 `apps/server/src/agents/
+# entity-aliases.ts` 載入、retriever / routing 都用。
+#
+# 結構：
+#   groups:
+#     - canonical: <slug、僅內部識別、不曝露給 LLM>
+#       aliases: [<可能在 decomposer 輸出 / external_articles tag 出現的所有同義 form>]
+#
+# 比對規則：
+# - canonicalize 採 trim + case-insensitive：任一 alias / canonical 過 normalize
+#   後都對應到同一個 canonical key
+# - canonical 是 slug-only 識別碼（kebab-case、純小寫）、預設不會被當作真實
+#   form 拿去 retriever GIN 查詢；正常 article tag 也不該寫成 slug。
+# - expand 結果 = 使用者明確列在 aliases 裡的 form。所以**所有想被 retriever
+#   命中的 form 都要明確列**（含 alias 也含 canonical 的可讀型；通常 canonical
+#   slug 不需要列）。
+# - 例外：若某 group 的 aliases 留空（不建議）、expand 會 fallback 回傳輸入
+#   字串本身、避免回空陣列當查詢條件。
+#
+# 加新 alias：直接在這檔追加；container 重啟 / 下次 pnpm dev:server / next deploy
+# 即生效（runtime 載入一次後 cache）。dev 加一條 entry 不需動 code。
+
+groups:
+  # 美國央行
+  - canonical: fed
+    aliases:
+      - Fed
+      - FOMC
+      - 聯準會
+      - 美聯儲
+      - 美國聯準會
+      - 美國聯邦準備理事會
+      - federal reserve
+
+  # 台積電
+  - canonical: tsmc
+    aliases:
+      - TSMC
+      - 台積電
+      - 台積
+      - '2330'
+      - taiwan semiconductor
+
+  # 輝達
+  - canonical: nvidia
+    aliases:
+      - Nvidia
+      - NVIDIA
+      - NVDA
+      - 輝達
+      - 英偉達
+
+  # 蘋果
+  - canonical: apple
+    aliases:
+      - Apple
+      - AAPL
+      - 蘋果
+
+  # 降息（事件 / 政策）
+  - canonical: rate-cut
+    aliases:
+      - 降息
+      - rate cut
+      - rate-cut
+      - 利率下調
+      - 降低利率
+      - cutting rates
+
+  # 升息
+  - canonical: rate-hike
+    aliases:
+      - 升息
+      - rate hike
+      - rate-hike
+      - 利率上調
+      - 提高利率
+      - hiking rates
+
+  # 半導體（產業）
+  - canonical: semiconductor
+    aliases:
+      - 半導體
+      - semiconductor
+      - semiconductors
+      - sem
+      - chip
+      - chips
+
+  # 通膨
+  - canonical: inflation
+    aliases:
+      - 通膨
+      - 通脹
+      - inflation
+      - CPI
+      - 消費者物價指數
+
+  # 非農就業（NFP）
+  - canonical: nfp
+    aliases:
+      - NFP
+      - 非農
+      - 非農就業
+      - non-farm payrolls
+      - nonfarm payrolls
+
+  # 中東 / 地緣政治
+  - canonical: middle-east
+    aliases:
+      - 中東
+      - middle east
+      - middle-east
+      - 以巴
+      - 伊朗
+
+  # 油價
+  - canonical: oil-price
+    aliases:
+      - 油價
+      - oil price
+      - oil-price
+      - 原油
+      - crude oil
+      - WTI
+      - 布蘭特
+      - brent
+
+  # 外資
+  - canonical: foreign-investors
+    aliases:
+      - 外資
+      - foreign investors
+      - foreign-investors
+      - 外國投資人
+      - 外國機構投資人
+
+  # 台股大盤
+  - canonical: taiex
+    aliases:
+      - 台股
+      - 加權指數
+      - TAIEX
+      - 大盤
+      - 台股大盤
+
+  # === cross-domain (17 groups) ===
+
+  # 兩岸 / 台海
+  - canonical: cross-strait
+    aliases:
+      - 兩岸
+      - cross-strait
+      - 台海
+      - 台海關係
+      - 兩岸關係
+
+  # CHIPS Act / 美國晶片法案
+  - canonical: chips-act
+    aliases:
+      - CHIPS Act
+      - 美國晶片法案
+      - 晶片法案
+      - chips and science act
+
+  # 友岸外包 / 供應鏈韌性（B4a 廣化：加供應鏈 / supply chain / reshoring / 製造業回流 bare form）
+  - canonical: friend-shoring
+    aliases:
+      - friend-shoring
+      - friendshoring
+      - 友岸外包
+      - 供應鏈韌性
+      - supply chain resilience
+      - 供應鏈
+      - supply chain
+      - reshoring
+      - 製造業回流
+
+  # 川普關稅 / 對等關稅（B4a 廣化：加對等關稅 / 互惠關稅 / 關稅政策 bare form）
+  - canonical: trump-tariff
+    aliases:
+      - 川普關稅
+      - Trump tariff
+      - 美國對等關稅
+      - reciprocal tariff
+      - tariff policy
+      - 對等關稅
+      - 互惠關稅
+      - 關稅政策
+
+  # 美中科技戰
+  - canonical: us-china-tech
+    aliases:
+      - 美中科技戰
+      - 中美科技戰
+      - US China tech war
+      - tech decoupling
+      - 科技脫鉤
+
+  # 對中出口管制
+  - canonical: china-export-control
+    aliases:
+      - 對中出口管制
+      - China export control
+      - BIS export control
+      - 出口管制
+      - export controls
+
+  # 烏俄戰爭（B4a 廣化：加主詞國家 / 人名 bare form、召回廣 > 精度）
+  - canonical: russia-ukraine-war
+    aliases:
+      - 烏俄戰爭
+      - Russia Ukraine war
+      - 俄烏戰爭
+      - 烏克蘭戰爭
+      - Russia-Ukraine
+      - 俄羅斯
+      - Russia
+      - 烏克蘭
+      - Ukraine
+      - Putin
+      - Zelensky
+
+  # 紅海航運（B4a 廣化：加葉門 / Yemen / Houthis / 胡塞武裝 bare form）
+  - canonical: red-sea
+    aliases:
+      - 紅海
+      - Red Sea
+      - 紅海航運
+      - 葉門胡塞
+      - Houthi
+      - 葉門
+      - Yemen
+      - Houthis
+      - 胡塞武裝
+
+  # 以哈衝突（以巴衝突只留在 israel-hamas、middle-east 保留 以巴 避免完全脫鉤）
+  - canonical: israel-hamas
+    aliases:
+      - 以哈衝突
+      - Israel Hamas
+      - Gaza war
+      - 加薩戰爭
+      - 以巴衝突
+
+  # 行政院 / 立法院
+  - canonical: tw-government
+    aliases:
+      - 行政院
+      - executive yuan
+      - 立法院
+      - legislative yuan
+      - 內閣
+
+  # 台灣央行
+  - canonical: tw-cbc
+    aliases:
+      - 台灣央行
+      - 中央銀行
+      - 央行理監事
+      - CBC
+
+  # 歐洲央行
+  - canonical: ecb
+    aliases:
+      - ECB
+      - 歐洲央行
+      - European Central Bank
+      - euro area rate
+
+  # OPEC / 油國組織（B4a 廣化：加石油 / petroleum bare form；crude oil 不加、已在 oil-price）
+  - canonical: opec
+    aliases:
+      - OPEC
+      - OPEC+
+      - 油國組織
+      - 石油輸出國組織
+      - 石油
+      - petroleum
+
+  # 能源轉型
+  - canonical: energy-transition
+    aliases:
+      - 能源轉型
+      - energy transition
+      - 淨零
+      - net zero
+      - 再生能源
+
+  # 美中貿易戰（B4a 廣化：加貿易戰 / trade war bare form）
+  - canonical: us-china-trade
+    aliases:
+      - 美中貿易戰
+      - 中美貿易戰
+      - US China trade war
+      - 301 條款
+      - section 301
+      - 貿易戰
+      - trade war
+
+  # 制裁清單
+  - canonical: sanctions
+    aliases:
+      - 制裁清單
+      - sanctions
+      - entity list
+      - SDN list
+      - 實體清單
+
+  # 印太 / Indo-Pacific
+  - canonical: indo-pacific
+    aliases:
+      - 印太
+      - Indo-Pacific
+      - 印太戰略
+      - Indo-Pacific Economic Framework
+      - IPEF
+
+  # ===== 國際半導體 supply chain partner =====
+  # tier 1 Analyst 提名 nextTierEntities 多為國際具名、corpus 用英文 source 報導、
+  # Gemini 抽 entity 中英混雜、加 alias 提高 retriever GIN 命中率
+
+  - canonical: asml
+    aliases: [ASML, ASML Holding, 艾司摩爾, 阿斯麥, EUV, DUV]
+
+  - canonical: advantest
+    aliases: [Advantest, 愛德萬測試, 愛德萬, 6857.T]
+
+  - canonical: tokyo-electron
+    aliases: [Tokyo Electron, 東京威力科創, 東京威力, TEL]
+
+  - canonical: lam-research
+    aliases: [Lam Research, 科林研發, 蘭研, LRCX]
+
+  - canonical: applied-materials
+    aliases: [Applied Materials, 應用材料, AMAT]
+
+  - canonical: kla
+    aliases: [KLA, KLA Corporation, 科磊, KLAC]
+
+  - canonical: kyocera
+    aliases: [Kyocera, 京瓷, 6971.T]
+
+  - canonical: disco
+    aliases: [Disco, 6146.T]
+
+  - canonical: shinetsu
+    aliases: [Shin-Etsu, 信越化學, 信越, 4063.T]
+
+  - canonical: teradyne
+    aliases: [Teradyne, TER]
+
+  - canonical: sk-hynix
+    aliases: [SK Hynix, 海力士, SK 海力士, 000660.KS]
+
+  - canonical: hbm
+    aliases: [HBM, high bandwidth memory, 高頻寬記憶體]
+
+  - canonical: broadcom
+    aliases: [Broadcom, 博通, AVGO]
+
+  - canonical: marvell
+    aliases: [Marvell, 邁威爾, MRVL]
+
+  - canonical: hon-hai
+    aliases: [鴻海, Foxconn, Hon Hai, 2317.TW, 鴻海精密]
+
+  - canonical: wiwynn
+    aliases: [緯穎, Wiwynn, 6669.TW]
+
+  - canonical: thermal-modules
+    aliases: [雙鴻, 6442.TW, 奇鋐, 3017.TW, 散熱模組]
+
+  - canonical: vertiv
+    aliases: [Vertiv, VRT, 資料中心電源]

@@ -1,0 +1,36 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildStorylineBlock / continuityHintFromEntries — characterization baseline > continuity hint: with arc suffix and without (arcDays < 2) 1`] = `
+{
+  "withArc": "延續主線「能源通膨」（已追蹤 3 天）：原油庫存意外增加",
+  "withoutArc": "延續主線「A」：n",
+}
+`;
+
+exports[`buildStorylineBlock / continuityHintFromEntries — characterization baseline > renders full block: multiple entries, every valence, with/without prior note, resolveToday both variants 1`] = `
+"## 追蹤中敘事線（今日有進展）
+- 【能源通膨】（今日反向訊號）論點：油價回落壓抑通膨 ｜ 已追蹤 3 天
+  先前（2026-06-23）：荷姆茲復航、油價回落
+  今日進展：原油庫存意外增加、與回落論點相左
+  ※今日論點被證偽（refuted）
+- 【台股資金行情】（今日進展）論點：外資回流 ｜ 已追蹤 4 天
+  今日進展：連五買
+  ※今日論點兌現（confirmed）
+- 【稀土管制】（今日支持）論點：北京收緊稀土出口
+  今日進展：正式公告"
+`;
+
+exports[`entriesFromEditorResult — characterization baseline (out-of-order updates) > picks the latest-by-briefDate update as priorNote/priorDate despite out-of-order array 1`] = `
+[
+  {
+    "arcDays": 4,
+    "note": "原油庫存意外增加",
+    "priorDate": "2026-06-23",
+    "priorNote": "荷姆茲復航、油價回落",
+    "resolveToday": null,
+    "thesis": "油價回落壓抑通膨",
+    "title": "能源通膨",
+    "valence": "challenge",
+  },
+]
+`;

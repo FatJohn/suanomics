@@ -1,0 +1,101 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`analyst-tier2 user content snapshot > retrieved 為空 1`] = `
+"# 主新聞
+## 標題: 半導體設備廠訂單回溫
+## 內文:
+設備廠訂單自本季起明顯回溫、法人看好本波庫存回補。
+
+# Tier 1 Cascade Chain（context、不要當 citation 來源）
+- industry: 半導體
+- mechanism: 資本支出上調帶動設備採購
+- 已提名 tier 2 partner: 應用材料
+
+# Retriever 結果
+(retrieve 為空、依紀律 cascadeChains 留空陣列、不要靠內建知識硬寫)"
+`;
+
+exports[`analyst-tier2 user content snapshot > 多個提名 partner 的 join 顯示 1`] = `
+"# 主新聞
+## 標題: 記憶體現貨價格走揚
+## 內文:
+DRAM 現貨價格連三週上漲。
+
+# Tier 1 Cascade Chain（context、不要當 citation 來源）
+- industry: 記憶體
+- mechanism: AI 伺服器需求外溢
+- 已提名 tier 2 partner: 美光, 南亞科, SK 海力士
+
+# Retriever 結果
+(retrieve 為空、依紀律 cascadeChains 留空陣列、不要靠內建知識硬寫)"
+`;
+
+exports[`analyst-tier2 user content snapshot > 完整輸入 1`] = `
+"# 主新聞
+## 標題: 半導體設備廠訂單回溫
+## 內文:
+設備廠訂單自本季起明顯回溫、法人看好本波庫存回補。
+
+# Tier 1 Cascade Chain（context、不要當 citation 來源）
+- industry: 半導體
+- mechanism: 資本支出上調帶動設備採購
+- 已提名 tier 2 partner: 應用材料, 艾司摩爾
+
+# Retriever 結果（你只能用以下 url 當 citation）
+- 若該 tier 2 chain 內容無法由以下任何 url 佐證、請把 citations 留空陣列、不要編造 url
+- url: https://known.example.com/1
+  title: 設備訂單回溫報導
+  summary: 訂單能見度拉長至下半年
+- url: https://known.example.com/2
+  title: 法人喊進設備股
+
+# 市場數據快照（主動解讀、不只當背景）
+- 對 primaryImpact 與每條 cascadeChain、檢查快照中是否有相關序列；有則引用並解讀：方向（加速 / 放緩 / 轉向）、以及與新聞敘事一致或矛盾
+- 數字與變化幅度照抄快照提供的值、不得自行推算未提供的數字
+- 數據與新聞論點矛盾時、明確點出（例：新聞稱需求強勁、但相關序列連三月放緩）
+- 無相關序列的主軸不要硬引用、不要為引用而引用
+- 費城半導體指數：4,820 點（+0.8%）"
+`;
+
+exports[`analyst-tier2 user content snapshot > 完整輸入 2`] = `"TEST_ANALYST_TIER2_SYSTEM_PROMPT"`;
+
+exports[`analyst-tier2 user content snapshot > 幻覺 citation 觸發重試：第二次呼叫的 userContent 含 feedback 區塊 1`] = `
+"# 主新聞
+## 標題: 半導體設備廠訂單回溫
+## 內文:
+設備廠訂單自本季起明顯回溫、法人看好本波庫存回補。
+
+# Tier 1 Cascade Chain（context、不要當 citation 來源）
+- industry: 半導體
+- mechanism: 資本支出上調帶動設備採購
+- 已提名 tier 2 partner: 應用材料
+
+# Retriever 結果（你只能用以下 url 當 citation）
+- 若該 tier 2 chain 內容無法由以下任何 url 佐證、請把 citations 留空陣列、不要編造 url
+- url: https://known.example.com/1
+  title: r
+
+
+# 你上次輸出含未授權的 citation url（不在 retrieve 結果裡）：
+- https://invented.example.com/666
+請只用以下 url、若無相關來源請把 citations 留空陣列：
+- https://known.example.com/1"
+`;
+
+exports[`analyst-tier2 user content snapshot > 無 marketSnapshot：不附加快照段落 1`] = `
+"# 主新聞
+## 標題: 半導體設備廠訂單回溫
+## 內文:
+設備廠訂單自本季起明顯回溫、法人看好本波庫存回補。
+
+# Tier 1 Cascade Chain（context、不要當 citation 來源）
+- industry: 半導體
+- mechanism: 資本支出上調帶動設備採購
+- 已提名 tier 2 partner: 應用材料, 艾司摩爾
+
+# Retriever 結果（你只能用以下 url 當 citation）
+- 若該 tier 2 chain 內容無法由以下任何 url 佐證、請把 citations 留空陣列、不要編造 url
+- url: https://known.example.com/1
+  title: 設備訂單回溫報導
+  summary: 訂單能見度拉長至下半年"
+`;

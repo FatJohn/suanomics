@@ -1,0 +1,53 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`editor formatUserContent snapshot (characterization) > captures clampString truncation for overlong candidate title/excerpt 1`] = `
+"## 候選新聞（1 則、只能從這些 id 中選）
+[12][台股其他] 標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標標… — 述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述述…
+
+## 進行中敘事線（0 條）
+（目前無、可視今日新聞提出 0-2 條新線）
+
+## 近三日 brief
+（無）"
+`;
+
+exports[`editor formatUserContent snapshot (characterization) > captures empty path: zero candidates untouched but zero storylines and zero recent briefs, all optional blocks omitted 1`] = `
+"## 候選新聞（1 則、只能從這些 id 中選）
+[1][總經] 單一候選新聞標題 — 單一候選新聞摘要內容
+
+## 進行中敘事線（0 條）
+（目前無、可視今日新聞提出 0-2 條新線）
+
+## 近三日 brief
+（無）"
+`;
+
+exports[`editor formatUserContent snapshot (characterization) > captures full path: all 5 item categories, multi storylines with unsorted updates, non-empty recent briefs, all optional blocks present 1`] = `
+"## 候選新聞（5 則、只能從這些 id 中選）
+[1][科技半導體] 台積電法說會上修資本支出指引 — 公司預期明年資本支出將顯著成長
+[2][台股其他] 大立光第三季營收公布 — 光學鏡頭需求回升
+[3][總經] 美國CPI數據優於預期 — 通膨降溫速度加快
+[4][能源] 國際油價因地緣衝突走高 — 布蘭特原油站上每桶90美元
+[5][國際] 歐洲央行維持利率不變 — 市場預期年底前開始降息
+
+## 進行中敘事線（2 條）
+[10] Fed 降息路徑｜論點：年內降息兩碼｜近期：（2026-06-21/support）第三新一筆；（2026-06-22/challenge）次新一筆；（2026-06-23/extend）最新一筆
+[11] 尚無進展的敘事線｜論點：仍在觀察階段｜近期：（尚無進展）
+
+## 近三日 brief
+2026-06-22：昨日盤勢回顧 — 大盤震盪整理，成交量縮
+2026-06-21：前日盤勢 — 外資大幅買超台股
+
+## 本週財經行事曆（判斷今日是否排定總經事件）
+## 本週重要事件
+- 週四：美國PCE公布
+
+## 市場數據快照（判斷市場是否大幅變動）
+## 今日市場數據
+- 加權指數：23,150 點
+
+## 主管機關公告（一手消息、判斷今日是否有政策事件）
+★ 這是背景素材，**不保證出現在候選新聞清單裡**；只有清單裡真的存在的 id 才可寫進 selectedNewsIds。無論有沒有選到，都要把這裡的內容納入主軸與 dailyThesis 的判斷。
+## 官方公告
+- 央行召開理監事會議"
+`;
