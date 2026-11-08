@@ -17,7 +17,7 @@
 
 | 名稱 | slug | Feed URL | 類型 | 條款連結 | 允許用法 |
 |---|---|---|---|---|---|
-| 中央銀行新聞稿 | `cbc-press` | https://www.cbc.gov.tw/tw/rss-302-1.xml | 官方 RSS | `https://www.cbc.gov.tw/tw/cp-307-36676-DE020-1.html` | 正文。政府資料開放授權第 1 版，須註明出處 |
+| 中央銀行新聞稿 | `cbc-press` | https://www.cbc.gov.tw/tw/rss-302-1.xml | 官方 RSS | https://www.cbc.gov.tw/tw/cp-307-36676-de020-1.html | 正文。政府資料開放授權第 1 版，須註明出處 |
 | 金管會新聞稿 | `fsc-press` | https://www.fsc.gov.tw/RSS/Messages?serno=201202290009&language=chinese | 官方 RSS | https://www.fsc.gov.tw/ch/main.jsp?websitelink=artsublink.jsp&dataserno=201604250004 | 正文。政府資料開放授權第 1 版，須註明出處 |
 | 行政院新聞 | `ey-press` | https://www.ey.gov.tw/RSS_Content.aspx?ModuleType=3 | 官方 RSS | https://www.ey.gov.tw/Page/2EADDBFEDDB6357E | 正文。政府資料開放授權第 1 版 |
 | 總統府新聞 | `president-news` | https://www.president.gov.tw/RSSNEWS.aspx | 官方 RSS | https://www.president.gov.tw/Page/18 | 正文。政府資料開放授權第 1 版，須註明出處 |

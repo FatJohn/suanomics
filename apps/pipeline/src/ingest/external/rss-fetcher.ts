@@ -63,7 +63,7 @@ export function parseRssXml(xml: string): ParsedEntry[] {
   return items
     .filter((it): it is RawItem => typeof it === 'object' && it !== null)
     .map((it) => {
-      const url = asString(it.link).trim()
+      const url = asString(it.link).trim().replace(/&amp;/g, '&')
       const guid = extractGuid(it)
       const externalId = guid ?? (url ? hashUrl(url) : '')
       const pubStr = asString(it.pubDate)
@@ -91,7 +91,8 @@ export function dedupByExternalId(entries: readonly ParsedEntry[]): ParsedEntry[
   return out
 }
 
-export async function fetchRss(url: string, timeoutMs = 10_000): Promise<string> {
+// 外交部 feed 約 3.6 MB，實測 10 秒內讀不完。
+export async function fetchRss(url: string, timeoutMs = 30_000): Promise<string> {
   const ctl = new AbortController()
   const timer = setTimeout(() => ctl.abort(), timeoutMs)
   try {
