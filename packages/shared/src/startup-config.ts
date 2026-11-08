@@ -26,7 +26,7 @@ export interface ConfigIssue {
   key: string
   severity: ConfigSeverity
   kind: ConfigIssueKind
-  /** 缺了會發生什麼事，直接進 log 與 /api/ops/config-health */
+  /** 缺了會發生什麼事，直接進 log */
   impact: string
 }
 
@@ -62,7 +62,7 @@ function requestsClaudeModel(raw: string | undefined): boolean {
 
 // gemini／openai 兩個「有沒有被顯式指定」的 provider 前綴，判斷邏輯獨立於
 // apps/server/src/agents/providers/resolve.ts 的 parseModelSpec——packages/shared
-// 不能依賴 apps/server，這裡是同一條規則的獨立實作：只有 `provider/model` 的
+// 不能依賴 apps/pipeline，這裡是同一條規則的獨立實作：只有 `provider/model` 的
 // provider 半剛好是已知名字才算，裸 model（例如 `gemini-3.7-flash`）不算。
 type NonClaudeProvider = 'gemini' | 'openai'
 const KNOWN_NON_CLAUDE_PROVIDERS: readonly NonClaudeProvider[] = ['gemini', 'openai']
@@ -154,14 +154,6 @@ export function checkStartupConfig(service: StartupService, env: EnvSnapshot): S
 
   // ── 主線：缺了整個 process 都做不了事 ──
   requireKey('DATABASE_URL', 'required', '所有資料存取都經過它；缺了每次 query 都會 throw DATABASE_URL not set')
-
-  // route 層在 NODE_ENV=development 時本來就跳過 bearer check（internal.ts），這裡跟著跳過。
-  if ((env.NODE_ENV ?? '').trim() !== 'development') {
-    requireKey('INGEST_TRIGGER_SECRET', 'required', '/internal/* 會一律回 403，每日 pipeline 的排程觸發全部打不進來')
-    // 不是金鑰，但形狀一樣：缺了 CORS 白名單只剩 localhost、瀏覽器端全部被擋，
-    // 而 HTTP 自己完全正常。判 optional 是因為每日 pipeline 不經過瀏覽器、照跑。
-    requireKey('WEB_ORIGIN', 'optional', 'CORS 白名單只剩 localhost，正式網域的瀏覽器請求全部被擋；HTTP 端點與每日 pipeline 不受影響')
-  }
 
   // anthropic 三條件 gate 是否「真的」開啟（AI_PROVIDER=anthropic 且 ANTHROPIC_API_KEY
   // 存在）——要先算出來才知道 LLM_PROVIDER=anthropic 這個全域選擇有沒有真的生效，還是
@@ -274,8 +266,7 @@ export function checkStartupConfig(service: StartupService, env: EnvSnapshot): S
   return { service, issues, fatal, degraded, ok: issues.length === 0 }
 }
 
-// 刻意只印 key 名與影響、不印任何設定值：這些行會落在容器 log 與 /api/ops/config-health，
-// 兩個地方都不該出現金鑰內容。
+// 刻意只印 key 名與影響、不印任何設定值：這些行會落在 log，不該出現金鑰內容。
 export function formatStartupConfigReport(result: StartupConfigResult): StartupConfigLogLine[] {
   if (result.ok)
     return [{ level: 'info', message: `[startup-config] ${result.service} 設定檢查通過` }]

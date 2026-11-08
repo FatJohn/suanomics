@@ -7,8 +7,6 @@ import { checkStartupConfig, formatStartupConfigReport } from './startup-config.
 const PROD_SERVER_ENV = {
   NODE_ENV: 'production',
   DATABASE_URL: 'postgres://x',
-  INGEST_TRIGGER_SECRET: 'secret',
-  WEB_ORIGIN: 'https://app.example.com',
   GEMINI_API_KEY: 'g',
   FRED_API_KEY: 'f',
   PODCAST_TTS_PROVIDER: 'azure',
@@ -63,18 +61,9 @@ describe('checkStartupConfig：主線缺就是 fatal', () => {
     expect(keys(r.fatal)).toEqual(['GEMINI_API_KEY'])
   })
 
-  it('prod 缺 INGEST_TRIGGER_SECRET 是 fatal', () => {
-    const { INGEST_TRIGGER_SECRET: _s, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', env)
-    expect(keys(r.fatal)).toEqual(['INGEST_TRIGGER_SECRET'])
-  })
-
-  // route 層在 NODE_ENV=development 時本來就跳過 bearer check，這裡跟著跳過，
-  // 否則本機 `pnpm dev:server` 會起不來。
-  it('development 缺 INGEST_TRIGGER_SECRET 不叫', () => {
-    const { INGEST_TRIGGER_SECRET: _s, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', { ...env, NODE_ENV: 'development' })
-    expect(r.issues).toEqual([])
+  // v1 沒有 HTTP 服務（批次 pipeline＋靜態站），v0 的 HTTP 欄位不再檢查。
+  it('prod 沒有 INGEST_TRIGGER_SECRET、WEB_ORIGIN 也不叫', () => {
+    expect(checkStartupConfig('server', PROD_SERVER_ENV).issues).toEqual([])
   })
 })
 
@@ -234,19 +223,6 @@ describe('checkStartupConfig：只換 provider 沒換 model 的 footgun', () => 
 })
 
 describe('checkStartupConfig：次要依賴只 degraded', () => {
-  // 不是金鑰，但同一個形狀：缺了靜默降級、HTTP 自己完全正常，而瀏覽器端全滅。
-  it('prod 缺 WEB_ORIGIN 要叫，但不擋啟動', () => {
-    const { WEB_ORIGIN: _w, ...env } = PROD_SERVER_ENV
-    const r = checkStartupConfig('server', env)
-    expect(r.fatal).toEqual([])
-    expect(keys(r.degraded)).toEqual(['WEB_ORIGIN'])
-  })
-
-  it('development 缺 WEB_ORIGIN 不叫（entrypoint 本來就補 localhost）', () => {
-    const { WEB_ORIGIN: _w, INGEST_TRIGGER_SECRET: _s, ...env } = PROD_SERVER_ENV
-    expect(checkStartupConfig('server', { ...env, NODE_ENV: 'development' }).issues).toEqual([])
-  })
-
   it('缺 FRED_API_KEY', () => {
     const { FRED_API_KEY: _f, ...env } = PROD_SERVER_ENV
     const r = checkStartupConfig('server', env)
