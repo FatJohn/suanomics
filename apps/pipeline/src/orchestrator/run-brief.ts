@@ -34,8 +34,17 @@ function reasonText(reason: unknown): string {
   return reason instanceof Error ? reason.message : String(reason)
 }
 
-async function decomposeNews(news: NewsItem[]): Promise<Decomposed[]> {
-  const settled = await fanoutSettled(news, FANOUT.decomposer, n => callDecomposer({ newsTitle: n.title, newsText: n.text, newsId: n.id }))
+// 逐則累積，花費閘中途觸發時已付費的結果才不會隨整階段失敗遺失。同則重寫時取代舊值。
+function recordAnalyst(progress: DailyProgress, output: AnalystOutput): void {
+  progress.analystOutputs = [...(progress.analystOutputs ?? []).filter(a => a.newsId !== output.newsId), output]
+}
+
+async function decomposeNews(news: NewsItem[], progress: DailyProgress): Promise<Decomposed[]> {
+  const settled = await fanoutSettled(news, FANOUT.decomposer, async (n) => {
+    const decomposed = await callDecomposer({ newsTitle: n.title, newsText: n.text, newsId: n.id })
+    progress.decomposed = [...(progress.decomposed ?? []), { newsId: n.id, decomposed }]
+    return decomposed
+  })
   const survived: Decomposed[] = []
   settled.forEach((res, i) => {
     const item = news[i]
@@ -73,10 +82,10 @@ async function analyzeNews(
       seriesAnchors: market.seriesAnchors,
     })
     const tier1Chains = stampTier1(tier1.cascadeChains)
+    recordAnalyst(progress, { ...tier1, cascadeChains: tier1Chains, newsId: news.id })
     const tier2Chains = await runTier2Fanout({ news: { title: news.title, text: news.text, id: news.id }, tier1Chains, reportDate: date, marketSnapshot: market.snapshotBlock })
     const output = { ...tier1, cascadeChains: [...tier1Chains, ...tier2Chains] }
-    // 逐則累積：花費閘中途觸發時，已付費的單則結果不能隨整階段失敗一起遺失。
-    progress.analystOutputs = [...(progress.analystOutputs ?? []), { ...output, newsId: news.id }]
+    recordAnalyst(progress, { ...output, newsId: news.id })
     return output
   })
   const outputs: AnalystOutput[] = []
@@ -108,7 +117,7 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
   const marketCloseFraming = buildMarketCloseFraming(market.taiexCloseDate, date)
   const news: NewsItem[] = p.news.map(n => ({ ...n, id: String(n.id) }))
 
-  const survived = await stage('decompose', () => decomposeNews(news))
+  const survived = await stage('decompose', () => decomposeNews(news, progress))
   const retrieved = await stage('retrieve', async () => {
     const settled = await fanoutSettled(survived, FANOUT.retrieve, s => retrieveForDecomposed(s.decomposed, date))
     return settled.map(r => (r.status === 'fulfilled' ? r.value : []))
@@ -136,9 +145,14 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
   progress.brief = assembled
   const thesis = assembled.dailyThesis
 
+  const finalized: NonNullable<DailyProgress['finalize']> = {}
+  progress.finalize = finalized
   const [viewpoints, narrative, groupedChains] = await stage('finalize', () => settleFinalize([
     thesis
-      ? runViewpointsDebate({ thesis, headline: assembled.headline, summary: assembled.summary, marketSnapshot: market.snapshotBlock, cascadeChains: mergedChains, claimLedger: claimLedger.claims })
+      ? runViewpointsDebate({ thesis, headline: assembled.headline, summary: assembled.summary, marketSnapshot: market.snapshotBlock, cascadeChains: mergedChains, claimLedger: claimLedger.claims }).then((r) => {
+          finalized.viewpoints = r
+          return r
+        })
       : Promise.resolve(null),
     callNarrativeWriter({
       brief: assembled,
@@ -154,8 +168,14 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
       claimLedger: claimLedger.claims,
       ...(editor.selection?.mainThemes ? { mainThemes: editor.selection.mainThemes } : {}),
       ...(thesis ? { dailyThesis: thesis } : {}),
+    }).then((r) => {
+      finalized.narrative = r
+      return r
     }),
-    tagChainForceGroups({ chains: assembled.cascadeChains ?? [], forceNames: assembled.affectedIndustries.map(i => i.name) }),
+    tagChainForceGroups({ chains: assembled.cascadeChains ?? [], forceNames: assembled.affectedIndustries.map(i => i.name) }).then((r) => {
+      finalized.groupedChains = r
+      return r
+    }),
   ]))
 
   return {

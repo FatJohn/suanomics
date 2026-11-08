@@ -8,6 +8,7 @@ import { callDecomposer } from '../agents/decomposer.js'
 import { callNarrativeWriter } from '../agents/narrative-writer.js'
 import { retrieveForDecomposed } from '../agents/retrieve-for-decomposed.js'
 import { callSynthesizer } from '../agents/synthesizer.js'
+import { runTier2Fanout } from '../agents/tier2-fanout.js'
 import { assembleDailyBrief } from '../brief/assemble.js'
 import { EMPTY_MARKET_CONTEXT } from '../ingest/market-data/context.js'
 import { generateBrief } from './run-brief.js'
@@ -19,7 +20,7 @@ vi.mock('../agents/retrieve-for-decomposed.js')
 vi.mock('../agents/chain-grouper.js')
 vi.mock('../agents/narrative-writer.js')
 vi.mock('../brief/assemble.js')
-vi.mock('../agents/tier2-fanout.js', () => ({ stampTier1: (c: unknown) => c, runTier2Fanout: async () => [] }))
+vi.mock('../agents/tier2-fanout.js', () => ({ stampTier1: (c: unknown) => c, runTier2Fanout: vi.fn() }))
 
 const NEWS = [1, 2, 3].map(id => ({ id, title: `t${id}`, url: `https://e.com/${id}`, text: 'x', publishedAt: null }))
 
@@ -52,6 +53,7 @@ describe('generateBrief', () => {
     vi.mocked(callDecomposer).mockResolvedValue(decomposed)
     vi.mocked(retrieveForDecomposed).mockResolvedValue([])
     vi.mocked(callAnalystTier1).mockResolvedValue(analyst)
+    vi.mocked(runTier2Fanout).mockResolvedValue([])
   })
 
   it('單則 decomposer 失敗只少該則，後續只分析存活的新聞', async () => {
@@ -98,8 +100,11 @@ describe('generateBrief', () => {
       narrativeDone = true
       return { narrative: null } as never
     })
-    await expect(generateBrief(params().p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    const { p } = params()
+    await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
     expect(narrativeDone).toBe(true)
+    expect(p.progress.brief).toMatchObject({ headline: 'h' })
+    expect(p.progress.finalize).toEqual({ narrative: { narrative: null } })
   })
 
   it('finalize 同時有一般錯誤與花費閘時優先回報花費閘', async () => {
@@ -108,5 +113,36 @@ describe('generateBrief', () => {
     vi.mocked(callNarrativeWriter).mockRejectedValue(new Error('narrative'))
     vi.mocked(tagChainForceGroups).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
     await expect(generateBrief(params().p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+  })
+
+  it('decompose 完成後的產出進 progress', async () => {
+    vi.mocked(callAnalystTier1).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    const { p } = params()
+    await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(p.progress.decomposed?.map(d => d.newsId)).toEqual(['1', '2', '3'])
+  })
+
+  it('decompose 中途觸發花費閘時，已完成的單則結果仍進 progress', async () => {
+    vi.mocked(callDecomposer).mockResolvedValueOnce(decomposed).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    const { p } = params()
+    await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(p.progress.decomposed).toEqual([{ newsId: '1', decomposed }])
+  })
+
+  it('tier2 觸發花費閘時，該則 tier1 結果仍進 progress', async () => {
+    vi.mocked(runTier2Fanout).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    const { p } = params()
+    await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(p.progress.analystOutputs?.map(a => a.newsId)).toEqual(['1', '2', '3'])
+  })
+
+  it('tier2 完成後以含二階的結果取代同則 tier1，不重複累積', async () => {
+    const t2 = { industry: 'x' } as never
+    vi.mocked(runTier2Fanout).mockResolvedValue([t2])
+    vi.mocked(callSynthesizer).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    const { p } = params()
+    await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(p.progress.analystOutputs).toHaveLength(3)
+    expect(p.progress.analystOutputs?.[0]?.cascadeChains).toEqual([t2])
   })
 })

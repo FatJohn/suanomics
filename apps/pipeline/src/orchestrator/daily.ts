@@ -1,6 +1,6 @@
 import type { MarketBrief } from '@suanomics/shared'
 import type { DailyCostGate } from '../agents/cost-gate.js'
-import type { AnalystOutput } from '../agents/types.js'
+import type { AnalystOutput, DecomposerOutput } from '../agents/types.js'
 import type { RelevanceCandidate } from '../db/repos/news-repo.js'
 import type { MarketContext } from '../ingest/market-data/context.js'
 import type { EditorStageResult } from './editor-stage.js'
@@ -22,8 +22,12 @@ export interface DailyProgress {
   completedStages: StageName[]
   failedStage?: StageName
   editor?: EditorStageResult
+  decomposed?: { newsId: string, decomposed: DecomposerOutput }[]
+  // tier2 尚未完成的新聞，這裡只有 tier1 的 chains。
   analystOutputs?: AnalystOutput[]
   brief?: MarketBrief
+  // finalize 三個呼叫各自成功的結果。
+  finalize?: { viewpoints?: unknown, narrative?: unknown, groupedChains?: unknown }
 }
 
 export type DailyResult
