@@ -13,7 +13,7 @@ Suanomics 每個台股交易日開盤前產出一份總經報告，說明前一�
 
 | 約束 | 內容 |
 |---|---|
-| 成本 | 基礎設施以免費層為主，含 LLM 在內每月上限 NT$1,000；LLM 用量走 Anthropic Console 預付額度（claude.ai 訂閱不含 API 用量） |
+| 成本 | 基礎設施以免費層為主；LLM 用量走 Anthropic Console，額度是 Max 方案附帶的每月 API credits（US$100），每日上限見 `DAILY_COST_LIMIT_USD` |
 | 有憑有據 | 每條連動鏈的數字、事件、因果都要能追到來源；投信投顧法禁用語句在 system prompt 層硬式攔截 |
 | 一人維護 | 沒有常駐服務要顧、沒有排隊系統要調；pipeline 跑完就結束 |
 

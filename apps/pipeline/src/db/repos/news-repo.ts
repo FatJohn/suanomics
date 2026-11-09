@@ -105,6 +105,7 @@ export interface StratifiedCandidate {
   url: string
   contentText: string | null
   category: ItemCategory
+  publishedAt: Date | null
 }
 
 // 候選池分層取樣：近窗 news_items join 來源、按 item 層分類（null 退來源層）、每類取最近 perCategoryLimit 則。
@@ -119,7 +120,7 @@ export async function getStratifiedCandidates(briefDate: string, sinceDays = 2, 
   const cutoff = new Date(new Date(`${briefDate}T00:00:00Z`).getTime() - sinceDays * 864e5)
   const upperBound = new Date(`${briefDate}T23:59:59.999Z`)
   const rows = await db
-    .select({ id: newsItems.id, title: newsItems.title, url: newsItems.url, contentText: newsItems.contentText, category: newsItems.category, slug: newsSources.slug })
+    .select({ publishedAt: newsItems.publishedAt, id: newsItems.id, title: newsItems.title, url: newsItems.url, contentText: newsItems.contentText, category: newsItems.category, slug: newsSources.slug })
     .from(newsItems)
     .innerJoin(newsSources, eq(newsItems.sourceId, newsSources.id))
     .where(and(gte(newsItems.fetchedAt, cutoff), lte(newsItems.fetchedAt, upperBound)))
@@ -130,6 +131,7 @@ export async function getStratifiedCandidates(briefDate: string, sinceDays = 2, 
     url: r.url,
     contentText: r.contentText,
     category: resolveItemCategory(r.category, r.slug),
+    publishedAt: r.publishedAt,
   }))
   return partitionByCategory(withCategory, c => c.category, perCategoryLimit)
 }
@@ -354,7 +356,7 @@ export async function countNewsFetchedBetween(from: Date, to: Date): Promise<num
   return rows[0]?.n ?? 0
 }
 
-export interface BriefNewsItem { id: number, title: string, url: string, text: string }
+export interface BriefNewsItem { id: number, title: string, url: string, text: string, publishedAt: Date | null }
 
 export async function selectNewsForBrief(date: string): Promise<BriefNewsItem[]> {
   // fallback 也走分層，避免高產量總經 feed 在 degraded 路徑 over-rotate
@@ -364,5 +366,6 @@ export async function selectNewsForBrief(date: string): Promise<BriefNewsItem[]>
     title: r.title,
     url: r.url,
     text: r.contentText ?? r.title,
+    publishedAt: r.publishedAt,
   }))
 }

@@ -10,6 +10,7 @@ import {
 import { VIEWPOINTS_DEBATE_USER_TEXT } from '../prompts/viewpoints-debate.user-content.js'
 import { stripViolatingProse } from './_compliance-strip.js'
 import { hasGarbledChars } from './_garbled-text.js'
+import { truncateAtSentence } from './_truncate.js'
 import { callAgent } from './call-agent.js'
 import { CostGateError } from './cost-gate.js'
 import { ViewpointsNetReadResponse, ViewpointsPointsResponse } from './response-schemas.js'
@@ -24,6 +25,19 @@ export interface RunViewpointsDebateParams {
   // 反向數字會兩個讀者面欄位都到不了
   claimLedger?: readonly EvidenceClaim[]
   onCallRecord?: (r: LlmCallRecord) => void
+}
+
+const NET_READ_MIN = 120
+const NET_READ_MAX = 360
+const ENDS_AT_SENTENCE = /[。！？][」』）"]*$/
+
+// 超長時截到句界，保住整個區塊。prompt 要求結論寫在最前面，被截掉的是後段條件。
+// 找不到合格句界就原樣回傳交給 schema 擋：truncateAtSentence 此時會硬切，半句話不該上讀者面。
+function fitNetRead(s: string): string {
+  if (s.length <= NET_READ_MAX)
+    return s
+  const cut = truncateAtSentence(s, NET_READ_MAX, NET_READ_MIN)
+  return typeof cut === 'string' && ENDS_AT_SENTENCE.test(cut) ? cut : s
 }
 
 // 所有 reader-facing viewpoints 文字拼成一字串、供 checkCompliance 掃描
@@ -71,7 +85,8 @@ export async function runViewpointsDebate(
     const candidate = {
       supportPoints: support.points.map(s => s.trim()).filter(Boolean).filter(clean),
       riskPoints: risk.points.map(s => s.trim()).filter(Boolean).filter(clean),
-      netRead: stripViolatingProse(netReadOut.netRead.trim()),
+      // 先 strip 再截：違規句移除後可能已在上限內，順序反過來會多切掉合規內容。
+      netRead: fitNetRead(stripViolatingProse(netReadOut.netRead.trim())),
     }
     // netRead 是單一段連續文字、沒有「丟掉壞的那一點」這個選項；亂碼就整包 degrade。
     // brief 照常出稿（少了 viewpoints 區塊），比讓亂碼上讀者面好。

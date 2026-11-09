@@ -15,6 +15,7 @@ export type DailyLogEvent
   = | { event: 'stage_start', stage: StageName }
     | { event: 'stage_end', stage: StageName, ok: boolean, durationMs: number, calls: number, usd: number }
     | { event: 'storylines_failed', message: string }
+    | { event: 'storylines_new_skipped', date: string, count: number }
     | { event: 'run_end', date: string, status: DailyResult['status'], calls: number, usd: number }
 
 /** 花費閘觸發時寫進 `daily_briefs.progress` 的內容，讓已花錢的產出不會遺失。 */
@@ -40,6 +41,7 @@ export interface DailyDeps {
   log: (event: DailyLogEvent) => void
   isTradingDay: (date: string) => boolean
   findExistingBrief: (date: string) => Promise<{ status: string } | null>
+  hasCompleteBriefOnOrAfter: (date: string) => Promise<boolean>
   ingest: (date: string) => Promise<RelevanceCandidate[]>
   loadMarket: (date: string) => Promise<MarketContext>
   selectNews: (date: string, selected: RelevanceCandidate[], market: MarketContext) => Promise<EditorStageResult>
@@ -81,7 +83,7 @@ function createStageRunner(deps: DailyDeps, progress: DailyProgress): RunStage {
   }
 }
 
-async function runStages(date: string, deps: DailyDeps, progress: DailyProgress, stage: RunStage): Promise<number> {
+async function runStages(date: string, isRerun: boolean, deps: DailyDeps, progress: DailyProgress, stage: RunStage): Promise<number> {
   const selected = await stage('ingest', () => deps.ingest(date))
   const market = await stage('market-context', () => deps.loadMarket(date))
   const editor = await stage('editor', () => deps.selectNews(date, selected, market))
@@ -96,7 +98,10 @@ async function runStages(date: string, deps: DailyDeps, progress: DailyProgress,
   // 要在 brief 寫入之後：updates 的 briefDate 要對應已存在的 brief。寫回失敗下次 editor 會看到舊狀態自癒。
   if (editor.storyline) {
     try {
-      await deps.applyStorylines(date, editor.storyline)
+      // 新建沒有冪等鍵：重跑時 editor 換個標題就多一條線。touches 與 resolves 只保證同線同日不疊加，照常寫回。
+      if (isRerun && editor.storyline.newStorylines.length > 0)
+        deps.log({ event: 'storylines_new_skipped', date, count: editor.storyline.newStorylines.length })
+      await deps.applyStorylines(date, isRerun ? { ...editor.storyline, newStorylines: [] } : editor.storyline)
     }
     catch (err) {
       deps.log({ event: 'storylines_failed', message: err instanceof Error ? err.message : String(err) })
@@ -113,13 +118,15 @@ export async function runDaily(options: { date: string, force: boolean }, deps: 
   if (!force && await deps.findExistingBrief(date))
     return { status: 'skipped', reason: 'already-exists', date }
 
+  // 要在寫入 brief 之前判定，否則每次都會看到自己剛寫的那份。
+  const isRerun = await deps.hasCompleteBriefOnOrAfter(date)
   const progress: DailyProgress = { completedStages: [] }
   const finish = <T extends DailyResult>(result: T): T => {
     deps.log({ event: 'run_end', date, status: result.status, calls: deps.gate.callCount, usd: roundUsd(deps.gate.totalUsd) })
     return result
   }
   try {
-    const briefId = await runStages(date, deps, progress, createStageRunner(deps, progress))
+    const briefId = await runStages(date, isRerun, deps, progress, createStageRunner(deps, progress))
     return finish({ status: 'complete', date, briefId })
   }
   catch (err) {

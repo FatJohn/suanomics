@@ -107,6 +107,40 @@ describe('runViewpointsDebate', () => {
     expect(out?.netRead).not.toContain('建議買')
   })
 
+  // #25 實跑：netRead 超過 schema 上限 360 字，整段 viewpoints 消失。
+  describe('netRead 過長', () => {
+    const SENTENCE = '此觀點在利率穩定下成立且資金回流。' // 17 字含句號
+
+    it('超過 360 字時截到句界，保留整個 viewpoints', async () => {
+      mockDebate(['支持一', '支持二'], ['風險一', '風險二'], SENTENCE.repeat(25)) // 425 字
+      const out = await runViewpointsDebate(PARAMS)
+      expect(out?.netRead).toBe(SENTENCE.repeat(21)) // 357 字：360 內最後一個句界
+    })
+
+    it('恰好 360 字不截斷', async () => {
+      const exact = `${'字'.repeat(359)}。`
+      mockDebate(['支持一', '支持二'], ['風險一', '風險二'], exact)
+      expect((await runViewpointsDebate(PARAMS))?.netRead).toBe(exact)
+    })
+
+    it('先移除違規句再判斷長度：移除後已在上限內就不截', async () => {
+      const clean = SENTENCE.repeat(20) // 340 字
+      mockDebate(['支持一', '支持二'], ['風險一', '風險二'], `${'這裡建議買進股票。'.repeat(5)}${clean}`)
+      expect((await runViewpointsDebate(PARAMS))?.netRead).toBe(clean)
+    })
+
+    // 半句話上讀者面比少一個區塊糟，這兩條維持 degrade。
+    it('360 字內沒有句界時 degrade，不硬切半句', async () => {
+      mockDebate(['支持一', '支持二'], ['風險一', '風險二'], 'a'.repeat(400))
+      expect(await runViewpointsDebate(PARAMS)).toBeNull()
+    })
+
+    it('截到句界後不足 120 字時 degrade', async () => {
+      mockDebate(['支持一', '支持二'], ['風險一', '風險二'], `短句。${'a'.repeat(400)}`)
+      expect(await runViewpointsDebate(PARAMS)).toBeNull()
+    })
+  })
+
   // 丟棄違規 point 後不足 2 點 → schema invalid → degrade null
   it('degrades to null when stripping drops support below min 2', async () => {
     mockDebate(['支持一', '佈局台積電'], ['風險一', '風險二'], 'a'.repeat(130))

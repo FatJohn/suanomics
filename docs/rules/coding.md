@@ -63,7 +63,7 @@ provider 由 `@ai-sdk/anthropic` 提供，換 model 只改參數；直接綁某�
 
 ### 批次跑真 LLM（評測、A/B、重跑歷史資料）前先估總呼叫數、尖峰並行與費用；超過 500 次呼叫或尖峰並行超過 10 就分批跑（HIGH）
 
-含 LLM 在內每月預算上限 NT$1,000；密集打法也可能讓 provider 把請求判為可疑、降級整個 key。每日 pipeline 有花費閘，但跨次執行的累積量沒有機制會擋。
+LLM 每月額度是 Max 方案附帶的 API credits（US$100），用完時 API 會拒絕請求；密集打法也可能讓 provider 把請求判為可疑、降級整個 key。每日 pipeline 有花費閘，但跨次執行的累積量沒有機制會擋。
 
 ### 新增新聞或資料來源前，先在 `docs/sources.md` 記下 feed URL、條款連結與允許用法；條款禁止 AI 用途的來源不接（HIGH）
 

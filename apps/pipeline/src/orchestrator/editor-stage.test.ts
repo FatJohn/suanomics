@@ -18,7 +18,7 @@ describe('selectNewsViaEditor', () => {
     vi.resetAllMocks()
     vi.mocked(getOpenStorylines).mockResolvedValue([])
     vi.mocked(getRecentBriefSummaries).mockResolvedValue([])
-    vi.mocked(selectNewsForBrief).mockResolvedValue([{ id: 9, title: 'f', url: 'u', text: 'x' }])
+    vi.mocked(selectNewsForBrief).mockResolvedValue([{ id: 9, title: 'f', url: 'u', text: 'x', publishedAt: new Date('2026-11-08T12:00:00Z') }, { id: 10, title: 'g', url: 'v', text: 'y', publishedAt: null }])
   })
 
   it('花費閘例外往外丟，不退回 recency 繼續花錢', async () => {
@@ -29,7 +29,12 @@ describe('selectNewsViaEditor', () => {
 
   it('一般錯誤退回 recency', async () => {
     vi.mocked(callEditor).mockRejectedValue(new Error('bad'))
-    expect((await selectNewsViaEditor(params)).news.map(n => n.id)).toEqual([9])
+    expect((await selectNewsViaEditor(params)).news.map(n => n.id)).toEqual([9, 10])
+  })
+
+  it('退回 recency 時保留發布時間，narrative 才標得出相對日期', async () => {
+    vi.mocked(callEditor).mockRejectedValue(new Error('bad'))
+    expect((await selectNewsViaEditor(params)).news.map(n => n.publishedAt)).toEqual(['2026-11-08T12:00:00.000Z', null])
   })
 
   it('沒有候選時不打 editor', async () => {

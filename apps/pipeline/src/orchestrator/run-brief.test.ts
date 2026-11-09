@@ -63,6 +63,18 @@ describe('generateBrief', () => {
     expect(callAnalystTier1).toHaveBeenCalledTimes(2)
   })
 
+  it('跨新聞的 chainId 不撞號，二階鏈仍指向同則新聞的父鏈', async () => {
+    const chain = { industry: 'i', mechanism: 'm', affectedTickers: [], direction: 'neutral' as const, citations: [] }
+    vi.mocked(callAnalystTier1).mockResolvedValue({ ...analyst, cascadeChains: [{ ...chain, chainId: 't1-0', tier: 1 }] })
+    vi.mocked(runTier2Fanout).mockResolvedValue([{ ...chain, chainId: 't2-0', tier: 2, parentChainId: 't1-0' }])
+    vi.mocked(callSynthesizer).mockRejectedValue(new Error('stop-here'))
+    const { p } = params()
+    await expect(generateBrief(p)).rejects.toThrow('stop-here')
+    const chains = (p.progress.analystOutputs ?? []).flatMap(a => a.cascadeChains)
+    expect(new Set(chains.map(c => c.chainId)).size).toBe(6)
+    expect(chains.map(c => c.parentChainId)).toEqual([undefined, 't1-0', undefined, 't1-1', undefined, 't1-2'])
+  })
+
   it('存活新聞不足 2 則時中止', async () => {
     vi.mocked(callDecomposer).mockRejectedValue(new Error('bad'))
     await expect(generateBrief(params().p)).rejects.toThrow('存活新聞不足')
