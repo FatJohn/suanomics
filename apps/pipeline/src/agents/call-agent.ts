@@ -126,7 +126,6 @@ export async function callAgent<T>(
   // 沒價格的 model 要在花錢之前擋下，不是呼叫完才發現算不出成本。
   priceFor(agentModel.model)
   const gate = options.gate ?? getDailyCostGate()
-  const maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS
   const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS
   const startedAt = Date.now()
 
@@ -189,7 +188,7 @@ export async function callAgent<T>(
     }
     catch (error) {
       const accountError = toLlmAccountError(error)
-      const willRetry = accountError === null && attempt < maxAttempts && isRetryable(error)
+      const willRetry = accountError === null && attempt < (options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS) && isRetryable(error)
       // 輸出不符 schema 時 token 已經計費，沒記到就會讓花費閘少算。
       if (NoObjectGeneratedError.isInstance(error) && error.usage)
         await report(error.usage, attempt, 'invalid_output')

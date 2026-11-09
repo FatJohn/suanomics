@@ -155,6 +155,21 @@ describe('dailyCostGate 的 recordCall', () => {
     error.mockRestore()
   })
 
+  it('沒有 cause 的多行錯誤訊息也壓成單行', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const gate = new DailyCostGate(1, {
+      retryDelayMs: 0,
+      ledger: {
+        insert: async () => {
+          throw new Error('line one\nline two')
+        },
+      },
+    })
+    await gate.recordCall(ENTRY)
+    expect(String(error.mock.calls[0]?.[0])).toContain('line one line two')
+    error.mockRestore()
+  })
+
   it('每次呼叫的 id 不同', async () => {
     const ledger = fakeLedger()
     const gate = new DailyCostGate(1, { ledger })
