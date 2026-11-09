@@ -1,6 +1,15 @@
 import type { EvidenceClaim } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
-import { buildDebateMaterial } from './viewpoints-debate.prompt.js'
+import { buildDebateMaterial, NET_READ_PROMPT } from './viewpoints-debate.prompt.js'
+
+describe('net read prompt', () => {
+  // 上限要低於 schema 的 360：模型對中文字數估得偏少，目標貼著上限就會超標。
+  it('字數目標明確低於 schema 上限', () => {
+    expect(NET_READ_PROMPT).toContain('目標 180-260 字')
+    expect(NET_READ_PROMPT).toContain('絕對不可超過 300 字')
+    expect(NET_READ_PROMPT).toContain('以完整句收尾')
+  })
+})
 
 describe('buildDebateMaterial', () => {
   const base = {
