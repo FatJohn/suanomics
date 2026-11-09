@@ -7,16 +7,22 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "build:publish": "WEB_REQUIRE_DATABASE=1 astro build",
     "preview": "astro preview",
     "type-check": "astro check",
     "test": "vitest run"
   },
   "dependencies": {
     "@suanomics/shared": "workspace:*",
-    "astro": "^7.4.7"
+    "astro": "^7.4.7",
+    "drizzle-orm": "^0.45.4",
+    "markdown-it": "^15.0.3",
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
+    "@tailwindcss/vite": "^4.3.5",
+    "tailwindcss": "^4.3.5",
     "typescript": "~6.0.3",
     "vitest": "^5.1.0"
   }

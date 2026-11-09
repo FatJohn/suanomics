@@ -14,7 +14,7 @@
       "project": ["src/**/*.ts"]
     },
     "apps/web": {
-      "project": ["src/**/*.{ts,astro}"]
+      "project": ["src/**/*.{ts,astro,css}"]
     }
   }
 }

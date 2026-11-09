@@ -1,0 +1,19 @@
+---
+import type { GetStaticPaths } from 'astro'
+import type { BriefView } from '../../lib/present-brief'
+import BriefArticle from '../../components/BriefArticle.astro'
+import Base from '../../layouts/Base.astro'
+import { getSiteData } from '../../lib/site-data'
+
+export const getStaticPaths = (async () => {
+  const { briefs } = await getSiteData()
+  return briefs.map(brief => ({ params: { date: brief.date }, props: { brief } }))
+}) satisfies GetStaticPaths
+
+interface Props { brief: BriefView }
+const { brief } = Astro.props
+---
+
+<Base title={brief.headline}>
+  <BriefArticle brief={brief} />
+</Base>
