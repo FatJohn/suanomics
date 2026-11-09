@@ -2,6 +2,20 @@ packages:
   - apps/*
   - packages/*
 
+# 卡住版本的上層套件最新版都還不允許修正版，先用限定路徑的 override 清 Dependabot alert；
+# 各條的移除條件寫在該條註解。
+overrides:
+  # alert #15：@esbuild-kit/core-utils 3.3.2（latest）鎖 esbuild ~0.18.20，只能動這條路徑，
+  # drizzle-kit、tsx、vite 自己的 esbuild 不受影響。這個套件已 deprecated 不會再升，
+  # 等 drizzle-kit 不再依賴 @esbuild-kit/esm-loader 後移除。
+  '@esbuild-kit/core-utils>esbuild': ^0.25.0
+  # alert #5：micromark-extension-math 3.1.0（latest）鎖 katex ^0.16.0。釘精確版本是因為
+  # ^0.18.2 會解析到 0.18.11，那版已被標 deprecated（誤發 breaking changes）。
+  micromark-extension-math>katex: 0.18.10
+  # alert #2、#3：oxfmt 0.35.0 釘死 tinypool 2.1.0，而 eslint-plugin-format 2.0.1（latest）
+  # 還鎖 oxfmt ^0.35.0。oxfmt 0.67 起已帶修正版，上層放寬到 >=0.67 後移除。
+  oxfmt>tinypool: 2.1.2
+
 packageExtensions:
   # @astrojs/astro2tsx 釘了 @emnapi/core 1.11.3，卻沒宣告 @emnapi/runtime；它依賴的
   # @napi-rs/wasm-runtime 把 runtime 列成 peer（^1.7.1 || 2.0.0-beta），autoInstallPeers
