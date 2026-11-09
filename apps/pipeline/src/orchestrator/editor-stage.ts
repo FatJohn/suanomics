@@ -78,5 +78,5 @@ export async function selectNewsViaEditor(p: SelectNewsParams): Promise<EditorSt
   }
   const fallback = await selectNewsForBrief(p.date)
   // storylineBlock／continuityHint 描述的是 editor 選的那批新聞，與 fallback 選稿對不上，不餵給 narrative。
-  return { news: fallback.map(n => ({ ...n, publishedAt: null })), selection: null, storyline, storylineBlock: null, continuityHint: null }
+  return { news: fallback.map(n => ({ ...n, publishedAt: n.publishedAt?.toISOString() ?? null })), selection: null, storyline, storylineBlock: null, continuityHint: null }
 }

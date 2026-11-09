@@ -3,7 +3,8 @@ import { eq, inArray, like } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { closeDb, getDb } from '../client.js'
 import { dailyBriefs, newsItems, newsSources } from '../schema.js'
-import { buildUpsertRows, countNewsFetchedBetween, getDailyBriefsForDates, getRecentBriefSummaries, getStratifiedCandidates, listDailyBriefDates, saveDailyBrief, selectNewsForBrief } from './news-repo.js'
+import { hasCompleteBriefOnOrAfter } from './brief-rerun.js'
+import { buildUpsertRows, countNewsFetchedBetween, getDailyBriefsForDates, getRecentBriefSummaries, getStratifiedCandidates, listDailyBriefDates, saveDailyBrief, saveIncompleteDailyBrief, selectNewsForBrief } from './news-repo.js'
 
 describe('buildUpsertRows', () => {
   it('shouldAttachSourceIdAndDefaultContentSourceToEveryEntry', () => {
@@ -212,6 +213,28 @@ describe('selectNewsForBrief（fallback 分層）', () => {
     expect(ours.filter(n => n.title.includes('fb-twe')).length).toBe(3) // 7 → capped 3
     expect(ours.filter(n => n.title.includes('fb-macro')).length).toBe(2) // 不足 3 取全部
     expect(ours[0]?.text).toContain('body') // BriefNewsItem 形狀
+    expect(ours[0]?.publishedAt).toBeInstanceOf(Date)
+  })
+})
+
+describe('hasCompleteBriefOnOrAfter', () => {
+  const DATES = ['2099-10-10', '2099-10-20']
+  const cleanup = async (): Promise<void> => {
+    await getDb().delete(dailyBriefs).where(inArray(dailyBriefs.briefDate, DATES))
+  }
+  beforeEach(cleanup)
+  afterAll(cleanup)
+
+  it('當日或之後有 complete brief 才回 true', async () => {
+    await saveDailyBrief('2099-10-10', [], 'x')
+    expect(await hasCompleteBriefOnOrAfter('2099-10-09')).toBe(true)
+    expect(await hasCompleteBriefOnOrAfter('2099-10-10')).toBe(true)
+    expect(await hasCompleteBriefOnOrAfter('2099-10-11')).toBe(false)
+  })
+
+  it('incomplete 不算：花費閘中止的那次沒寫過 storyline', async () => {
+    await saveIncompleteDailyBrief('2099-10-20', [], {})
+    expect(await hasCompleteBriefOnOrAfter('2099-10-20')).toBe(false)
   })
 })
 

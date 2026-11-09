@@ -1,6 +1,7 @@
 import type { DailyDeps } from './daily.js'
 import { isTwseTradingDay } from '@suanomics/shared'
 import { getDailyCostGate } from '../agents/cost-gate.js'
+import { hasCompleteBriefOnOrAfter } from '../db/repos/brief-rerun.js'
 import { getDailyBriefByDate, saveDailyBrief, saveIncompleteDailyBrief } from '../db/repos/news-repo.js'
 import { applyEditorResult } from '../db/repos/storylines-repo.js'
 import { EMPTY_MARKET_CONTEXT, loadMarketContext } from '../ingest/market-data/context.js'
@@ -14,6 +15,7 @@ export function createDailyDeps(): DailyDeps {
     log: event => console.warn(JSON.stringify(event)),
     isTradingDay: isTwseTradingDay,
     findExistingBrief: getDailyBriefByDate,
+    hasCompleteBriefOnOrAfter,
     ingest: async (date) => {
       // 交易日已由 orchestrator 判斷過，這裡帶 force 只是略過 ingest 自己的同一道檢查。
       const result = await runIngest({ date, force: true })
