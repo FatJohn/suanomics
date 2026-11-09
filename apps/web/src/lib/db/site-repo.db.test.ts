@@ -28,17 +28,24 @@ describe('readSiteRows', () => {
     await sql.end()
   })
 
-  it('只讀 complete 的 brief、新到舊，新聞帶來源名稱', async () => {
-    await sql`INSERT INTO daily_briefs (brief_date, selected_news_ids, summary, status) VALUES
-      (${OLDER}, '{}', 's', 'complete'), (${COMPLETE}, '{}', 's', 'complete'), (${INCOMPLETE}, '{}', '', 'incomplete')`
+  it('只讀 complete 的 brief、新到舊；新聞只取 complete brief 選到的，帶來源名稱', async () => {
     const [source] = await sql`INSERT INTO news_sources (slug, display_name, rss_url) VALUES (${SLUG}, '測試來源', 'https://example.com/r.xml') RETURNING id`
-    await sql`INSERT INTO news_items (source_id, external_id, title, url, content_source, fetched_at, published_at)
-      VALUES (${source?.id}, 'web26-1', '標題', 'https://example.com/1', 'rss-excerpt', ${FAR}, ${FAR})`
+    const insertNews = async (key: string): Promise<number> => {
+      const [row] = await sql`INSERT INTO news_items (source_id, external_id, title, url, content_source, fetched_at, published_at)
+        VALUES (${source?.id}, ${`web26-${key}`}, ${key}, ${`https://example.com/${key}`}, 'rss-excerpt', ${FAR}, ${FAR}) RETURNING id`
+      return row?.id as number
+    }
+    const selected = await insertNews('selected')
+    const onlyIncomplete = await insertNews('only-incomplete')
+    await insertNews('unselected')
+    await sql`INSERT INTO daily_briefs (brief_date, selected_news_ids, summary, status) VALUES
+      (${OLDER}, ${`{${selected}}`}, 's', 'complete'), (${COMPLETE}, '{}', 's', 'complete'), (${INCOMPLETE}, ${`{${onlyIncomplete}}`}, '', 'incomplete')`
 
     const { briefs, news } = await readSiteRows(url as string)
 
     const mine = briefs.map(b => b.briefDate).filter(d => [COMPLETE, OLDER, INCOMPLETE].includes(d))
     expect(mine).toEqual([COMPLETE, OLDER])
-    expect(news.find(n => n.url === 'https://example.com/1')).toMatchObject({ title: '標題', sourceName: '測試來源' })
+    const myNews = news.filter(n => n.url.startsWith('https://example.com/'))
+    expect(myNews).toMatchObject([{ id: selected, title: 'selected', sourceName: '測試來源' }])
   })
 })

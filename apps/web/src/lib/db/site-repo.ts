@@ -1,4 +1,4 @@
-import { desc, eq } from 'drizzle-orm'
+import { desc, eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { dailyBriefs, newsItems, newsSources } from './schema'
@@ -17,10 +17,13 @@ export async function readSiteRows(databaseUrl: string): Promise<SiteRows> {
       .from(dailyBriefs)
       .where(eq(dailyBriefs.status, 'complete'))
       .orderBy(desc(dailyBriefs.briefDate))
+    // 只取已發佈 brief 的選稿：其餘新聞沒有站內入口，全產會讓頁數隨 ingest 無上限成長。
+    const selectedIds = [...new Set(briefs.flatMap(b => b.selectedNewsIds))]
     const news = await db
       .select({ id: newsItems.id, title: newsItems.title, url: newsItems.url, publishedAt: newsItems.publishedAt, sourceName: newsSources.displayName })
       .from(newsItems)
       .innerJoin(newsSources, eq(newsItems.sourceId, newsSources.id))
+      .where(inArray(newsItems.id, selectedIds))
     return { briefs, news }
   }
   finally {
