@@ -6,6 +6,7 @@ import type { BriefNews, EditorStageResult } from './editor-stage.js'
 import { buildClaimLedger } from '@suanomics/shared'
 import { callAnalystTier1 } from '../agents/analyst.js'
 import { tagChainForceGroups } from '../agents/chain-grouper.js'
+import { renumberChainsAcrossNews } from '../agents/chain-ids.js'
 import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
 import { callDecomposer } from '../agents/decomposer.js'
 import { buildMarketCloseFraming } from '../agents/market-close-framing.js'
@@ -99,7 +100,7 @@ async function analyzeNews(
   })
   if (outputs.length < MIN_NEWS_FOR_BRIEF)
     throw new Error(`analyst 產出不足（${outputs.length} < ${MIN_NEWS_FOR_BRIEF}）`)
-  return outputs
+  return renumberChainsAcrossNews(outputs)
 }
 
 // 不用 Promise.all：它在第一個 reject 就返回，其餘 LLM 呼叫會在 run 收尾後繼續計費且不進統計。
