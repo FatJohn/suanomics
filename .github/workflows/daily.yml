@@ -1,4 +1,4 @@
-name: daily
+name: Daily Brief
 
 # 每日 pipeline → build → 部署。主觸發是 apps/trigger 的 Worker（05:00 台北），
 # schedule 是 05:20 的備援；當日已有 brief 時 pipeline 以 exit 0 結束。見 ADR 0009。
