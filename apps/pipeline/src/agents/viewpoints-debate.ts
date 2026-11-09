@@ -31,7 +31,7 @@ const NET_READ_MIN = 120
 const NET_READ_MAX = 360
 const ENDS_AT_SENTENCE = /[。！？][」』）"]*$/
 
-// 超長時截到句界，保住整個區塊；這段是連續文字，少結尾一兩句比整段消失好。
+// 超長時截到句界，保住整個區塊。prompt 要求結論寫在最前面，被截掉的是後段條件。
 // 找不到合格句界就原樣回傳交給 schema 擋：truncateAtSentence 此時會硬切，半句話不該上讀者面。
 function fitNetRead(s: string): string {
   if (s.length <= NET_READ_MAX)

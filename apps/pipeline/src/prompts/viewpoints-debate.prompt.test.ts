@@ -4,6 +4,11 @@ import { buildDebateMaterial, NET_READ_PROMPT } from './viewpoints-debate.prompt
 
 describe('net read prompt', () => {
   // 上限要低於 schema 的 360：模型對中文字數估得偏少，目標貼著上限就會超標。
+  // 超長時從尾端截斷，結論放最後會先被切掉。
+  it('要求結論放在最前面', () => {
+    expect(NET_READ_PROMPT.indexOf('綜合後的淨讀')).toBeLessThan(NET_READ_PROMPT.indexOf('核心論點在什麼條件下成立'))
+  })
+
   it('字數目標明確低於 schema 上限', () => {
     expect(NET_READ_PROMPT).toContain('目標 180-260 字')
     expect(NET_READ_PROMPT).toContain('絕對不可超過 300 字')

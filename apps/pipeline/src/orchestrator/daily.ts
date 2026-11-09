@@ -15,6 +15,7 @@ export type DailyLogEvent
   = | { event: 'stage_start', stage: StageName }
     | { event: 'stage_end', stage: StageName, ok: boolean, durationMs: number, calls: number, usd: number }
     | { event: 'storylines_failed', message: string }
+    | { event: 'storylines_new_skipped', date: string, count: number }
     | { event: 'run_end', date: string, status: DailyResult['status'], calls: number, usd: number }
 
 /** 花費閘觸發時寫進 `daily_briefs.progress` 的內容，讓已花錢的產出不會遺失。 */
@@ -97,7 +98,9 @@ async function runStages(date: string, isRerun: boolean, deps: DailyDeps, progre
   // 要在 brief 寫入之後：updates 的 briefDate 要對應已存在的 brief。寫回失敗下次 editor 會看到舊狀態自癒。
   if (editor.storyline) {
     try {
-      // touches 與 resolves 同日冪等，只有新建不是：重跑時 editor 換個標題就多一條線。
+      // 新建沒有冪等鍵：重跑時 editor 換個標題就多一條線。touches 與 resolves 只保證同線同日不疊加，照常寫回。
+      if (isRerun && editor.storyline.newStorylines.length > 0)
+        deps.log({ event: 'storylines_new_skipped', date, count: editor.storyline.newStorylines.length })
       await deps.applyStorylines(date, isRerun ? { ...editor.storyline, newStorylines: [] } : editor.storyline)
     }
     catch (err) {

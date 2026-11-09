@@ -80,6 +80,7 @@ describe('runDaily', () => {
     const deps = fakeDeps()
     await runDaily({ date: DATE, force: false }, deps)
     expect(vi.mocked(deps.applyStorylines).mock.calls[0]?.[1].newStorylines).toHaveLength(1)
+    expect(deps.events.some(e => e.event === 'storylines_new_skipped')).toBe(false)
   })
 
   it('重跑或補跑（當日或之後已有完整報告）不新建 storyline，其餘寫回照做', async () => {
@@ -95,6 +96,7 @@ describe('runDaily', () => {
     await runDaily({ date: DATE, force: true }, deps)
     expect(deps.hasCompleteBriefOnOrAfter).toHaveBeenCalledWith(DATE)
     expect(deps.applyStorylines).toHaveBeenCalledWith(DATE, { ...storyline, newStorylines: [] })
+    expect(deps.events).toContainEqual({ event: 'storylines_new_skipped', date: DATE, count: 1 })
   })
 
   it('要在寫入 brief 之前判定重跑，否則每次都會看到自己剛寫的那份', async () => {
