@@ -12,7 +12,8 @@ export function getDb(): ReturnType<typeof drizzle<typeof schema>> {
   const url = process.env.DATABASE_URL
   if (!url)
     throw new Error('DATABASE_URL not set')
-  _client = postgres(url, { max: 5 })
+  // 帳本寫入可能晚於 closeDb（Promise.all 提早返回時還有呼叫在飛）而重開連線；閒置自動關閉，process 才退得掉。
+  _client = postgres(url, { max: 5, idle_timeout: 5 })
   _db = drizzle(_client, { schema })
   return _db
 }

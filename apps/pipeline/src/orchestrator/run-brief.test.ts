@@ -102,6 +102,14 @@ describe('generateBrief', () => {
     expect(p.progress.analystOutputs?.map(a => a.newsId)).toEqual(['1'])
   })
 
+  it('finalize 帳務錯誤與花費閘例外同時出現時丟帳務錯誤', async () => {
+    vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+    vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+    vi.mocked(tagChainForceGroups).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    vi.mocked(callNarrativeWriter).mockRejectedValue(new LlmAccountError('billing'))
+    await expect(generateBrief(params().p)).rejects.toBeInstanceOf(LlmAccountError)
+  })
+
   it('finalize 觸發花費閘時等在途呼叫收尾才往外丟', async () => {
     let narrativeDone = false
     vi.mocked(callSynthesizer).mockResolvedValue({} as never)

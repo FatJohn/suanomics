@@ -208,6 +208,36 @@ describe('callAgent 寫帳本', () => {
     error.mockRestore()
   })
 
+  it('重試等待中撞到花費閘時留一列 failed，attempts 為已打過的次數', async () => {
+    const { gate, rows } = ledgerGate(1)
+    generate.mockRejectedValueOnce(apiError(503, true))
+    vi.mocked(delay).mockImplementationOnce(async () => {
+      gate.record(2)
+      return undefined as never
+    })
+    await expect(callAgent('news-tagger', input, schema, { gate, retryDelayMs: 0 })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(generate).toHaveBeenCalledTimes(1)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ status: 'failed', attempts: 1, costUsd: null })
+  })
+
+  it('onCallRecord 的 latency 與帳本同值，不含寫帳本的時間', async () => {
+    succeed()
+    const rows: LlmLedgerRow[] = []
+    const gate = new DailyCostGate(10, {
+      ledger: {
+        insert: async (r) => {
+          rows.push(r)
+          await new Promise(resolve => setImmediate(resolve))
+          await new Promise(resolve => setTimeout(resolve, 15))
+        },
+      },
+    })
+    const onCallRecord = vi.fn()
+    await callAgent('news-tagger', input, schema, { gate, onCallRecord })
+    expect(onCallRecord.mock.calls[0]?.[0].latencyMs).toBe(rows[0]?.latencyMs)
+  })
+
   it('花費閘已超過上限時不打 API 也不寫列', async () => {
     const { gate, rows } = ledgerGate(1)
     gate.record(1.5)

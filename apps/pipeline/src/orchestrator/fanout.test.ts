@@ -30,6 +30,12 @@ describe('fanoutSettled', () => {
     })).rejects.toBeInstanceOf(LlmAccountError)
   })
 
+  it('帳務錯誤與花費閘例外同時出現時丟帳務錯誤', async () => {
+    await expect(fanoutSettled([1, 2], 2, async (n) => {
+      throw n === 1 ? new DailyCostLimitExceededError(1, 2) : new LlmAccountError('billing')
+    })).rejects.toBeInstanceOf(LlmAccountError)
+  })
+
   it('同時在飛的工作不超過上限', async () => {
     let inFlight = 0
     let peak = 0

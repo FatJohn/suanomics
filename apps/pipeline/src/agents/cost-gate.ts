@@ -60,6 +60,12 @@ interface DailyCostGateOptions {
 const LEDGER_WRITE_ATTEMPTS = 3
 const DEFAULT_LEDGER_RETRY_DELAY_MS = 200
 
+// drizzle 的 message 是多行 SQL，真因在 cause；annotation 只吃單行。
+function ledgerFailureReason(error: unknown): string {
+  const root = error instanceof Error && error.cause instanceof Error ? error.cause : error
+  return (root instanceof Error ? root.message : String(root)).replace(/\s*\n\s*/g, ' ')
+}
+
 let processRunId: string | undefined
 
 /** Actions 的重跑（run attempt）是另一次花費，要分開記。 */
@@ -132,7 +138,7 @@ export class DailyCostGate {
           await delay(this.retryDelayMs * attempt)
       }
     }
-    console.error(`::error title=llm_calls 漏帳::${row.agent} 的一筆用量寫不進帳本（${lastError instanceof Error ? lastError.message : String(lastError)}）`)
+    console.error(`::error title=llm_calls 漏帳::${row.agent} 的一筆用量寫不進帳本（${ledgerFailureReason(lastError)}）`)
     console.error(JSON.stringify({ event: 'llm_ledger_write_failed', row }))
   }
 }

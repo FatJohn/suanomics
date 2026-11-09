@@ -104,6 +104,18 @@ function toTokenUsage(usage: SdkUsage): TokenUsage {
   }
 }
 
+// 重試等待中被其他並行呼叫推過上限時，前一次嘗試已打過 API，要留下失敗紀錄。
+async function assertBeforeAttempt(gate: DailyCostGate, attempt: number, recordPriorFailure: () => Promise<void>): Promise<void> {
+  try {
+    gate.assertWithinLimit()
+  }
+  catch (error) {
+    if (attempt > 1)
+      await recordPriorFailure()
+    throw error
+  }
+}
+
 export async function callAgent<T>(
   name: AgentName,
   input: AgentInput,
@@ -118,7 +130,7 @@ export async function callAgent<T>(
   const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS
   const startedAt = Date.now()
 
-  const recordLedger = (usage: TokenUsage, attempts: number, status: LlmCallStatus, costUsd: number | null): Promise<void> => gate.recordCall({
+  const recordLedger = (usage: TokenUsage, attempts: number, status: LlmCallStatus, costUsd: number | null, latencyMs: number): Promise<void> => gate.recordCall({
     agent: name,
     provider: agentModel.provider,
     model: agentModel.model,
@@ -128,7 +140,7 @@ export async function callAgent<T>(
     tokensOut: usage.outputTokens,
     cacheReadTokens: usage.cacheReadTokens,
     cacheWriteTokens: usage.cacheWriteTokens,
-    latencyMs: Date.now() - startedAt,
+    latencyMs,
     attempts,
     status,
     costUsd,
@@ -137,7 +149,9 @@ export async function callAgent<T>(
   const report = async (sdkUsage: SdkUsage, attempts: number, status: LlmCallStatus): Promise<void> => {
     const usage = toTokenUsage(sdkUsage)
     const costUsd = computeCost(agentModel.model, usage)
-    await recordLedger(usage, attempts, status, costUsd)
+    // 寫帳本之前算：DB 慢的時間不該算進 LLM 延遲。
+    const latencyMs = Date.now() - startedAt
+    await recordLedger(usage, attempts, status, costUsd, latencyMs)
     options.onCallRecord?.({
       agentName: name,
       ...(options.newsId !== undefined ? { newsId: options.newsId } : {}),
@@ -148,7 +162,7 @@ export async function callAgent<T>(
       cachedReadTokens: usage.cacheReadTokens,
       cacheWriteTokens: usage.cacheWriteTokens,
       costUsd,
-      latencyMs: Date.now() - startedAt,
+      latencyMs,
       attempts,
     })
   }
@@ -168,7 +182,7 @@ export async function callAgent<T>(
   })
 
   for (let attempt = 1; ; attempt++) {
-    gate.assertWithinLimit()
+    await assertBeforeAttempt(gate, attempt, () => recordLedger(NO_USAGE, attempt - 1, 'failed', null, Date.now() - startedAt))
     let result: Awaited<ReturnType<typeof invoke>>
     try {
       result = await invoke()
@@ -180,7 +194,7 @@ export async function callAgent<T>(
       if (NoObjectGeneratedError.isInstance(error) && error.usage)
         await report(error.usage, attempt, 'invalid_output')
       else if (!willRetry)
-        await recordLedger(NO_USAGE, attempt, 'failed', null)
+        await recordLedger(NO_USAGE, attempt, 'failed', null, Date.now() - startedAt)
       if (!willRetry)
         throw accountError ?? error
       await delay(Math.max(retryDelayMs * 2 ** (attempt - 1), retryAfterMs(error)))

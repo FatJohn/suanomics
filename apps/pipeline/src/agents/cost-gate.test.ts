@@ -138,6 +138,23 @@ describe('dailyCostGate 的 recordCall', () => {
     error.mockRestore()
   })
 
+  it('annotation 取 cause 的真因並壓成單行', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const gate = new DailyCostGate(1, {
+      retryDelayMs: 0,
+      ledger: {
+        insert: async () => {
+          throw new Error('Failed query: insert\nparams: a,b', { cause: new Error('relation "llm_calls" does not exist') })
+        },
+      },
+    })
+    await gate.recordCall(ENTRY)
+    const annotation = String(error.mock.calls[0]?.[0])
+    expect(annotation).toContain('relation "llm_calls" does not exist')
+    expect(annotation).not.toContain('\n')
+    error.mockRestore()
+  })
+
   it('每次呼叫的 id 不同', async () => {
     const ledger = fakeLedger()
     const gate = new DailyCostGate(1, { ledger })

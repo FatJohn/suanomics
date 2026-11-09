@@ -15,6 +15,7 @@ describe('renderRunSummary', () => {
     expect(md).toContain('| editor | 1 | 0 | 0 | $0.5000 |')
     expect(md).toContain('失敗 2')
     expect(md).toContain('重試 3')
+    expect(md).toContain('金額未知')
   })
 
   it('沒有呼叫時明講，不輸出空表', () => {
