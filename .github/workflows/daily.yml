@@ -60,7 +60,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-          DAILY_COST_LIMIT_USD: '1.20'
+          DAILY_COST_LIMIT_USD: '3.00'
           ANALYST_CLAIMS_ENABLED: 'true'
           NARRATIVE_LEDGER_ENABLED: 'true'
         run: |
