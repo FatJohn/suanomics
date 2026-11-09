@@ -1,5 +1,5 @@
 # 部署：pnpm dlx --allow-build=esbuild --allow-build=workerd wrangler@4.158.0 deploy --config apps/trigger/wrangler.toml
-# GitHub token 只放 Worker secret：wrangler secret put GITHUB_DISPATCH_TOKEN
+# GitHub token 只放 Worker secret：pnpm dlx --allow-build=esbuild --allow-build=workerd wrangler@4.158.0 secret put GITHUB_DISPATCH_TOKEN --config apps/trigger/wrangler.toml
 name = "suanomics-trigger"
 main = "src/index.ts"
 compatibility_date = "2026-11-01"

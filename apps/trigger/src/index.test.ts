@@ -28,7 +28,7 @@ describe('scheduled', () => {
     )
   })
 
-  it('gitHub 回非 2xx 時丟錯，讓 Cron 事件記成失敗', async () => {
+  it('回應非 2xx 時丟錯，讓 Cron 事件記成失敗', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('Not Found', { status: 404 })))
 
     await expect(worker.scheduled({}, env)).rejects.toThrow('404')

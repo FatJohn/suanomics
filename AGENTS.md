@@ -63,7 +63,7 @@ CI（`.github/workflows/ci.yml`）跑上面全部指令，資料庫是 Postgres 
 | workflow 的 action 釘 commit SHA、最小 `permissions`、不用 `pull_request_target` | CI `Audit workflows`（zizmor） |
 | `apps/`、`packages/` 不放 emoji | CI `Check emoji` |
 | 長存文件通過 `check_docs.py`，`AGENTS.md` 規則清單與 `docs/rules/coding.md` 同步 | CI `Check docs`、`Check rules index`（`tools/agents-guideline/`） |
-| `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`（shared、pipeline）與 `apps/web/tsconfig.json`，`pnpm -r type-check` |
+| `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`（shared、pipeline、trigger）與 `apps/web/tsconfig.json`，`pnpm -r type-check` |
 | `rewrite` 要走 PR、`gitleaks` 與 `ci` 兩個 check 通過、commit 要簽章、禁 force push 與刪除 | GitHub ruleset |
 
 ## 規則
