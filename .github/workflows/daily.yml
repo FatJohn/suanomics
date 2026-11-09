@@ -1,0 +1,83 @@
+name: daily
+
+# 每日 pipeline → build → 部署。主觸發是 apps/trigger 的 Worker（05:00 台北），
+# schedule 是 05:20 的備援；當日已有 brief 時 pipeline 以 exit 0 結束。見 ADR 0009。
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 報告日期 YYYY-MM-DD，留空為今日台北
+        required: false
+        type: string
+      force:
+        description: 覆蓋當日已有的 brief
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: '20 21 * * *'
+
+permissions:
+  contents: read
+
+# 主跑與備援重疊時排隊，輪到時因當日已有 brief 而結束，不同時跑 pipeline。
+concurrency:
+  group: daily
+  cancel-in-progress: false
+
+jobs:
+  daily:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # pnpm 版本取自 package.json 的 packageManager 欄位
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm -r build
+
+      - name: Run pipeline
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+          INPUT_FORCE: ${{ inputs.force }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          DAILY_COST_LIMIT_USD: '1.20'
+        run: |
+          date="${INPUT_DATE:-$(TZ=Asia/Taipei date +%F)}"
+          args=(--date "$date")
+          if [ "$INPUT_FORCE" = "true" ]; then
+            args+=(--force)
+          fi
+          pnpm --filter @suanomics/pipeline run daily "${args[@]}"
+
+      # 備援跑到 skip 時仍重新部署：補上前一次 build 或部署失敗的情況。
+      - name: Build site
+        env:
+          WEB_DATABASE_URL: ${{ secrets.WEB_DATABASE_URL }}
+        run: pnpm --filter @suanomics/web run build:publish
+
+      # --branch 要對應 Pages 的 production_branch，否則會變成 preview 部署。
+      - name: Deploy site
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm dlx --allow-build=esbuild --allow-build=workerd wrangler@4.158.0 pages deploy apps/web/dist --project-name suanomics --branch rewrite
