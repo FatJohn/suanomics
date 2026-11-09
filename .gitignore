@@ -12,4 +12,5 @@ node_modules/
 # Build output
 dist/
 .astro/
+.wrangler/
 .neon

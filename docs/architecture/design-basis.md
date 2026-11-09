@@ -48,13 +48,14 @@ Pipeline 的一次執行是固定順序的 DAG，不是 agent 自主迴圈：每
 
 ## Workspace 與依賴方向
 
-pnpm workspace 三個成員：
+pnpm workspace 四個成員：
 
 | Workspace | 職責 | 可以 import |
 |---|---|---|
 | `packages/shared` | brief 的 Zod 契約、compliance 禁用語、citation 驗證規則 | 只有 zod |
 | `apps/pipeline` | ingest、agents、prompts、drizzle schema 與 repos、CLI 入口、花費閘 | `shared` |
 | `apps/web` | Astro 網站；build 時讀 Postgres | `shared`（型別與 schema）、drizzle client |
+| `apps/trigger` | Cloudflare Worker，Cron Trigger 呼叫 `workflow_dispatch` | 無 |
 
 `apps/web` 不 import `apps/pipeline`；eslint 的 `import-x/no-restricted-paths` 強制這條邊界。後端語言只有 TypeScript，決策見 [後端維持 TypeScript](../adr/0006-typescript-only-backend.md)。
 

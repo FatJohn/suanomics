@@ -13,6 +13,10 @@
       ],
       "project": ["src/**/*.ts"]
     },
+    "apps/trigger": {
+      "entry": ["src/index.ts"],
+      "project": ["src/**/*.ts"]
+    },
     "apps/web": {
       "project": ["src/**/*.{ts,astro,css}"]
     }

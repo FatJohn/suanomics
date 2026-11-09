@@ -34,7 +34,7 @@ CI（`.github/workflows/ci.yml`）跑上面全部指令，資料庫是 Postgres 
 | 語言 | TypeScript（後端與網站都是），`strict` | [0006](docs/adr/0006-typescript-only-backend.md) |
 | Node | 26（`.nvmrc`、`engines`） | — |
 | Package manager | pnpm，版本由根目錄 `package.json` 的 `packageManager` 鎖定；不用 npm、yarn、bun | — |
-| Monorepo | pnpm workspace：`packages/shared`、`apps/pipeline`、`apps/web` | [設計依據的〈Workspace 與依賴方向〉](docs/architecture/design-basis.md#workspace-與依賴方向) |
+| Monorepo | pnpm workspace：`packages/shared`、`apps/pipeline`、`apps/web`、`apps/trigger` | [設計依據的〈Workspace 與依賴方向〉](docs/architecture/design-basis.md#workspace-與依賴方向) |
 | 執行環境 | GitHub Actions 排程批次 pipeline，沒有常駐 server | [0002](docs/adr/0002-batch-pipeline-and-static-site.md) |
 | 觸發器 | Cloudflare Worker Cron Trigger 為主，Actions `schedule` 為備援 | [0009](docs/adr/0009-cron-trigger-via-cloudflare-worker.md) |
 | 資料庫 | Neon Postgres，drizzle-orm 與 drizzle-kit migration | [0003](docs/adr/0003-neon-postgres.md) |
