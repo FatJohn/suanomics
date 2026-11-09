@@ -19,3 +19,6 @@ pipeline 是固定的 DAG：15 個階段各自「給 system prompt 與結構化�
 - judge 用與產出不同家族的 model，可避免同家族評自己的輸出；judge 不在每日路徑上。目前全部用 Anthropic，judge 用哪一家在接回 judge 時（#33）決定。
 - 每日花費硬閘沿用 v0 的 `totalCostUsd` 計量，加上 Anthropic Console 的 workspace spend limit。
 - Anthropic 的 prompt caching 走 `providerOptions.anthropic.cacheControl`。
+- 實測一份冷快取的每日報告花 US$0.81（85 次呼叫），依 22 個交易日推算約 US$18／月。每天只跑一次時快取不跨日，所以月成本以冷快取計（#17）。樣本當天 analyst 第二層沒有觸發、總經序列也缺，這個數字偏低估。
+- `DAILY_COST_LIMIT_USD` 先以 1.20 為參考值（約實測值的 1.5 倍），實際跑過後再調整，調整時同時看花費與報告品質。備援重跑時當日花費約到上限兩倍（花費閘只在呼叫前檢查，可能略超），這個最壞情況只容許偶發，每天都發生會超過月預算。`--force` 只擋得住 brief 已存在的重跑；主跑與備援在 brief 寫入前重疊仍會雙跑，排程上線（#27）前要加 concurrency 控制，目前尚未實作。
+- narrative-writer 不升級模型：兩次實跑都一次完成，無 retry，也沒有截斷。品質還沒有 judge 分數，接回 judge 時（#33）再評估。
