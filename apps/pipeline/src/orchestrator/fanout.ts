@@ -1,5 +1,5 @@
 import pMap from 'p-map'
-import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { CostGateError } from '../agents/cost-gate.js'
 
 export interface FanoutLimits { decomposer: number, retrieve: number, tier1: number, tier2: number }
 
@@ -27,7 +27,7 @@ export async function fanoutSettled<T, R>(
     }
   }, { concurrency })
   for (const result of settled) {
-    if (result.status === 'rejected' && result.reason instanceof DailyCostLimitExceededError)
+    if (result.status === 'rejected' && result.reason instanceof CostGateError)
       throw result.reason
   }
   return settled

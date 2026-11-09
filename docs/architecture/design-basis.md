@@ -43,6 +43,8 @@ flowchart LR
 | 持久狀態 | storylines（跨日敘事線與週回顧）、近日 brief 摘要、market data 歷史、news 候選池；drizzle schema 與 repos | Neon Postgres 免費層 | [持久狀態放 Neon Postgres、沿用 drizzle](../adr/0003-neon-postgres.md) |
 | 網站 | Astro 在同一個 Actions job 內 build，直接讀 Postgres 產成純 HTML，`wrangler pages deploy` 上線 | Cloudflare Pages，自訂網域 `suanomics.everbegin.net` | [網站用 Astro 靜態產生](../adr/0005-astro-static-site.md) |
 | 每日花費閘 | pipeline 累計每次 LLM 呼叫的 `totalCostUsd`，超過設定上限即停止並標記該日報告未完成 | pipeline 內 | — |
+| LLM 用量帳本 | 每次 LLM 呼叫寫一列 `llm_calls`（不含 provider 專屬欄位），Actions job summary 與 `llm:usage` CLI 由此取數；寫入失敗不擋 run，但留 annotation 與整列 log。花費閘不讀帳本，每次 run 獨立計算 | pipeline 內 | — |
+| LLM 帳務錯誤 | 額度、帳務、認證錯誤穿透所有降級 catch 讓 run 失敗，不發佈殘缺報告；辨識不了的錯誤維持原本的重試與降級 | pipeline 內 | — |
 
 Pipeline 的一次執行是固定順序的 DAG，不是 agent 自主迴圈：每個階段「給 system prompt 與結構化輸入，要一份符合 Zod schema 的 JSON」。
 

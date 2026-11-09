@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { effectiveLlmPeak, FANOUT, fanoutSettled } from './fanout.js'
 
 describe('fanoutSettled', () => {
@@ -22,6 +22,12 @@ describe('fanoutSettled', () => {
       finished++
     })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
     expect(finished).toBe(1)
+  })
+
+  it('帳務錯誤也要往外丟，不當成單筆失敗', async () => {
+    await expect(fanoutSettled([1], 1, async () => {
+      throw new LlmAccountError('db down')
+    })).rejects.toBeInstanceOf(LlmAccountError)
   })
 
   it('同時在飛的工作不超過上限', async () => {

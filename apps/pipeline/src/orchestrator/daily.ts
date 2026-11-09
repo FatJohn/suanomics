@@ -37,7 +37,7 @@ export type DailyResult
     | { status: 'incomplete', date: string, failedStage: StageName }
 
 export interface DailyDeps {
-  gate: Pick<DailyCostGate, 'totalUsd' | 'callCount'>
+  gate: Pick<DailyCostGate, 'totalUsd' | 'callCount' | 'setReportDate'>
   log: (event: DailyLogEvent) => void
   isTradingDay: (date: string) => boolean
   findExistingBrief: (date: string) => Promise<{ status: string } | null>
@@ -118,6 +118,7 @@ export async function runDaily(options: { date: string, force: boolean }, deps: 
   if (!force && await deps.findExistingBrief(date))
     return { status: 'skipped', reason: 'already-exists', date }
 
+  deps.gate.setReportDate(date)
   // 要在寫入 brief 之前判定，否則每次都會看到自己剛寫的那份。
   const isRerun = await deps.hasCompleteBriefOnOrAfter(date)
   const progress: DailyProgress = { completedStages: [] }

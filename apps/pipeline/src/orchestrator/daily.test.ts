@@ -1,6 +1,6 @@
 import type { DailyDeps, DailyLogEvent } from './daily.js'
 import { describe, expect, it, vi } from 'vitest'
-import { DailyCostGate, DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { DailyCostGate, DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { runDaily } from './daily.js'
 
 const DATE = '2026-11-09'
@@ -158,6 +158,22 @@ describe('runDaily', () => {
     }) })
     await expect(runDaily({ date: DATE, force: false }, deps)).rejects.toThrow('boom')
     expect(deps.saveIncompleteBrief).not.toHaveBeenCalled()
+  })
+
+  it('帳務錯誤讓 run 失敗，不寫 incomplete 也不寫 brief', async () => {
+    const deps = fakeDeps({ selectNews: vi.fn(async () => {
+      throw new LlmAccountError('billing')
+    }) })
+    await expect(runDaily({ date: DATE, force: false }, deps)).rejects.toBeInstanceOf(LlmAccountError)
+    expect(deps.saveIncompleteBrief).not.toHaveBeenCalled()
+    expect(deps.saveBrief).not.toHaveBeenCalled()
+  })
+
+  it('補跑舊日期時帳本的 report_date 是 --date，不是今天', async () => {
+    const gate = new DailyCostGate(1)
+    const spy = vi.spyOn(gate, 'setReportDate')
+    await runDaily({ date: DATE, force: false }, fakeDeps({ gate }))
+    expect(spy).toHaveBeenCalledWith(DATE)
   })
 
   it('每階段記開始與結束，含耗時、呼叫數與 USD 差額', async () => {

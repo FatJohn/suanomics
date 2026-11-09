@@ -14,7 +14,8 @@
     "ingest:run": "tsx --env-file-if-exists=.env src/ingest/run.cli.ts",
     "daily": "tsx --env-file-if-exists=.env src/orchestrator/daily.cli.ts",
     "fixtures:check": "tsx src/ingest/fixtures/cli.ts",
-    "llm:live-check": "tsx src/agents/live-check.cli.ts"
+    "llm:live-check": "tsx src/agents/live-check.cli.ts",
+    "llm:usage": "tsx --env-file-if-exists=.env src/agents/llm-usage.cli.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.98",

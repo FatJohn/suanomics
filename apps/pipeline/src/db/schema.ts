@@ -179,3 +179,31 @@ export const econCalendarEvents = pgTable('econ_calendar_events', {
   eventUnique: unique('econ_calendar_events_date_title_unique').on(t.date, t.title),
   dateIdx: index('idx_econ_calendar_events_date').on(t.date),
 }))
+
+// 每次 LLM 呼叫一列，跟 provider 無關。網站不讀這張表（suanomics_web 沒有授權）。
+// id 由 pipeline 產生，寫入重試時靠它去重。
+export const llmCalls = pgTable('llm_calls', {
+  id: uuid('id').primaryKey(),
+  runId: text('run_id').notNull(),
+  reportDate: date('report_date').notNull(),
+  provider: text('provider').notNull(),
+  model: text('model').notNull(),
+  agent: text('agent').notNull(),
+  newsId: text('news_id'),
+  // 四種 token 互斥：tokens_in 不含 cache read／write。
+  tokensIn: integer('tokens_in').notNull(),
+  tokensOut: integer('tokens_out').notNull(),
+  cacheReadTokens: integer('cache_read_tokens').notNull(),
+  cacheWriteTokens: integer('cache_write_tokens').notNull(),
+  latencyMs: integer('latency_ms').notNull(),
+  attempts: smallint('attempts').notNull(),
+  status: text('status').notNull(),
+  // null＝金額未知（API 沒回 usage）或地端模型。
+  costUsd: numeric('cost_usd', { precision: 14, scale: 10 }),
+  priceVersion: text('price_version').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => ({
+  statusCheck: check('llm_calls_status_check', sql`${t.status} IN ('ok', 'invalid_output', 'failed')`),
+  createdAtIdx: index('idx_llm_calls_created_at').on(t.createdAt.desc()),
+  runIdIdx: index('idx_llm_calls_run_id').on(t.runId),
+}))
