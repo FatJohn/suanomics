@@ -1,4 +1,4 @@
-name: security
+name: Secret Scan
 
 # 金鑰防線的 CI 層：每個 PR 與 push 都用 gitleaks 掃整段 git history。
 # 本機 husky pre-commit 也跑 gitleaks，這裡擋的是繞過 hook（--no-verify、

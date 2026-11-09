@@ -1,4 +1,4 @@
-name: ci
+name: CI
 
 # 程式碼的驗證 gate：build → lint → type-check → db:migrate → test。
 # 真資料庫一律用 Postgres service container；Neon 的連線字串不進 CI。
