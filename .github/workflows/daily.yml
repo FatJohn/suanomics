@@ -61,6 +61,8 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
           DAILY_COST_LIMIT_USD: '1.20'
+          ANALYST_CLAIMS_ENABLED: 'true'
+          NARRATIVE_LEDGER_ENABLED: 'true'
         run: |
           date="${INPUT_DATE:-$(TZ=Asia/Taipei date +%F)}"
           args=(--date "$date")
