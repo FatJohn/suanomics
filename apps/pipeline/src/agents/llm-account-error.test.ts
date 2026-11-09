@@ -21,6 +21,8 @@ describe('toLlmAccountError', () => {
     ['餘額不足 400', err(400, body('invalid_request_error', 'Your credit balance is too low to access the Anthropic API.'))],
     ['狀態碼缺失但型別是 billing', err(undefined, body('billing_error', 'x'))],
     ['回應不是 JSON 的 401', err(401)],
+    ['回應不是 JSON 的 402', err(402)],
+    ['回應不是 JSON 的 403', err(403)],
   ])('%s 判為帳務錯誤', (_label, e) => {
     expect(toLlmAccountError(e)).toBeInstanceOf(LlmAccountError)
   })
