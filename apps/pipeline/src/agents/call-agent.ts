@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import type { DailyCostGate } from './cost-gate.js'
+import type { DailyCostGate, LlmCallStatus } from './cost-gate.js'
 import type { AgentName, LlmProvider } from './models.js'
 import type { RetryReason } from './narrative-shared.js'
 import type { TokenUsage } from './pricing.js'
@@ -7,14 +7,16 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { anthropic } from '@ai-sdk/anthropic'
 import { APICallError, generateText, NoObjectGeneratedError, Output } from 'ai'
 import { getDailyCostGate } from './cost-gate.js'
+import { toLlmAccountError } from './llm-account-error.js'
 import { resolveAgentModel } from './models.js'
-import { computeCost, priceFor } from './pricing.js'
+import { computeCost, PRICE_VERSION, priceFor } from './pricing.js'
 
 /** 每次 LLM 呼叫的紀錄；只有某一個 agent 會填的欄位標在註解裡。 */
 export interface LlmCallRecord {
   agentName: AgentName
   newsId?: string
   provider?: LlmProvider
+  model?: string
   tokensIn: number
   tokensOut: number
   cachedReadTokens?: number
@@ -59,6 +61,8 @@ const DEFAULT_TIMEOUT_MS = 180_000
 const DEFAULT_MAX_ATTEMPTS = 3
 const DEFAULT_RETRY_DELAY_MS = 1_000
 const MAX_RETRY_AFTER_SECONDS = 60
+// API 沒回 usage（5xx、timeout 等）時金額未知，記 null 而不是 0，失敗次數才查得到。
+const NO_USAGE: TokenUsage = { noCacheInputTokens: 0, cacheWriteTokens: 0, cacheReadTokens: 0, outputTokens: 0 }
 
 // SDK 內建的 retry 另含 408／409，範圍比這裡要的寬，所以關掉自己判斷。
 // timeout 不是 APICallError，不會重試。
@@ -100,6 +104,18 @@ function toTokenUsage(usage: SdkUsage): TokenUsage {
   }
 }
 
+// 重試等待中被其他並行呼叫推過上限時，前一次嘗試已打過 API，要留下失敗紀錄。
+async function assertBeforeAttempt(gate: DailyCostGate, attempt: number, recordPriorFailure: () => Promise<void>): Promise<void> {
+  try {
+    gate.assertWithinLimit()
+  }
+  catch (error) {
+    if (attempt > 1)
+      await recordPriorFailure()
+    throw error
+  }
+}
+
 export async function callAgent<T>(
   name: AgentName,
   input: AgentInput,
@@ -110,54 +126,81 @@ export async function callAgent<T>(
   // 沒價格的 model 要在花錢之前擋下，不是呼叫完才發現算不出成本。
   priceFor(agentModel.model)
   const gate = options.gate ?? getDailyCostGate()
-  const maxAttempts = options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS
   const retryDelayMs = options.retryDelayMs ?? DEFAULT_RETRY_DELAY_MS
   const startedAt = Date.now()
 
-  const report = (sdkUsage: SdkUsage, attempts: number): void => {
+  const recordLedger = (usage: TokenUsage, attempts: number, status: LlmCallStatus, costUsd: number | null, latencyMs: number): Promise<void> => gate.recordCall({
+    agent: name,
+    provider: agentModel.provider,
+    model: agentModel.model,
+    priceVersion: PRICE_VERSION,
+    ...(options.newsId !== undefined ? { newsId: options.newsId } : {}),
+    tokensIn: usage.noCacheInputTokens,
+    tokensOut: usage.outputTokens,
+    cacheReadTokens: usage.cacheReadTokens,
+    cacheWriteTokens: usage.cacheWriteTokens,
+    latencyMs,
+    attempts,
+    status,
+    costUsd,
+  })
+
+  const report = async (sdkUsage: SdkUsage, attempts: number, status: LlmCallStatus): Promise<void> => {
     const usage = toTokenUsage(sdkUsage)
     const costUsd = computeCost(agentModel.model, usage)
-    gate.record(costUsd)
+    // 寫帳本之前算：DB 慢的時間不該算進 LLM 延遲。
+    const latencyMs = Date.now() - startedAt
+    await recordLedger(usage, attempts, status, costUsd, latencyMs)
     options.onCallRecord?.({
       agentName: name,
       ...(options.newsId !== undefined ? { newsId: options.newsId } : {}),
       provider: agentModel.provider,
+      model: agentModel.model,
       tokensIn: usage.noCacheInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens,
       tokensOut: usage.outputTokens,
       cachedReadTokens: usage.cacheReadTokens,
       cacheWriteTokens: usage.cacheWriteTokens,
       costUsd,
-      latencyMs: Date.now() - startedAt,
+      latencyMs,
       attempts,
     })
   }
 
+  const invoke = () => generateText({
+    model: anthropic(agentModel.model),
+    system: {
+      role: 'system',
+      content: input.systemPrompt,
+      providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
+    },
+    prompt: input.userContent,
+    output: Output.object({ schema }),
+    maxOutputTokens: MAX_OUTPUT_TOKENS,
+    maxRetries: 0,
+    timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
+  })
+
   for (let attempt = 1; ; attempt++) {
-    gate.assertWithinLimit()
+    await assertBeforeAttempt(gate, attempt, () => recordLedger(NO_USAGE, attempt - 1, 'failed', null, Date.now() - startedAt))
+    let result: Awaited<ReturnType<typeof invoke>>
     try {
-      const result = await generateText({
-        model: anthropic(agentModel.model),
-        system: {
-          role: 'system',
-          content: input.systemPrompt,
-          providerOptions: { anthropic: { cacheControl: { type: 'ephemeral' } } },
-        },
-        prompt: input.userContent,
-        output: Output.object({ schema }),
-        maxOutputTokens: MAX_OUTPUT_TOKENS,
-        maxRetries: 0,
-        timeout: options.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-      })
-      report(result.usage, attempt)
-      return result.output
+      result = await invoke()
     }
     catch (error) {
+      const accountError = toLlmAccountError(error)
+      const willRetry = accountError === null && attempt < (options.maxAttempts ?? DEFAULT_MAX_ATTEMPTS) && isRetryable(error)
       // 輸出不符 schema 時 token 已經計費，沒記到就會讓花費閘少算。
       if (NoObjectGeneratedError.isInstance(error) && error.usage)
-        report(error.usage, attempt)
-      if (attempt >= maxAttempts || !isRetryable(error))
-        throw error
+        await report(error.usage, attempt, 'invalid_output')
+      else if (!willRetry)
+        await recordLedger(NO_USAGE, attempt, 'failed', null, Date.now() - startedAt)
+      if (!willRetry)
+        throw accountError ?? error
       await delay(Math.max(retryDelayMs * 2 ** (attempt - 1), retryAfterMs(error)))
+      continue
     }
+    // 記帳放在 try 外：記帳失敗不能被當成 API 錯誤重打。
+    await report(result.usage, attempt, 'ok')
+    return result.output
   }
 }

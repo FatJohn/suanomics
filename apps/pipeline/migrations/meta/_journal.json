@@ -127,6 +127,13 @@
       "when": 1794152511067,
       "tag": "0017_nosy_fabian_cortez",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794208178311,
+      "tag": "0018_heavy_deathbird",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import type { LlmCallEntry, LlmLedger, LlmLedgerRow } from './cost-gate.js'
+import { describe, expect, it, vi } from 'vitest'
 import { CostGateError, DailyCostGate, DailyCostLimitExceededError, parseDailyCostLimit } from './cost-gate.js'
 
 describe('dailyCostGate', () => {
@@ -50,5 +51,130 @@ describe('parseDailyCostLimit', () => {
   it.each([undefined, '', 'abc', '0', '-1', 'Infinity'])('未設定或不是正數時拒絕：%s', (raw) => {
     expect(() => parseDailyCostLimit(raw)).toThrow(/DAILY_COST_LIMIT_USD/)
     expect(() => parseDailyCostLimit(raw)).toThrow(CostGateError)
+  })
+})
+
+const ENTRY: LlmCallEntry = {
+  agent: 'news-tagger',
+  provider: 'anthropic',
+  model: 'claude-haiku-5-5',
+  tokensIn: 1,
+  tokensOut: 1,
+  cacheReadTokens: 0,
+  cacheWriteTokens: 0,
+  latencyMs: 1,
+  attempts: 1,
+  status: 'ok',
+  costUsd: 0.5,
+  priceVersion: 'v',
+}
+
+function fakeLedger(): LlmLedger & { rows: LlmLedgerRow[] } {
+  const rows: LlmLedgerRow[] = []
+  return {
+    rows,
+    insert: async (row) => {
+      rows.push(row)
+    },
+  }
+}
+
+describe('dailyCostGate 的 recordCall', () => {
+  it('累計並寫一列，帶 runId 與 reportDate', async () => {
+    const ledger = fakeLedger()
+    const gate = new DailyCostGate(1, { ledger, runId: 'r1' })
+    gate.setReportDate('2026-11-09')
+    await gate.recordCall(ENTRY)
+    expect(gate.totalUsd).toBe(0.5)
+    expect(gate.callCount).toBe(1)
+    expect(ledger.rows).toHaveLength(1)
+    expect(ledger.rows[0]).toMatchObject({ ...ENTRY, runId: 'r1', reportDate: '2026-11-09' })
+  })
+
+  it('costUsd 為 null 時閘當 0 計、列照寫', async () => {
+    const ledger = fakeLedger()
+    const gate = new DailyCostGate(1, { ledger })
+    await gate.recordCall({ ...ENTRY, costUsd: null, status: 'failed' })
+    expect(gate.totalUsd).toBe(0)
+    expect(gate.callCount).toBe(1)
+    expect(ledger.rows[0]?.costUsd).toBeNull()
+  })
+
+  it('暫時失敗重試時沿用同一個 id，讓 DB 端能去重', async () => {
+    const ids: string[] = []
+    let fails = 2
+    const gate = new DailyCostGate(1, {
+      retryDelayMs: 0,
+      ledger: {
+        ...fakeLedger(),
+        insert: async (row) => {
+          ids.push(row.id)
+          if (fails-- > 0)
+            throw new Error('transient')
+        },
+      },
+    })
+    await gate.recordCall(ENTRY)
+    expect(ids).toHaveLength(3)
+    expect(new Set(ids).size).toBe(1)
+  })
+
+  it('重試用完仍寫不進去時不擋 run，但印 Actions annotation 與整列內容', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const gate = new DailyCostGate(1, {
+      retryDelayMs: 0,
+      ledger: {
+        insert: async () => {
+          throw new Error('db down')
+        },
+      },
+    })
+    await expect(gate.recordCall(ENTRY)).resolves.toBeUndefined()
+    expect(gate.totalUsd).toBe(0.5)
+    const output = error.mock.calls.map(c => String(c[0])).join('\n')
+    expect(output).toContain('::error')
+    expect(output).toContain('llm_ledger_write_failed')
+    expect(output).toContain('claude-haiku-5-5')
+    error.mockRestore()
+  })
+
+  it('annotation 取 cause 的真因並壓成單行', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const gate = new DailyCostGate(1, {
+      retryDelayMs: 0,
+      ledger: {
+        insert: async () => {
+          throw new Error('Failed query: insert\nparams: a,b', { cause: new Error('relation "llm_calls" does not exist') })
+        },
+      },
+    })
+    await gate.recordCall(ENTRY)
+    const annotation = String(error.mock.calls[0]?.[0])
+    expect(annotation).toContain('relation "llm_calls" does not exist')
+    expect(annotation).not.toContain('\n')
+    error.mockRestore()
+  })
+
+  it('沒有 cause 的多行錯誤訊息也壓成單行', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const gate = new DailyCostGate(1, {
+      retryDelayMs: 0,
+      ledger: {
+        insert: async () => {
+          throw new Error('line one\nline two')
+        },
+      },
+    })
+    await gate.recordCall(ENTRY)
+    expect(String(error.mock.calls[0]?.[0])).toContain('line one line two')
+    error.mockRestore()
+  })
+
+  it('每次呼叫的 id 不同', async () => {
+    const ledger = fakeLedger()
+    const gate = new DailyCostGate(1, { ledger })
+    await gate.recordCall(ENTRY)
+    await gate.recordCall(ENTRY)
+    expect(ledger.rows[0]?.id).not.toBe(ledger.rows[1]?.id)
   })
 })

@@ -7,7 +7,7 @@ import { buildClaimLedger } from '@suanomics/shared'
 import { callAnalystTier1 } from '../agents/analyst.js'
 import { tagChainForceGroups } from '../agents/chain-grouper.js'
 import { renumberChainsAcrossNews } from '../agents/chain-ids.js'
-import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { callDecomposer } from '../agents/decomposer.js'
 import { buildMarketCloseFraming } from '../agents/market-close-framing.js'
 import { callNarrativeWriter } from '../agents/narrative-writer.js'
@@ -107,7 +107,7 @@ async function analyzeNews(
 async function settleFinalize<A, B, C>(calls: [Promise<A>, Promise<B>, Promise<C>]): Promise<[A, B, C]> {
   const results = await Promise.allSettled(calls)
   const rejected = results.filter(r => r.status === 'rejected').map(r => r.reason as unknown)
-  const firstError = rejected.find(e => e instanceof DailyCostLimitExceededError) ?? rejected[0]
+  const firstError = rejected.find(e => e instanceof LlmAccountError) ?? rejected.find(e => e instanceof DailyCostLimitExceededError) ?? rejected[0]
   if (rejected.length > 0)
     throw firstError
   return Promise.all(calls)

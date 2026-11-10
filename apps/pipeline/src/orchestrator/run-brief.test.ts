@@ -3,7 +3,7 @@ import type { GenerateBriefParams } from './run-brief.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { callAnalystTier1 } from '../agents/analyst.js'
 import { tagChainForceGroups } from '../agents/chain-grouper.js'
-import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { callDecomposer } from '../agents/decomposer.js'
 import { callNarrativeWriter } from '../agents/narrative-writer.js'
 import { retrieveForDecomposed } from '../agents/retrieve-for-decomposed.js'
@@ -102,6 +102,14 @@ describe('generateBrief', () => {
     expect(p.progress.analystOutputs?.map(a => a.newsId)).toEqual(['1'])
   })
 
+  it('finalize 帳務錯誤與花費閘例外同時出現時丟帳務錯誤', async () => {
+    vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+    vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+    vi.mocked(tagChainForceGroups).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
+    vi.mocked(callNarrativeWriter).mockRejectedValue(new LlmAccountError('billing'))
+    await expect(generateBrief(params().p)).rejects.toBeInstanceOf(LlmAccountError)
+  })
+
   it('finalize 觸發花費閘時等在途呼叫收尾才往外丟', async () => {
     let narrativeDone = false
     vi.mocked(callSynthesizer).mockResolvedValue({} as never)
@@ -114,6 +122,23 @@ describe('generateBrief', () => {
     })
     const { p } = params()
     await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(narrativeDone).toBe(true)
+    expect(p.progress.brief).toMatchObject({ headline: 'h' })
+    expect(p.progress.finalize).toEqual({ narrative: { narrative: null } })
+  })
+
+  it('帳務錯誤同樣穿透：finalize 觸發花費閘時等在途呼叫收尾才往外丟', async () => {
+    let narrativeDone = false
+    vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+    vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+    vi.mocked(tagChainForceGroups).mockRejectedValue(new LlmAccountError('billing'))
+    vi.mocked(callNarrativeWriter).mockImplementation(async () => {
+      await new Promise(r => setTimeout(r, 10))
+      narrativeDone = true
+      return { narrative: null } as never
+    })
+    const { p } = params()
+    await expect(generateBrief(p)).rejects.toBeInstanceOf(LlmAccountError)
     expect(narrativeDone).toBe(true)
     expect(p.progress.brief).toMatchObject({ headline: 'h' })
     expect(p.progress.finalize).toEqual({ narrative: { narrative: null } })

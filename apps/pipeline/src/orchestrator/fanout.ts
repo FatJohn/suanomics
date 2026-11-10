@@ -1,5 +1,5 @@
 import pMap from 'p-map'
-import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { CostGateError, LlmAccountError } from '../agents/cost-gate.js'
 
 export interface FanoutLimits { decomposer: number, retrieve: number, tier1: number, tier2: number }
 
@@ -26,9 +26,10 @@ export async function fanoutSettled<T, R>(
       return { status: 'rejected', reason }
     }
   }, { concurrency })
-  for (const result of settled) {
-    if (result.status === 'rejected' && result.reason instanceof DailyCostLimitExceededError)
-      throw result.reason
-  }
+  const reasons = settled.flatMap(r => (r.status === 'rejected' ? [r.reason as unknown] : []))
+  // 帳務錯誤優先：花費閘例外會走 incomplete 流程，帳務錯誤要讓 run 失敗。
+  const fatal = reasons.find(e => e instanceof LlmAccountError) ?? reasons.find(e => e instanceof CostGateError)
+  if (fatal !== undefined)
+    throw fatal
   return settled
 }

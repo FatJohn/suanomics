@@ -2,7 +2,7 @@ import type { LlmCallRecord } from '../agents/call-agent.js'
 import type { EditorStorylineState, SanitizedSelection } from '../agents/editor-output.js'
 import type { RelevanceCandidate } from '../db/repos/news-repo.js'
 import type { MarketContext } from '../ingest/market-data/context.js'
-import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { CostGateError } from '../agents/cost-gate.js'
 import { sanitizeSelection, sanitizeStoryline } from '../agents/editor-output.js'
 import { callEditor } from '../agents/editor.js'
 import { buildStorylineBlock, continuityHintFromEntries, entriesFromEditorResult } from '../agents/storyline-block.js'
@@ -72,7 +72,7 @@ export async function selectNewsViaEditor(p: SelectNewsParams): Promise<EditorSt
     console.warn('[editor] 選稿不可用，退回 recency selection')
   }
   catch (err) {
-    if (err instanceof DailyCostLimitExceededError)
+    if (err instanceof CostGateError)
       throw err
     console.warn('[editor] 失敗，退回 recency selection：', err instanceof Error ? err.message : String(err))
   }

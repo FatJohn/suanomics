@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from '../prompts/narrative-writer.prompt.js'
 
 import { callAgent } from './call-agent.js'
-import { DailyCostLimitExceededError } from './cost-gate.js'
+import { DailyCostLimitExceededError, LlmAccountError } from './cost-gate.js'
 import { buildMarketCloseFraming } from './market-close-framing.js'
 import { callNarrativeWriter } from './narrative-writer.js'
 
@@ -850,6 +850,19 @@ describe('callNarrativeWriter 的花費閘', () => {
       citations: FAKE_BRIEF.citations,
       briefDate: '2026-06-27',
     })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(callAgent).toHaveBeenCalledTimes(1)
+  })
+
+  it('帳務錯誤同樣穿透：超限時往外丟且不再重試', async () => {
+    vi.mocked(callAgent).mockReset()
+    vi.mocked(callAgent).mockRejectedValue(new LlmAccountError('billing'))
+    await expect(callNarrativeWriter({
+      brief: FAKE_BRIEF,
+      analystOutputs: FAKE_ANALYSTS,
+      news: FAKE_NEWS,
+      citations: FAKE_BRIEF.citations,
+      briefDate: '2026-06-27',
+    })).rejects.toBeInstanceOf(LlmAccountError)
     expect(callAgent).toHaveBeenCalledTimes(1)
   })
 })

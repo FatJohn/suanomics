@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { callEditor } from '../agents/editor.js'
 import { getRecentBriefSummaries, selectNewsForBrief } from '../db/repos/news-repo.js'
 import { getOpenStorylines } from '../db/repos/storylines-repo.js'
@@ -24,6 +24,12 @@ describe('selectNewsViaEditor', () => {
   it('花費閘例外往外丟，不退回 recency 繼續花錢', async () => {
     vi.mocked(callEditor).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
     await expect(selectNewsViaEditor(params)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+    expect(selectNewsForBrief).not.toHaveBeenCalled()
+  })
+
+  it('帳務錯誤往外丟，不退回 recency', async () => {
+    vi.mocked(callEditor).mockRejectedValue(new LlmAccountError('db down'))
+    await expect(selectNewsViaEditor(params)).rejects.toBeInstanceOf(LlmAccountError)
     expect(selectNewsForBrief).not.toHaveBeenCalled()
   })
 

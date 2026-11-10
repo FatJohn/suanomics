@@ -65,7 +65,7 @@ export function checkNarrativeClaimBinding(
 
 /**
  * 軟警告：不擋 pipeline，但要在 worker log 留下**可追回原文**的訊號。
- * `LlmCallRecord` 不落 DB、`brief_json` 也不含 audit，所以 **log 是這些數字唯一的 prod 出口**。
+ * `llm_calls` 帳本只記用量不記 audit、`brief_json` 也不含 audit，所以 **log 是這些數字唯一的 prod 出口**。
  *
  * 一定要把 `claimIdsTruncated` 一起印：unbound 有兩種成因——模型用了沒宣稱的數字（真問題），
  * 或模型宣稱了但被 `max 8` 上限截掉（我們自己的限制）。兩者在 log 裡分不開就判不動。

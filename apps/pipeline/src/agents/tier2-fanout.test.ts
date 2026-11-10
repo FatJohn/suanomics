@@ -1,7 +1,7 @@
 import type { CascadeChain } from './types.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as analystMod from './analyst.js'
-import { DailyCostLimitExceededError } from './cost-gate.js'
+import { DailyCostLimitExceededError, LlmAccountError } from './cost-gate.js'
 import * as retrieverMod from './retriever.js'
 import { runTier2Fanout, stampTier1 } from './tier2-fanout.js'
 
@@ -47,5 +47,14 @@ describe('runTier2Fanout marketSnapshot pass-through', () => {
     vi.mocked(analystMod.callAnalystTier2).mockRejectedValue(new DailyCostLimitExceededError(1, 2))
     const tier1 = stampTier1([{ industry: 'i', mechanism: 'm', affectedTickers: [], direction: 'neutral', citations: [], nextTierEntities: ['台積電'] }])
     await expect(runTier2Fanout({ news: { title: 't', text: 'x' }, tier1Chains: tier1, reportDate: '2026-06-13' })).rejects.toBeInstanceOf(DailyCostLimitExceededError)
+  })
+
+  it('帳務錯誤同樣穿透：花費閘例外不被降級吞掉', async () => {
+    vi.mocked(retrieverMod.retrieveArticles).mockResolvedValue([
+      { id: '1', url: 'https://example.com/a', title: 't', contentSummary: null, entities: [], topicTags: [], fetchedAt: '2026-06-13' },
+    ])
+    vi.mocked(analystMod.callAnalystTier2).mockRejectedValue(new LlmAccountError('billing'))
+    const tier1 = stampTier1([{ industry: 'i', mechanism: 'm', affectedTickers: [], direction: 'neutral', citations: [], nextTierEntities: ['台積電'] }])
+    await expect(runTier2Fanout({ news: { title: 't', text: 'x' }, tier1Chains: tier1, reportDate: '2026-06-13' })).rejects.toBeInstanceOf(LlmAccountError)
   })
 })
