@@ -201,6 +201,55 @@ describe('callSynthesizer', () => {
   })
 })
 
+describe('callSynthesizer compliance gate with real rules (#78)', () => {
+  beforeEach(async () => {
+    vi.resetAllMocks()
+    const actual = await vi.importActual<typeof import('@suanomics/shared')>('@suanomics/shared')
+    vi.mocked(checkCompliance).mockImplementation(actual.checkCompliance)
+  })
+
+  async function attemptsFor(first: object): Promise<number> {
+    vi.mocked(wrapper.callAgent).mockResolvedValueOnce(first).mockResolvedValue(validSynth)
+    await callSynthesizer({ analystOutputs: [], date: '2026-04-25' })
+    return vi.mocked(wrapper.callAgent).mock.calls.length
+  }
+
+  it('retries when a newline inside a field separates the actor from the direction verb', async () => {
+    expect(await attemptsFor({ ...validSynth, summary: '外資\n加碼台積電' })).toBe(2)
+  })
+
+  it('retries when the actor and the direction verb sit in different fields', async () => {
+    expect(await attemptsFor({ ...validSynth, reasoningChain: ['市場關注外資', '加碼台積電'] })).toBe(2)
+  })
+
+  it('still retries on hits that only show up across serialized fields', async () => {
+    // 舊閘門檢查整份 JSON；逐欄位檢查是加上去的，不取代它，避免放寬
+    expect(await attemptsFor({ ...validSynth, headline: '台積電', summary: '加碼' })).toBe(2)
+  })
+
+  it('checks every reader-facing prose field', async () => {
+    const bad = '外資\n加碼台積電'
+    const industry = { name: '半導體', direction: 'positive', confidence: 'medium', reasoning: '需求回溫' } as const
+    const etf = { ticker: '0050', name: '台灣50', rationale: '權值股' }
+    const cases = [
+      { ...validSynth, headline: bad },
+      { ...validSynth, relatedNews: [{ newsId: 'n1', relationType: 'cause', reasoning: bad }] },
+      { ...validSynth, affectedIndustries: [{ ...industry, name: bad }] },
+      { ...validSynth, affectedIndustries: [{ ...industry, reasoning: bad }] },
+      { ...validSynth, relatedETFs: [{ ...etf, name: bad }] },
+      { ...validSynth, relatedETFs: [{ ...etf, rationale: bad }] },
+    ]
+    for (const c of cases) {
+      vi.mocked(wrapper.callAgent).mockReset()
+      expect(await attemptsFor(c), JSON.stringify(c)).toBe(2)
+    }
+  })
+
+  it('does not retry clean output', async () => {
+    expect(await attemptsFor({ ...validSynth, summary: '外資今日加碼台積電' })).toBe(1)
+  })
+})
+
 describe('sanitizeSynthesizerOutput', () => {
   const base = {
     headline: '',

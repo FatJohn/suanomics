@@ -1,3 +1,4 @@
+import type { ComplianceViolation } from '@suanomics/shared'
 import type { LlmCallRecord } from './call-agent.js'
 import type { AnalystOutput } from './types.js'
 import { AffectedIndustrySchema, checkCompliance, RelatedEtfSchema, RelationTypeSchema } from '@suanomics/shared'
@@ -81,7 +82,7 @@ export async function callSynthesizer(p: CallSynthesizerParams): Promise<Synthes
     })
     const parsed = SynthesizerOutputSchema.parse(normalizeForSynthesizerSchema(raw))
     lastParsed = parsed
-    const violation = checkCompliance(JSON.stringify(parsed))
+    const violation = findComplianceViolation(parsed)
     if (!violation)
       return parsed
     // 不 echo 命中字（C1 防 echo）：只回類型 + 抽象指引、由 LLM 自行重寫。
@@ -94,6 +95,25 @@ export async function callSynthesizer(p: CallSynthesizerParams): Promise<Synthes
   const { sanitized, count } = sanitizeSynthesizerOutput(lastParsed)
   emitSynthAudit(p.onCallRecord, count)
   return sanitized
+}
+
+// 序列化後換行變成字面 \n、欄位邊界變成 ","，都不算句界，跨句歸因會被放行（#78）。
+// 逐欄位再查一次（欄位同 sanitizeSynthesizerOutput 與下游 analyzer）；整份 JSON 照舊查，只加不減。
+function findComplianceViolation(out: SynthesizerOutput): ComplianceViolation | null {
+  const fields = [
+    out.headline,
+    out.summary,
+    ...out.relatedNews.map(n => n.reasoning),
+    ...out.affectedIndustries.flatMap(i => [i.name, i.reasoning]),
+    ...out.relatedETFs.flatMap(e => [e.name, e.rationale]),
+    ...out.reasoningChain,
+  ]
+  for (const text of [JSON.stringify(out), ...fields]) {
+    const violation = checkCompliance(text)
+    if (violation)
+      return violation
+  }
+  return null
 }
 
 function emitSynthAudit(onCall: ((r: LlmCallRecord) => void) | undefined, synthForbiddenSanitized: number) {
