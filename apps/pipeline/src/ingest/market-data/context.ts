@@ -11,6 +11,7 @@ import { buildOfficialAnnouncementsBlock, OFFICIAL_BLOCK_SLUGS } from '../../bri
 import { getLatestPoints } from '../../db/repos/market-data-repo.js'
 import { getRecentOfficialAnnouncements } from '../../db/repos/official-announcements-repo.js'
 import { buildCalendarBlock, CALENDAR_FRESHNESS_MIN_DAYS, CALENDAR_HORIZON_DAYS, COMPANY_CALENDAR_CATEGORY_LABELS, daysUntilCalendarExhausted, EconCalendarSchema, selectCalendarWindow, toDateString } from './calendar.js'
+import { deriveExpiryEvents } from './derivatives-expiry.js'
 import { fetchExDividendEvents } from './ex-dividend-source.js'
 import { fetchInvestorConferenceEvents } from './investor-conference-source.js'
 import { SERIES_SPECS } from './series-config.js'
@@ -293,11 +294,19 @@ async function loadCalendar(
   //   brief 持久層給讀者面看。錨成報告日當天的 UTC 午夜，`toDateString` 取回來就逐字是
   //   reportDate（reportDate 是台北曆日，用 now 另外還有 UTC/台北 差一天的漂移）。
   //   健康度 warn 用的仍是 now：「種子還夠用幾天」問的是現在，不是報告日。
-  const all = [...macroEvents, ...exDiv.events, ...conf.events]
   const anchor = new Date(`${reportDate}T00:00:00Z`)
   // windowEnd 必須跟 selectCalendarWindow 用同一個日期加法（見 calendar.ts 的 toDateString
   // export 理由）——否則 out-of-range 的判準會跟 buildCalendarBlock 實際採用的視窗不一致。
   const windowEnd = toDateString(new Date(anchor.getTime() + CALENDAR_HORIZON_DAYS * 24 * 60 * 60 * 1000))
+  // 衍生品到期日是純計算，不會失敗，不需要自己的 degrade；休市表涵蓋不到的只能出聲。
+  const expiry = deriveExpiryEvents(reportDate, windowEnd)
+  if (expiry.uncovered.length > 0) {
+    console.warn(
+      `[market-context] 衍生品到期日超出休市表涵蓋範圍、可能落在視窗內但未列入行事曆：`
+      + `${expiry.uncovered.map(u => `${u.title}（規則日 ${u.rawDate}）`).join('、')}`,
+    )
+  }
+  const all = [...macroEvents, ...expiry.events, ...exDiv.events, ...conf.events]
   const coverage: CalendarCoverage[] = [
     resolveCalendarCoverage('ex-dividend', exDiv, windowEnd, false),
     resolveCalendarCoverage('investor-conference', conf, windowEnd, true),

@@ -78,7 +78,7 @@ export function selectCalendarWindow(
 
 /**
  * 把視窗內事件依 category 分兩區塊 markdown：
- * - 總經（macro / undefined）→「## 本週財經行事曆」、列尾帶（region、importance）。
+ * - 總經（macro / undefined）與衍生品到期（derivatives-expiry）→「## 本週財經行事曆」、列尾帶（region、importance）。
  * - 公司（除權息 / 法說會）→「## 本週公司事件」、列尾不帶 region/importance（title 已自述）。
  * 各區塊內升冪排序；空區塊省略；兩區塊皆空回 null。
  *

@@ -7,7 +7,8 @@ import { z } from 'zod'
  * 事件原封存進 briefJson，讀者面再拿它渲染「接下來會來的」時間軸帶。三端共用同一個形狀，
  * 任何一端加欄位而另外兩端沒跟上時 tsc 會擋。
  *
- * `category` 未指定或 `macro` 視為總經事件；`ex-dividend` / `investor-conference` 是公司事件。
+ * `category` 未指定或 `macro` 視為總經事件；`ex-dividend` / `investor-conference` 是公司事件；
+ * `derivatives-expiry`（台指期結算、美股四巫日）由 pipeline 依日期規則與休市表算出，跟總經事件排在同一區塊。
  * 這個預設值語意是歷史遺留（種子檔早於公司事件），不要反過來把 macro 設成必填。
  */
 export const CalendarEventSchema = z.object({
@@ -16,13 +17,13 @@ export const CalendarEventSchema = z.object({
   title: z.string().min(1),
   region: z.enum(['US', 'TW', 'GLOBAL']),
   importance: z.enum(['high', 'medium', 'low']),
-  category: z.enum(['macro', 'ex-dividend', 'investor-conference']).optional(),
+  category: z.enum(['macro', 'ex-dividend', 'investor-conference', 'derivatives-expiry']).optional(),
   companyCode: z.string().optional(),
 })
 
 export type CalendarEvent = z.infer<typeof CalendarEventSchema>
 
-/** category 未指定或 'macro' 視為總經事件；其餘為公司事件。 */
+/** 只有 ex-dividend／investor-conference 是公司事件；其餘（未指定、macro、derivatives-expiry）排在總經區塊。 */
 export function isCompanyCalendarEvent(e: CalendarEvent): boolean {
   return e.category === 'ex-dividend' || e.category === 'investor-conference'
 }
