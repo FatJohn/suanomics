@@ -4,7 +4,9 @@ import {
   classifyPublicationDay,
   daysUntilHolidayCoverageExhausted,
   HOLIDAY_COVERAGE_END,
+  HOLIDAY_COVERAGE_START,
   HOLIDAY_FRESHNESS_MIN_DAYS,
+  isNyseTradingDay,
   isTwHolidayProvisionalReviewOverdue,
   isTwseTradingDay,
   TW_HOLIDAYS_PROVISIONAL_UNTIL,
@@ -92,6 +94,32 @@ describe('isTwseTradingDay', () => {
   // 補班日是行政機關上班、股市不開：只看「是不是上班日」會把它判成開市。
   it('週六補班日不開市', () => {
     expect(isTwseTradingDay('2025-02-08')).toBe(false)
+  })
+})
+
+describe('isNyseTradingDay', () => {
+  it('一般平日開市', () => {
+    expect(isNyseTradingDay('2026-11-09')).toBe(true) // 週一
+  })
+  it('週末休市', () => {
+    expect(isNyseTradingDay('2026-11-07')).toBe(false) // 週六
+    expect(isNyseTradingDay('2026-11-08')).toBe(false) // 週日
+  })
+  it('休市表裡的平日休市', () => {
+    expect(isNyseTradingDay('2026-11-26')).toBe(false) // Thanksgiving，週四
+  })
+  // 台美休市表各自獨立：台股休市的平日美股照常開。
+  it('台股休市日不影響美股', () => {
+    expect(isNyseTradingDay('2026-09-25')).toBe(true) // 台股中秋節
+  })
+})
+
+describe('休市表涵蓋起點 HOLIDAY_COVERAGE_START', () => {
+  it('台美兩表的每一筆都落在涵蓋範圍內', () => {
+    for (const d of [...TW_MARKET_HOLIDAYS, ...US_MARKET_HOLIDAYS]) {
+      expect(d >= HOLIDAY_COVERAGE_START).toBe(true)
+      expect(d <= HOLIDAY_COVERAGE_END).toBe(true)
+    }
   })
 })
 

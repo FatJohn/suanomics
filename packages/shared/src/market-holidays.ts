@@ -18,7 +18,7 @@ export interface PublicationDay {
 //     辦公日曆表的平日放假日（查證日 2026-11-11）。TWSE 公告後要逐筆核對，春節前「市場無交易，
 //     僅辦理結算交割」的日子不在辦公日曆表上，可能要補。
 //   美股：NYSE hours-calendars（full-day holidays；2026 查證日 2026-07-20、2027 查證日 2026-11-11）
-// 涵蓋窗口：2026-07-21 起至 HOLIDAY_COVERAGE_END；台美兩表對稱截於此窗。
+// 涵蓋窗口：HOLIDAY_COVERAGE_START 至 HOLIDAY_COVERAGE_END；台美兩表對稱截於此窗。
 export const TW_MARKET_HOLIDAYS: readonly string[] = [
   '2026-09-25', // 中秋節
   '2026-09-28', // 孔子誕辰紀念日／教師節
@@ -62,6 +62,9 @@ export const US_MARKET_HOLIDAYS: readonly string[] = [
   '2027-12-24', // Christmas Day（12-25 適逢週六，週五補假）
 ]
 
+// 窗口起點之前的休市日沒有收錄，這之前的日期判不出是否休市。
+export const HOLIDAY_COVERAGE_START = '2026-07-21'
+
 // 2027 台股表是暫定版（見上方來源說明）；time-bomb 會在 2027-12 初逼下一次年度更新（屬預期）。
 export const HOLIDAY_COVERAGE_END = '2027-12-31'
 
@@ -104,6 +107,12 @@ function isoDateMinusDays(date: string, days: number): string {
 export function isTwseTradingDay(date: string): boolean {
   const dow = new Date(`${date}T00:00:00Z`).getUTCDay()
   return dow !== 0 && dow !== 6 && !TW_HOLIDAY_SET.has(date)
+}
+
+// 只看週末與休市表：半日交易算開市（同休市表的收錄原則）。
+export function isNyseTradingDay(date: string): boolean {
+  const dow = new Date(`${date}T00:00:00Z`).getUTCDay()
+  return dow !== 0 && dow !== 6 && !US_HOLIDAY_SET.has(date)
 }
 
 export function classifyPublicationDay(date: string): PublicationDay {
