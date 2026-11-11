@@ -17,6 +17,5 @@ export * from './podcast.js'
 export * from './report-date.js'
 export * from './series-direction.js'
 export * from './source-silence.js'
-export * from './startup-config.js'
 
 export const SITE_NAME = '掐指連總經'
