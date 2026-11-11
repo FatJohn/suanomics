@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clampString, splitSentences, truncateAtSentence, truncateString } from './_truncate.js'
+import { clampString, truncateAtSentence, truncateString } from './_truncate.js'
 
 describe('clampString', () => {
   it('returns input unchanged when within max', () => {
@@ -88,20 +88,5 @@ describe('truncateAtSentence', () => {
     expect(out.length).toBeGreaterThanOrEqual(250)
     expect(out.endsWith('。')).toBe(true)
     expect(out).not.toContain('…')
-  })
-})
-
-describe('splitSentences', () => {
-  it('splits on Chinese enders keeping the delimiter attached', () => {
-    expect(splitSentences('甲。乙！丙？')).toEqual(['甲。', '乙！', '丙？'])
-  })
-  it('keeps trailing text without an ender as a final chunk', () => {
-    expect(splitSentences('甲。乙')).toEqual(['甲。', '乙'])
-  })
-  it('treats newline as a boundary', () => {
-    expect(splitSentences('甲\n乙')).toEqual(['甲\n', '乙'])
-  })
-  it('returns empty array for empty string', () => {
-    expect(splitSentences('')).toEqual([])
   })
 })

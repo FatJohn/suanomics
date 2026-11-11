@@ -1,6 +1,5 @@
 import type { MarketBrief, MarketBriefCitation } from '@suanomics/shared'
-import { checkCompliance, MarketBriefCitationSchema, MarketBriefSchema } from '@suanomics/shared'
-import { stripViolatingProse } from '../agents/_compliance-strip.js'
+import { checkCompliance, MarketBriefCitationSchema, MarketBriefSchema, stripViolatingProse } from '@suanomics/shared'
 import { clampString, truncateAtSentence } from '../agents/_truncate.js'
 import { rewriteText } from '../agents/narrative-shared.js'
 

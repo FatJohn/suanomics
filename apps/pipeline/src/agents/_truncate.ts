@@ -43,20 +43,3 @@ export function truncateAtSentence(s: unknown, max: number, minLen = 0): string 
   }
   return s.slice(0, max)
 }
-
-// 讀者面 prose 句界切分：以 。！？!? 與換行為界、分隔符留在該句尾。
-// 供 compliance graceful-strip 用（移除單一違規句、保留其餘）。
-export function splitSentences(s: string): string[] {
-  const out: string[] = []
-  let cur = ''
-  for (const ch of s) {
-    cur += ch
-    if (ch === '。' || ch === '！' || ch === '？' || ch === '!' || ch === '?' || ch === '\n') {
-      out.push(cur)
-      cur = ''
-    }
-  }
-  if (cur.length > 0)
-    out.push(cur)
-  return out
-}
