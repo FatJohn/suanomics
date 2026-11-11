@@ -125,3 +125,56 @@ describe('美股 2027 休市表', () => {
     expect(classifyPublicationDay('2027-07-06')).toEqual({ kind: 'weekday-brief' })
   })
 })
+
+// 2027 台股暫定表：TWSE 尚未公告 116 年開休市日期，逐筆對照人事行政總處「中華民國一百一十六年
+// 政府行政機關辦公日曆表」（https://www.dgpa.gov.tw/information?uid=83&pid=13114，查證日 2026-11-11）
+// 的平日放假日。TWSE 公告後要逐筆核對，尤其春節前「僅辦理結算交割」的日子。
+describe('台股 2027 休市表（暫定）', () => {
+  it('與 116 年辦公日曆表的平日放假日逐筆相符', () => {
+    expect(TW_MARKET_HOLIDAYS.filter(d => d.startsWith('2027-'))).toEqual([
+      '2027-01-01',
+      '2027-02-04',
+      '2027-02-05',
+      '2027-02-08',
+      '2027-02-09',
+      '2027-02-10',
+      '2027-03-01',
+      '2027-04-05',
+      '2027-04-06',
+      '2027-04-30',
+      '2027-06-09',
+      '2027-09-15',
+      '2027-09-28',
+      '2027-10-11',
+      '2027-10-25',
+      '2027-12-24',
+      '2027-12-31',
+    ])
+  })
+  it('涵蓋終點推到 2027-12-31', () => {
+    expect(HOLIDAY_COVERAGE_END).toBe('2027-12-31')
+  })
+  it('春節：除夕前一日起休市、開春首日開市', () => {
+    expect(isTwseTradingDay('2027-02-04')).toBe(false)
+    expect(isTwseTradingDay('2027-02-10')).toBe(false)
+    expect(isTwseTradingDay('2027-02-11')).toBe(true)
+    expect(previousTradingDay('2027-02-11', 'tw')).toBe('2027-02-03')
+  })
+  it('春節補假週一：台股休、前夜週日無美股 → skip', () => {
+    expect(classifyPublicationDay('2027-02-08')).toEqual({ kind: 'skip', reason: 'holiday-no-material' })
+  })
+  it('春節補假週二：台股休、前夜美股有開 → 照出', () => {
+    expect(classifyPublicationDay('2027-02-09')).toEqual({ kind: 'weekday-brief' })
+  })
+  it('端午節（06-09 週三）休市', () => {
+    expect(isTwseTradingDay('2027-06-09')).toBe(false)
+  })
+  it('年末：12-24 行憲紀念日補假、12-31 元旦補假皆休市，12-30 開市', () => {
+    expect(isTwseTradingDay('2027-12-24')).toBe(false)
+    expect(isTwseTradingDay('2027-12-30')).toBe(true)
+    expect(isTwseTradingDay('2027-12-31')).toBe(false)
+  })
+  it('年末 12-24 台股休、前夜 12-23 美股有開 → 照出', () => {
+    expect(classifyPublicationDay('2027-12-24')).toEqual({ kind: 'weekday-brief' })
+  })
+})
