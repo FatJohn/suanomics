@@ -9,7 +9,7 @@ import { DailyCostLimitExceededError, LlmAccountError } from './cost-gate.js'
 import { buildMarketCloseFraming } from './market-close-framing.js'
 import { callNarrativeWriter } from './narrative-writer.js'
 
-// 在 import 被測檔案之前 mock callAgent、避免真打 Gemini
+// 在 import 被測檔案之前 mock callAgent、避免真打 LLM
 vi.mock('./call-agent.js', async () => {
   const actual = await vi.importActual<typeof import('./call-agent.js')>('./call-agent.js')
   return {
@@ -153,7 +153,7 @@ describe('callNarrativeWriter', () => {
     expect(result.audit.failed).toBe(false)
   })
 
-  it('returns null on Gemini API error (after retry)', async () => {
+  it('returns null on LLM API error (after retry)', async () => {
     vi.mocked(callAgent)
       .mockRejectedValueOnce(new Error('500 Internal Server Error'))
       .mockRejectedValueOnce(new Error('500 Internal Server Error'))

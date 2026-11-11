@@ -34,7 +34,7 @@ export const MarketBriefCitationSchema = z.object({
   title: z.string().min(1),
   // 真 source URL（組裝層 assembleBriefCitations 由 analyst cascade citations http(s)-filter + 去重）
   url: z.string().url(),
-  // quote 放寬到 600（Cascade depth analysis）、Gemini 對深度分析自然引用 300-500 字段落、
+  // quote 放寬到 600（Cascade depth analysis）、v0 的 Gemini 對深度分析自然引用 300-500 字段落、
   // 200 常切句中、可信度降；UI 用 line-clamp 處理顯示。
   quote: z.string().min(1).max(600),
 })

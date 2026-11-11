@@ -111,7 +111,7 @@ function emitSynthAudit(onCall: ((r: LlmCallRecord) => void) | undefined, synthF
 }
 
 // prod 防禦：truncate 所有 SynthesizerOutputSchema 有 max length 的字串欄位、
-// slice array 到 schema max。Gemini 偶會超出 schema 約束、與其讓 z.string().max() 失敗
+// slice array 到 schema max。LLM 偶會超出 schema 約束（v0 在 Gemini 上觀察到）、與其讓 z.string().max() 失敗
 // throw 整個 job、不如截斷取前 N 字、保留 prose 連續性。
 // reasoning / rationale 上限同步拉到 600。
 // 解耦後：不再 force disclaimer 常數、也不 clamp citations（那是組裝層的職責）。

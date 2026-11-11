@@ -159,7 +159,7 @@ describe('runViewpointsDebate', () => {
   })
 
   it('degrades to null when an LLM call throws', async () => {
-    llm.mockRejectedValue(new Error('gemini 500') as never)
+    llm.mockRejectedValue(new Error('llm 500') as never)
     expect(await runViewpointsDebate(PARAMS)).toBeNull()
   })
 

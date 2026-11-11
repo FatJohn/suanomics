@@ -129,7 +129,7 @@ export const EXTERNAL_SOURCES_SEED: readonly ExternalSourceSeed[] = [
     dateSelector: 'span.date',
     // 文章頁（news_view.jsp）是普通 HTML，正文整塊在 div.maincontent 裡。2026-08-23
     // 實測經 extractBody 正規化後 677 字元、含標題/日期/內文/聯絡單位，不含頁首選單
-    // 與頁尾（釘子在 apps/server/src/corpus/sources/fsc-selector.test.ts，fixture 是
+    // 與頁尾（釘子在 v0 `main` 的 apps/server/src/corpus/sources/fsc-selector.test.ts，fixture 是
     // 整頁原樣）。★ 677 是走實際程式碼路徑量的；把換行也壓平會得到 672——量法不同
     // 就是不同的數字，引用時別混用。
     bodySelector: 'div.maincontent',

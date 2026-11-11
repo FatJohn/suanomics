@@ -64,7 +64,7 @@ export interface NarrativeNormalizeResult {
   claimIdsTruncated: number
 }
 
-// pre-parse normalize、handle Gemini schema overshoot before Zod validation
+// pre-parse normalize、handle LLM schema overshoot before Zod validation
 // - truncate string：intro/body/outro 走句界截斷（truncateAtSentence）、heading 仍 clampString
 // - filter section.citationUrls 移除 unknown、空集 fallback first valid
 // - filter relatedNewsIds 到已知 newsId

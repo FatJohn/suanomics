@@ -137,7 +137,7 @@ export async function getStratifiedCandidates(briefDate: string, sinceDays = 2, 
 }
 
 // 相關性感知選稿：撈 sanity cap 窗內全部候選（不在 DB 層按 recency 砍頂），
-// 砍頂改由 worker 的純函式 ranker 在「評分之後」做（見 apps/server/src/brief/news-relevance.ts）。
+// 砍頂改由 worker 的純函式 ranker 在「評分之後」做（見 v0 `main` 的 apps/server/src/brief/news-relevance.ts）。
 // 帶 publishedAt / fetchedAt / sourceSlug 供 ranker 算 recency 衰減與 source weight。
 export interface RelevanceCandidate {
   id: number

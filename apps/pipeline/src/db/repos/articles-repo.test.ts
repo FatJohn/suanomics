@@ -35,7 +35,7 @@ describe('articlesRepo', () => {
       contentSummary: 'sum',
       entities: [],
       topicTags: [],
-      llmModel: 'gemini',
+      llmModel: 'claude-haiku-5-5',
       llmCostUsd: 0.001,
     })
     expect(insertSpy).toHaveBeenCalledOnce()

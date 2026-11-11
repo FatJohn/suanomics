@@ -5,7 +5,7 @@ export function clampString(s: string, max: number): string {
   return s.length <= max ? s : `${s.slice(0, max - 1)}…`
 }
 
-// clampString 的 unknown-safe 包裝：Gemini schema-overflow 防禦、非 string 直接 pass-through。
+// clampString 的 unknown-safe 包裝：LLM schema-overflow 防禦、非 string 直接 pass-through。
 export function truncateString(s: unknown, max: number): string | unknown {
   return typeof s === 'string' ? clampString(s, max) : s
 }
