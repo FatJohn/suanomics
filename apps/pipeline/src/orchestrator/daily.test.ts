@@ -15,6 +15,7 @@ function fakeDeps(overrides: Partial<DailyDeps> = {}): DailyDeps & { events: Dai
     log: e => events.push(e),
     isTradingDay: () => true,
     findExistingBrief: vi.fn(async () => null),
+    refreshNews: vi.fn(async () => 3),
     hasCompleteBriefOnOrAfter: vi.fn(async () => false),
     ingest: vi.fn(async () => []),
     loadMarket: vi.fn(async () => ({}) as never),
@@ -36,11 +37,33 @@ function fakeDeps(overrides: Partial<DailyDeps> = {}): DailyDeps & { events: Dai
 const over = () => new DailyCostLimitExceededError(1, 1.2)
 
 describe('runDaily', () => {
-  it('非交易日不做任何事並回 skipped', async () => {
+  // 只保留最新幾則的 feed 撐不到下一個交易日，休市期間的新聞要當天抓進候選池。
+  it('非交易日只抓新聞、不產報告，回 skipped', async () => {
     const deps = fakeDeps({ isTradingDay: () => false })
     expect(await runDaily({ date: DATE, force: false }, deps)).toEqual({ status: 'skipped', reason: 'non-trading-day', date: DATE })
+    expect(deps.refreshNews).toHaveBeenCalledTimes(1)
     expect(deps.findExistingBrief).not.toHaveBeenCalled()
     expect(deps.ingest).not.toHaveBeenCalled()
+    expect(deps.saveBrief).not.toHaveBeenCalled()
+    expect(deps.events).toContainEqual({ event: 'non_trading_refresh', date: DATE, inserted: 3, calls: 0, usd: 0 })
+  })
+
+  it('非交易日抓新聞的 LLM 花費記在該日期名下', async () => {
+    const deps = fakeDeps({ isTradingDay: () => false })
+    const setReportDate = vi.spyOn(deps.gate, 'setReportDate')
+    await runDaily({ date: DATE, force: false }, deps)
+    expect(setReportDate).toHaveBeenCalledWith(DATE)
+  })
+
+  it('非交易日抓新聞失敗時 run 失敗，不吞錯', async () => {
+    const deps = fakeDeps({ isTradingDay: () => false, refreshNews: vi.fn(async () => Promise.reject(new LlmAccountError('billing'))) })
+    await expect(runDaily({ date: DATE, force: false }, deps)).rejects.toBeInstanceOf(LlmAccountError)
+  })
+
+  it('交易日不另外抓新聞：ingest 已經包含這一步', async () => {
+    const deps = fakeDeps()
+    await runDaily({ date: DATE, force: false }, deps)
+    expect(deps.refreshNews).not.toHaveBeenCalled()
   })
 
   it('當日已有 brief 且未帶 force 時不跑', async () => {

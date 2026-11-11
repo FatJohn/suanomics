@@ -5,6 +5,7 @@ import { hasCompleteBriefOnOrAfter } from '../db/repos/brief-rerun.js'
 import { getDailyBriefByDate, saveDailyBrief, saveIncompleteDailyBrief } from '../db/repos/news-repo.js'
 import { applyEditorResult } from '../db/repos/storylines-repo.js'
 import { EMPTY_MARKET_CONTEXT, loadMarketContext } from '../ingest/market-data/context.js'
+import { runNewsRefresh } from '../ingest/news/refresh.js'
 import { runIngest } from '../ingest/run.js'
 import { selectNewsViaEditor } from './editor-stage.js'
 import { generateBrief } from './run-brief.js'
@@ -15,6 +16,7 @@ export function createDailyDeps(): DailyDeps {
     log: event => console.warn(JSON.stringify(event)),
     isTradingDay: isTwseTradingDay,
     findExistingBrief: getDailyBriefByDate,
+    refreshNews: async () => (await runNewsRefresh()).totalInserted,
     hasCompleteBriefOnOrAfter,
     ingest: async (date) => {
       // 交易日已由 orchestrator 判斷過，這裡帶 force 只是略過 ingest 自己的同一道檢查。
