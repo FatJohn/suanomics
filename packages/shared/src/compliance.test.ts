@@ -276,6 +276,7 @@ describe('containsTickerDirection', () => {
       '外資不顧投資人賣壓加碼台積電',
       '外資與散戶同步加碼台積電',
       '外資賣超，趁散戶恐慌加碼台積電',
+      '外資散戶同步加碼台積電',
     ]
     for (const text of allowed)
       expect(containsTickerDirection(text).hit, text).toBe(false)
