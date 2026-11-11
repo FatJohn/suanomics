@@ -1,5 +1,5 @@
 import type { CalendarEvent } from '@suanomics/shared'
-import { HOLIDAY_COVERAGE_END, isTwseTradingDay, US_MARKET_HOLIDAYS } from '@suanomics/shared'
+import { HOLIDAY_COVERAGE_END, HOLIDAY_COVERAGE_START, isNyseTradingDay, isTwseTradingDay } from '@suanomics/shared'
 
 // 衍生品到期日：照日期規則加休市表在執行時算出，不寫進種子檔——休市表已是單一真相，
 // 再存一份算好的日期會在休市表更新（例如 2027 台股暫定表核對後）時分岔。
@@ -21,12 +21,6 @@ export interface MarketRules {
   coverageEnd: string
 }
 
-// market-holidays.ts 的檔頭註明「涵蓋窗口：2026-07-21 起」，但沒有 export 成常數；
-// 那個檔歸休市表維護者，這裡照抄一份，休市表往前補時要一起改。
-const HOLIDAY_COVERAGE_START = '2026-07-21'
-
-const US_HOLIDAY_SET = new Set(US_MARKET_HOLIDAYS)
-
 // isTwseTradingDay 只看週末與 TW_MARKET_HOLIDAYS：春節前「僅辦理結算交割」的日子要列進休市表，
 // 台指期結算日才會跟著順延。2027 暫定表還沒列這些日子，但 2027-02 第三個週三 02-17 在連假之後，不受影響。
 const TW_RULES: MarketRules = {
@@ -36,10 +30,7 @@ const TW_RULES: MarketRules = {
 }
 
 const US_RULES: MarketRules = {
-  isTradingDay: (date) => {
-    const dow = new Date(`${date}T00:00:00Z`).getUTCDay()
-    return dow !== 0 && dow !== 6 && !US_HOLIDAY_SET.has(date)
-  },
+  isTradingDay: isNyseTradingDay,
   coverageStart: HOLIDAY_COVERAGE_START,
   coverageEnd: HOLIDAY_COVERAGE_END,
 }
