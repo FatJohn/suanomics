@@ -1,6 +1,6 @@
 import type { CascadeChain, EvidenceClaim, Viewpoints } from '@suanomics/shared'
 import type { LlmCallRecord } from './call-agent.js'
-import { checkCompliance, ViewpointsSchema } from '@suanomics/shared'
+import { checkCompliance, stripViolatingProse, ViewpointsSchema } from '@suanomics/shared'
 import {
   buildDebateMaterial,
   NET_READ_PROMPT,
@@ -8,7 +8,6 @@ import {
   SUPPORT_PROMPT,
 } from '../prompts/viewpoints-debate.prompt.js'
 import { VIEWPOINTS_DEBATE_USER_TEXT } from '../prompts/viewpoints-debate.user-content.js'
-import { stripViolatingProse } from './_compliance-strip.js'
 import { hasGarbledChars } from './_garbled-text.js'
 import { truncateAtSentence } from './_truncate.js'
 import { callAgent } from './call-agent.js'

@@ -1,4 +1,5 @@
 export * from './brief-health.js'
+export * from './compliance-strip.js'
 export * from './compliance.js'
 export * from './cross-market-signals.js'
 export * from './enrichable.js'
