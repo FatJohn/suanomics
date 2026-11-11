@@ -32,6 +32,10 @@ describe('redactBlockedMarkdown', () => {
     expect(redactBlockedMarkdown('**建議買進。**外資賣超，**匯率**持平。')).toBe('外資賣超，匯率持平。')
   })
 
+  it('夾在英數字中間的 _ 不是強調標記，刪句後保留', () => {
+    expect(redactBlockedMarkdown('建議買進。US_10Y 殖利率上升，_匯率_持平。')).toBe('US_10Y 殖利率上升，匯率持平。')
+  })
+
   it('沒有刪句時保留強調標記', () => {
     expect(redactBlockedMarkdown('**外資**賣超。')).toBe('**外資**賣超。')
   })
