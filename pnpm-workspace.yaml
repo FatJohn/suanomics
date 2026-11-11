@@ -9,6 +9,13 @@ overrides:
   # drizzle-kit、tsx、vite 自己的 esbuild 不受影響。這個套件已 deprecated 不會再升，
   # 等 drizzle-kit 不再依賴 @esbuild-kit/esm-loader 後移除。
   '@esbuild-kit/core-utils>esbuild': ^0.25.0
+  # alert #14：eslint 10.14.0、@eslint/config-array 0.23.5（皆 latest）與
+  # @typescript-eslint/typescript-estree 8.72.1（latest 8.72.2 也一樣）還鎖 minimatch ^10，
+  # 10.x 沒有修正版。這三個只用 Minimatch#match、.pattern 與 minimatch()，11 沒有移除；
+  # eslint-plugin-import-x 4.18.1 起自己就接受 ^11.0.1。各條在上層放寬到 ^11 後移除。
+  '@eslint/config-array>minimatch': ^11.0.1
+  '@typescript-eslint/typescript-estree>minimatch': ^11.0.1
+  eslint>minimatch: ^11.0.1
   # alert #5：micromark-extension-math 3.1.0（latest）鎖 katex ^0.16.0。釘精確版本是因為
   # ^0.18.2 會解析到 0.18.11，那版已被標 deprecated（誤發 breaking changes）。
   micromark-extension-math>katex: 0.18.10
