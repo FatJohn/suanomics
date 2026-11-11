@@ -224,6 +224,41 @@ describe('containsTickerDirection', () => {
       expect(containsTickerDirection(text).hit, text).toBe(false)
   })
 
+  it('shouldNotAttributeVerbWhenLaterClauseAddressesReader', () => {
+    // 逗號後改成對讀者的語氣（情態詞）或換成讀者主詞：方向詞不再由前面的 actor 背書（#77）
+    const blocked = [
+      '外資賣超，可加碼台積電',
+      '外資賣超，散戶加碼台積電',
+      '外資賣超，宜加碼台積電',
+      '外資賣超，應減碼台積電',
+      '外資賣超，投資人可加碼台積電',
+      '外資賣超，投資人加碼台積電',
+      '外資賣超後，不妨加碼台積電',
+      '外資賣超，台積電可加碼',
+      '外資減碼聯發科；可加碼台積電',
+      // 讀者主詞比 actor 更靠近方向詞，方向詞歸給讀者
+      '外資與散戶同步加碼台積電',
+    ]
+    for (const text of blocked)
+      expect(containsTickerDirection(text).hit, text).toBe(true)
+  })
+
+  it('shouldKeepAttributionWhenLaterClauseKeepsActorAsSubject', () => {
+    // 正向語料：逗號後省略主詞、沿用前面的 actor，或情態詞不在逗號後的子句（#77）
+    const allowed = [
+      '外資昨日買超，持續加碼台積電',
+      '外資看好，續加碼台積電',
+      '外資回補，加碼台積電',
+      '外資：加碼台積電',
+      '外資加碼台積電，減碼聯發科',
+      '外資可能加碼台積電',
+      '外資認為應加碼台積電',
+      '外資連續加碼台積電',
+    ]
+    for (const text of allowed)
+      expect(containsTickerDirection(text).hit, text).toBe(false)
+  })
+
   it('shouldStillHitUnattributedDirectionOnNamedStock', () => {
     // 自家未歸因 reader-facing：仍擋
     expect(containsTickerDirection('台積電可加碼').hit).toBe(true)

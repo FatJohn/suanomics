@@ -250,11 +250,28 @@ function buildSnippet(text: string, a: Position, b: Position): string {
 // 句界與 compliance-strip 的 splitSentences 一致；分號不算句末，並列子句常省略主詞
 const SENTENCE_END = /[。！？!?\n]/
 
+// actor 與方向詞之間換了讀者當主詞，或逗號後的子句帶情態詞，方向詞就不是 actor 的動作（#77）：
+// 「外資賣超，散戶加碼台積電」「外資賣超，可加碼台積電」後半是對讀者的指示。
+// 情態詞只看最後一個子句：「外資可能加碼」「外資認為應加碼」是轉述 actor 的動向或看法。
+const READER_SUBJECTS = ['散戶', '投資人', '投資者', '讀者', '你', '您']
+const CLAUSE_BREAK = /[，,、；;：:]/
+const MODAL = /[可宜應該須需]|不妨/
+
+function addressesReader(between: string): boolean {
+  if (READER_SUBJECTS.some(s => between.includes(s)))
+    return true
+  const clauses = between.split(CLAUSE_BREAK)
+  return clauses.length > 1 && MODAL.test(clauses.at(-1) ?? '')
+}
+
 // 方向詞前方 ≤ATTRIBUTION_WINDOW 字內、同一句裡出現任一 actor → 視為第三方歸因（事實放行）
 function isAttributed(text: string, verb: Position, actors: Position[]): boolean {
   return actors.some((a) => {
     const gap = verb.start - a.end
-    return gap >= 0 && gap <= ATTRIBUTION_WINDOW && !SENTENCE_END.test(text.slice(a.end, verb.start))
+    if (gap < 0 || gap > ATTRIBUTION_WINDOW)
+      return false
+    const between = text.slice(a.end, verb.start)
+    return !SENTENCE_END.test(between) && !addressesReader(between)
   })
 }
 
