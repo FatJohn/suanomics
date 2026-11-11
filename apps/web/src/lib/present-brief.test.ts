@@ -48,6 +48,14 @@ describe('presentBrief', () => {
   })
 })
 
+describe('presentBrief 敘事 markdown', () => {
+  it('刪句後敘事不殘留不成對的強調標記', () => {
+    const narrative = { ...NARRATIVE, intro: '**建議買進。**開場。', sections: [{ ...NARRATIVE.sections[0] as NonNullable<typeof NARRATIVE.sections[0]>, body: '**建議買進。**本文。' }], outro: '**建議買進。**結尾。' }
+    const view = presentBrief('2095-01-01', { ...BASE, narrative }, [])
+    expect([view.narrative?.intro, view.narrative?.sections[0]?.body, view.narrative?.outro]).toEqual(['開場。', '本文。', '結尾。'])
+  })
+})
+
 describe('presentBrief 過濾後的空內容', () => {
   it('本文整段被攔截的段落不輸出', () => {
     const narrative = { ...NARRATIVE, sections: [{ ...NARRATIVE.sections[0] as NonNullable<typeof NARRATIVE.sections[0]>, body: '建議買進。' }] }

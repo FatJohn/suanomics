@@ -1,6 +1,6 @@
 import type { MarketBrief } from '@suanomics/shared'
 import { MarketBriefSchema } from '@suanomics/shared'
-import { redactBlockedSentences } from './compliance'
+import { redactBlockedMarkdown, redactBlockedSentences } from './compliance'
 
 export interface CitationLink { title: string, url: string }
 export interface NewsLink { id: number, title: string }
@@ -55,9 +55,9 @@ function presentNarrative(brief: MarketBrief, citations: CitationLink[]): BriefV
     return null
   const byUrl = new Map(citations.map(c => [c.url, c]))
   return {
-    intro: redactBlockedSentences(brief.narrative.intro),
+    intro: redactBlockedMarkdown(brief.narrative.intro),
     sections: brief.narrative.sections.flatMap((s) => {
-      const body = redactBlockedSentences(s.body)
+      const body = redactBlockedMarkdown(s.body)
       if (!body)
         return []
       return [{
@@ -70,7 +70,7 @@ function presentNarrative(brief: MarketBrief, citations: CitationLink[]): BriefV
         }),
       }]
     }),
-    outro: redactBlockedSentences(brief.narrative.outro),
+    outro: redactBlockedMarkdown(brief.narrative.outro),
   }
 }
 

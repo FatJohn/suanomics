@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { redactBlockedSentences } from './compliance'
+import { redactBlockedMarkdown, redactBlockedSentences } from './compliance'
 
 describe('redactBlockedSentences', () => {
   it('只拿掉命中禁用語的句子', () => {
@@ -24,5 +24,15 @@ describe('redactBlockedSentences', () => {
 
   it('整段通過時原樣保留，不因切句拆開主詞與動詞而誤刪', () => {
     expect(redactBlockedSentences('外資。加碼台積電。')).toBe('外資。加碼台積電。')
+  })
+})
+
+describe('redactBlockedMarkdown', () => {
+  it('刪句拆散強調標記時拿掉殘留的標記，不留字面 ** 或誤開粗體', () => {
+    expect(redactBlockedMarkdown('**建議買進。**外資賣超，**匯率**持平。')).toBe('外資賣超，匯率持平。')
+  })
+
+  it('沒有刪句時保留強調標記', () => {
+    expect(redactBlockedMarkdown('**外資**賣超。')).toBe('**外資**賣超。')
   })
 })
