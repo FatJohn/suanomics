@@ -246,11 +246,14 @@ function buildSnippet(text: string, a: Position, b: Position): string {
   return text.slice(start, end)
 }
 
-// 方向詞前方 ≤ATTRIBUTION_WINDOW 字內出現任一 actor → 視為第三方歸因（事實放行）
-function isAttributed(verb: Position, actors: Position[]): boolean {
+// actor 與方向詞之間隔著句末就不算歸因：「外資。加碼台積電。」的後句單獨讀就是推薦語氣（#73）
+const SENTENCE_END = /[。！？；!?;\n]/
+
+// 方向詞前方 ≤ATTRIBUTION_WINDOW 字內、同一句裡出現任一 actor → 視為第三方歸因（事實放行）
+function isAttributed(text: string, verb: Position, actors: Position[]): boolean {
   return actors.some((a) => {
     const gap = verb.start - a.end
-    return gap >= 0 && gap <= ATTRIBUTION_WINDOW
+    return gap >= 0 && gap <= ATTRIBUTION_WINDOW && !SENTENCE_END.test(text.slice(a.end, verb.start))
   })
 }
 
@@ -258,7 +261,7 @@ export function containsTickerDirection(text: string): TickerDirectionMatch {
   const tickers = findTickers(text)
   const companies = findTerms(text, TW_STOCK_NAMES)
   const actors = findTerms(text, ACTOR_SUBJECTS)
-  const verbs = findTerms(text, DIRECTION_VERBS).filter(v => !isAttributed(v, actors))
+  const verbs = findTerms(text, DIRECTION_VERBS).filter(v => !isAttributed(text, v, actors))
   if (verbs.length === 0)
     return { hit: false }
 

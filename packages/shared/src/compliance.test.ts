@@ -201,6 +201,26 @@ describe('containsTickerDirection', () => {
     expect(containsTickerDirection('投信加碼聯發科').hit).toBe(false)
   })
 
+  it('shouldNotAttributeVerbToActorAcrossSentenceEnd', () => {
+    // 前一句的 actor 不替下一句的方向詞背書：「加碼台積電」單獨成句就是推薦語氣（#73）
+    for (const end of ['。', '！', '？', '；', '!', '?', ';', '\n'])
+      expect(containsTickerDirection(`外資${end}加碼台積電`).hit, JSON.stringify(end)).toBe(true)
+  })
+
+  it('shouldKeepSameSentenceAttribution', () => {
+    // 正向語料：actor 與方向詞同句（逗號、頓號、空白不是句末）照常放行
+    const allowed = [
+      '外資加碼台積電',
+      '外資今日加碼台積電',
+      '外資，加碼台積電',
+      '外資、投信同步加碼台積電',
+      '外資 加碼 2330',
+      '外資賣超。投信加碼台積電。',
+    ]
+    for (const text of allowed)
+      expect(containsTickerDirection(text).hit, text).toBe(false)
+  })
+
   it('shouldStillHitUnattributedDirectionOnNamedStock', () => {
     // 自家未歸因 reader-facing：仍擋
     expect(containsTickerDirection('台積電可加碼').hit).toBe(true)
@@ -264,6 +284,10 @@ describe('checkCompliance', () => {
   it('allows factual macro reporting that previously false-positived (6/27 regression)', () => {
     const snippet = '度最為劇烈，成為外資減碼的主要重災區。\n台股週跌1893點　上市公司市值縮水'
     expect(checkCompliance(snippet)).toBeNull()
+  })
+
+  it('blocks a direction verb whose only actor sits in the previous sentence (#73)', () => {
+    expect(checkCompliance('外資。加碼台積電。')?.violation).toBe('ticker-direction')
   })
 
   it('still blocks reader-directed recommendation routed through 散戶 (not a third-party actor)', () => {
