@@ -247,7 +247,8 @@ function buildSnippet(text: string, a: Position, b: Position): string {
 }
 
 // actor 與方向詞之間隔著句末就不算歸因：「外資。加碼台積電。」的後句單獨讀就是推薦語氣（#73）
-const SENTENCE_END = /[。！？；!?;\n]/
+// 句界與 compliance-strip 的 splitSentences 一致；分號不算句末，並列子句常省略主詞
+const SENTENCE_END = /[。！？!?\n]/
 
 // 方向詞前方 ≤ATTRIBUTION_WINDOW 字內、同一句裡出現任一 actor → 視為第三方歸因（事實放行）
 function isAttributed(text: string, verb: Position, actors: Position[]): boolean {

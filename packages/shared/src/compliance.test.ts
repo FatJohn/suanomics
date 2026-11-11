@@ -203,7 +203,7 @@ describe('containsTickerDirection', () => {
 
   it('shouldNotAttributeVerbToActorAcrossSentenceEnd', () => {
     // 前一句的 actor 不替下一句的方向詞背書：「加碼台積電」單獨成句就是推薦語氣（#73）
-    for (const end of ['。', '！', '？', '；', '!', '?', ';', '\n'])
+    for (const end of ['。', '！', '？', '!', '?', '\n'])
       expect(containsTickerDirection(`外資${end}加碼台積電`).hit, JSON.stringify(end)).toBe(true)
   })
 
@@ -216,6 +216,9 @@ describe('containsTickerDirection', () => {
       '外資、投信同步加碼台積電',
       '外資 加碼 2330',
       '外資賣超。投信加碼台積電。',
+      // 分號隔開的並列子句常省略主詞，仍是同一句（與 splitSentences 的句界一致）
+      '外資減碼聯發科；加碼台積電。',
+      '外資減碼聯發科;加碼台積電。',
     ]
     for (const text of allowed)
       expect(containsTickerDirection(text).hit, text).toBe(false)
