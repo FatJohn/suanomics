@@ -22,8 +22,12 @@ describe('redactBlockedSentences', () => {
     expect(redactBlockedSentences('台積電法說會在週四。市場加碼')).toBe('台積電法說會在週四。')
   })
 
-  it('整段通過時原樣保留，不因切句拆開主詞與動詞而誤刪', () => {
-    expect(redactBlockedSentences('外資。加碼台積電。')).toBe('外資。加碼台積電。')
+  it('整段通過時原樣保留', () => {
+    expect(redactBlockedSentences('外資賣超。投信加碼台積電。')).toBe('外資賣超。投信加碼台積電。')
+  })
+
+  it('前一句的主詞不替後句的方向詞背書，刪掉後句（#73）', () => {
+    expect(redactBlockedSentences('外資。加碼台積電。')).toBe('外資。')
   })
 })
 
