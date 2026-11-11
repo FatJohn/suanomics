@@ -64,6 +64,8 @@ describe('buildMarketClosureBlock', () => {
     const block = buildMarketClosureBlock('2026-09-29') ?? ''
     expect(block).toMatch(/「昨日收盤」[^\n]*9\/24（四）/)
     expect(block).toContain('「前夜美股」')
+    // 週一寫「昨日收盤」卻指上週五會誤導讀者：今天改寫出日期，不沿用這兩個相對標籤。
+    expect(block).toContain('今天不用這兩個標籤')
   })
 
   it('帶入 shared 的 compliance 禁用語清單', () => {
