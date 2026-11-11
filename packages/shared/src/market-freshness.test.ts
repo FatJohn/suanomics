@@ -81,7 +81,7 @@ describe('expectedAsOf：monthly（不需假日表、涵蓋窗外仍可算）', 
     expect(expectedAsOf(MONTHLY_PAYROLLS, '2026-08-07')).toBe('2026-07-01')
   })
   it('涵蓋窗外照算（月頻不看交易日曆）', () => {
-    expect(expectedAsOf(MONTHLY_CPI, '2027-03-01')).toBe('2027-01-01')
+    expect(expectedAsOf(MONTHLY_CPI, '2028-03-01')).toBe('2028-01-01')
   })
   it('跨年往回找參考月', () => {
     expect(expectedAsOf(MONTHLY_CPI, '2027-01-10')).toBe('2026-11-01')
