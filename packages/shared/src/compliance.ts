@@ -250,11 +250,33 @@ function buildSnippet(text: string, a: Position, b: Position): string {
 // 句界與 compliance-strip 的 splitSentences 一致；分號不算句末，並列子句常省略主詞
 const SENTENCE_END = /[。！？!?\n]/
 
+// actor 之後的子句以讀者開頭，或最後一個子句帶情態詞，方向詞就不是 actor 的動作（#77）：
+// 「外資賣超，散戶加碼台積電」「外資賣超，可加碼台積電」後半是對讀者的指示。
+// 讀者詞只看分隔符之後的子句開頭：「外資趁散戶恐慌加碼」「外資散戶同步加碼」的散戶是對手方或並列主體。
+// ACTOR_SUBJECTS 的註解說不收的讀者詞就是這一組，增減時兩處一起看。
+// 情態詞只看分隔符（CLAUSE_BREAK）之後的最後一個子句：「外資可能加碼」「外資認為應加碼」是轉述 actor 的動向或看法。
+const READER_SUBJECTS = ['散戶', '投資人', '投資者', '讀者', '大家', '你', '您']
+const CLAUSE_BREAK = /[，,、；;：:]/
+const MODAL = /[可宜應該須需]|不妨/
+// 含情態字但不是情態的詞（推測語氣、名詞、股名），比對情態前先拿掉
+const NOT_MODAL = /可能|可望|可見|可成|需求|應會|該股/g
+
+function addressesReader(between: string): boolean {
+  const [, ...later] = between.split(CLAUSE_BREAK)
+  if (later.some(clause => READER_SUBJECTS.some(s => clause.startsWith(s))))
+    return true
+  const last = later.at(-1)
+  return last !== undefined && MODAL.test(last.replace(NOT_MODAL, ''))
+}
+
 // 方向詞前方 ≤ATTRIBUTION_WINDOW 字內、同一句裡出現任一 actor → 視為第三方歸因（事實放行）
 function isAttributed(text: string, verb: Position, actors: Position[]): boolean {
   return actors.some((a) => {
     const gap = verb.start - a.end
-    return gap >= 0 && gap <= ATTRIBUTION_WINDOW && !SENTENCE_END.test(text.slice(a.end, verb.start))
+    if (gap < 0 || gap > ATTRIBUTION_WINDOW)
+      return false
+    const between = text.slice(a.end, verb.start)
+    return !SENTENCE_END.test(between) && !addressesReader(between)
   })
 }
 
