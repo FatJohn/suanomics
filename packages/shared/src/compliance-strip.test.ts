@@ -22,4 +22,9 @@ describe('stripViolatingProseBy', () => {
     const isViolating = (t: string): boolean => checkCompliance(t.replace(/\*/g, '')) !== null
     expect(stripViolatingProseBy('建議**買**進。油價上漲。', isViolating)).toBe('油價上漲。')
   })
+
+  it('跨句鄰近命中時從尾端丟句，直到整段通過', () => {
+    const isViolating = (t: string): boolean => checkCompliance(t) !== null
+    expect(stripViolatingProseBy('台積電法說會在週四。市場加碼', isViolating)).toBe('台積電法說會在週四。')
+  })
 })
