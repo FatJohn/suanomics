@@ -182,4 +182,27 @@ describe('generateBrief', () => {
     expect(p.progress.analystOutputs).toHaveLength(3)
     expect(p.progress.analystOutputs?.[0]?.cascadeChains).toEqual([t2])
   })
+
+  describe('休市後第一個交易日的統整指示傳給 narrative-writer', () => {
+    function stubFinalize(): void {
+      vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+      vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+      vi.mocked(callNarrativeWriter).mockResolvedValue({ narrative: null } as never)
+      vi.mocked(tagChainForceGroups).mockResolvedValue([])
+    }
+
+    it('週一（09-14）帶上統整週末的 closureBlock', async () => {
+      stubFinalize()
+      const { p } = params()
+      await generateBrief({ ...p, date: '2026-09-14' })
+      expect(vi.mocked(callNarrativeWriter).mock.calls[0]?.[0].closureBlock).toContain('9/12（六）至 9/13（日）')
+    })
+
+    it('一般交易日（09-15）不帶 closureBlock', async () => {
+      stubFinalize()
+      const { p } = params()
+      await generateBrief({ ...p, date: '2026-09-15' })
+      expect(vi.mocked(callNarrativeWriter).mock.calls[0]?.[0].closureBlock ?? null).toBeNull()
+    })
+  })
 })

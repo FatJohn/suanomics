@@ -17,6 +17,7 @@ export type DailyLogEvent
     | { event: 'storylines_failed', message: string }
     | { event: 'storylines_new_skipped', date: string, count: number }
     | { event: 'run_end', date: string, status: DailyResult['status'], calls: number, usd: number }
+    | { event: 'non_trading_refresh', date: string, inserted: number, calls: number, usd: number }
 
 /** 花費閘觸發時寫進 `daily_briefs.progress` 的內容，讓已花錢的產出不會遺失。 */
 export interface DailyProgress {
@@ -41,6 +42,10 @@ export interface DailyDeps {
   log: (event: DailyLogEvent) => void
   isTradingDay: (date: string) => boolean
   findExistingBrief: (date: string) => Promise<{ status: string } | null>
+  // 只抓新聞進候選池，回傳新增則數。
+  refreshNews: () => Promise<number>
+  // 台北今天的日期；補跑舊日期時用來判斷 feed 是否還代表那一天。
+  today: () => string
   hasCompleteBriefOnOrAfter: (date: string) => Promise<boolean>
   ingest: (date: string) => Promise<RelevanceCandidate[]>
   loadMarket: (date: string) => Promise<MarketContext>
@@ -112,8 +117,16 @@ async function runStages(date: string, isRerun: boolean, deps: DailyDeps, progre
 
 export async function runDaily(options: { date: string, force: boolean }, deps: DailyDeps): Promise<DailyResult> {
   const { date, force } = options
-  if (!deps.isTradingDay(date))
+  if (!deps.isTradingDay(date)) {
+    // 補跑舊日期時抓到的是今天的 feed，花費會記到那個舊日期名下，所以只在當天抓。
+    if (date !== deps.today())
+      return { status: 'skipped', reason: 'non-trading-day', date }
+    // 有些 feed 只留一定則數，撐不到下一個交易日，休市期間的新聞當天就要進候選池。
+    deps.gate.setReportDate(date)
+    const inserted = await deps.refreshNews()
+    deps.log({ event: 'non_trading_refresh', date, inserted, calls: deps.gate.callCount, usd: roundUsd(deps.gate.totalUsd) })
     return { status: 'skipped', reason: 'non-trading-day', date }
+  }
   // incomplete 也算已存在：備援排程再跑一次會讓當日花費上限實質翻倍，重跑要明確帶 --force。
   if (!force && await deps.findExistingBrief(date))
     return { status: 'skipped', reason: 'already-exists', date }

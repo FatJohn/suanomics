@@ -67,6 +67,8 @@ export interface CallNarrativeWriterParams {
   // 週末模式（weekend=週日特輯）、預設 weekday；weekend 時 narrative-writer 用週末 prompt + 本週回顧素材
   reportKind?: 'weekday' | 'weekend'
   weeklyRecapBlock?: string | null
+  // 休市後第一個交易日的統整指示（market-closure.ts）；一般交易日為 null。
+  closureBlock?: string | null
   onCallRecord?: (r: LlmCallRecord) => void
 }
 
@@ -295,6 +297,8 @@ export function formatUserContent(p: CallNarrativeWriterParams, withLedger: bool
   const lines: string[] = []
   lines.push(NARRATIVE_WRITER_USER_TEXT.intro(p.briefDate))
   lines.push('')
+  if (p.closureBlock)
+    lines.push(p.closureBlock, '')
   if (p.dailyThesis) {
     lines.push(NARRATIVE_WRITER_USER_TEXT.dailyThesisHeading)
     lines.push(p.dailyThesis)

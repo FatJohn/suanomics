@@ -1,4 +1,5 @@
 import type { DailyDeps, DailyLogEvent } from './daily.js'
+import { isTwseTradingDay } from '@suanomics/shared'
 import { describe, expect, it, vi } from 'vitest'
 import { DailyCostGate, DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { runDaily } from './daily.js'
@@ -14,6 +15,8 @@ function fakeDeps(overrides: Partial<DailyDeps> = {}): DailyDeps & { events: Dai
     log: e => events.push(e),
     isTradingDay: () => true,
     findExistingBrief: vi.fn(async () => null),
+    refreshNews: vi.fn(async () => 3),
+    today: () => DATE,
     hasCompleteBriefOnOrAfter: vi.fn(async () => false),
     ingest: vi.fn(async () => []),
     loadMarket: vi.fn(async () => ({}) as never),
@@ -35,11 +38,45 @@ function fakeDeps(overrides: Partial<DailyDeps> = {}): DailyDeps & { events: Dai
 const over = () => new DailyCostLimitExceededError(1, 1.2)
 
 describe('runDaily', () => {
-  it('非交易日不做任何事並回 skipped', async () => {
+  // 只保留最新幾則的 feed 撐不到下一個交易日，休市期間的新聞要當天抓進候選池。
+  it('非交易日只抓新聞、不產報告，回 skipped', async () => {
     const deps = fakeDeps({ isTradingDay: () => false })
     expect(await runDaily({ date: DATE, force: false }, deps)).toEqual({ status: 'skipped', reason: 'non-trading-day', date: DATE })
+    expect(deps.refreshNews).toHaveBeenCalledTimes(1)
     expect(deps.findExistingBrief).not.toHaveBeenCalled()
     expect(deps.ingest).not.toHaveBeenCalled()
+    expect(deps.saveBrief).not.toHaveBeenCalled()
+    expect(deps.events).toContainEqual({ event: 'non_trading_refresh', date: DATE, inserted: 3, calls: 0, usd: 0 })
+  })
+
+  it('非交易日抓新聞的 LLM 花費記在該日期名下：先設報告日再抓', async () => {
+    const order: string[] = []
+    const deps = fakeDeps({ isTradingDay: () => false, refreshNews: vi.fn(async () => {
+      order.push('refresh')
+      return 0
+    }) })
+    vi.spyOn(deps.gate, 'setReportDate').mockImplementation((d) => {
+      order.push(`setReportDate:${d}`)
+    })
+    await runDaily({ date: DATE, force: false }, deps)
+    expect(order).toEqual([`setReportDate:${DATE}`, 'refresh'])
+  })
+
+  it('補跑過去的非交易日不抓新聞：抓到的是今天的 feed，花費會記錯日期', async () => {
+    const deps = fakeDeps({ isTradingDay: () => false, today: () => '2026-11-11' })
+    expect(await runDaily({ date: DATE, force: true }, deps)).toEqual({ status: 'skipped', reason: 'non-trading-day', date: DATE })
+    expect(deps.refreshNews).not.toHaveBeenCalled()
+  })
+
+  it('非交易日抓新聞失敗時 run 失敗，不吞錯', async () => {
+    const deps = fakeDeps({ isTradingDay: () => false, refreshNews: vi.fn(async () => Promise.reject(new LlmAccountError('billing'))) })
+    await expect(runDaily({ date: DATE, force: false }, deps)).rejects.toBeInstanceOf(LlmAccountError)
+  })
+
+  it('交易日不另外抓新聞：ingest 已經包含這一步', async () => {
+    const deps = fakeDeps()
+    await runDaily({ date: DATE, force: false }, deps)
+    expect(deps.refreshNews).not.toHaveBeenCalled()
   })
 
   it('當日已有 brief 且未帶 force 時不跑', async () => {
@@ -190,5 +227,24 @@ describe('runDaily', () => {
     expect(deps.events.find(e => e.event === 'stage_start' && e.stage === 'ingest')).toBeDefined()
     expect(deps.events.find(e => e.event === 'stage_end' && e.stage === 'ingest')).toMatchObject({ calls: 2, usd: 0.5 })
     expect(deps.events.find(e => e.event === 'stage_end' && e.stage === 'editor')).toMatchObject({ calls: 0, usd: 0 })
+  })
+})
+
+// 交易日只看 TWSE：用正式的 isTwseTradingDay，不是 fake。
+describe('runDaily 依 TWSE 開休市決定是否產出', () => {
+  it.each([
+    ['2026-09-12', '週六'],
+    ['2026-09-13', '週日'],
+    ['2026-10-09', 'TWSE 休市日（國慶補假）'],
+    ['2026-12-25', '台美都休市（行憲紀念日／Christmas）'],
+  ])('%s（%s）回 skipped: non-trading-day', async (date) => {
+    const deps = fakeDeps({ isTradingDay: isTwseTradingDay })
+    expect(await runDaily({ date, force: false }, deps)).toEqual({ status: 'skipped', reason: 'non-trading-day', date })
+    expect(deps.ingest).not.toHaveBeenCalled()
+  })
+
+  it('美股休市但台股開盤（2026-11-26 感恩節）照常產出', async () => {
+    const deps = fakeDeps({ isTradingDay: isTwseTradingDay })
+    expect(await runDaily({ date: '2026-11-26', force: false }, deps)).toEqual({ status: 'complete', date: '2026-11-26', briefId: 7 })
   })
 })

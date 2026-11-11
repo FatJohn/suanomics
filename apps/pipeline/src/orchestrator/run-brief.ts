@@ -10,6 +10,7 @@ import { renumberChainsAcrossNews } from '../agents/chain-ids.js'
 import { DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { callDecomposer } from '../agents/decomposer.js'
 import { buildMarketCloseFraming } from '../agents/market-close-framing.js'
+import { buildMarketClosureBlock } from '../agents/market-closure.js'
 import { callNarrativeWriter } from '../agents/narrative-writer.js'
 import { retrieveForDecomposed } from '../agents/retrieve-for-decomposed.js'
 import { callSynthesizer } from '../agents/synthesizer.js'
@@ -164,6 +165,7 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
       officialBlock: market.officialBlock,
       storylineBlock: editor.storylineBlock,
       briefDate: date,
+      closureBlock: buildMarketClosureBlock(date),
       marketCloseFraming,
       marketSnapshot: market.snapshotBlock,
       claimLedger: claimLedger.claims,
