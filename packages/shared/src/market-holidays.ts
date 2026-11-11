@@ -28,10 +28,21 @@ export const US_MARKET_HOLIDAYS: readonly string[] = [
   '2026-09-07', // Labor Day
   '2026-11-26', // Thanksgiving Day
   '2026-12-25', // Christmas Day
+  // 2027：NYSE hours-calendars 已公告（查證日 2026-11-11）
+  '2027-01-01', // New Year's Day
+  '2027-01-18', // Martin Luther King, Jr. Day
+  '2027-02-15', // Washington's Birthday
+  '2027-03-26', // Good Friday
+  '2027-05-31', // Memorial Day
+  '2027-06-18', // Juneteenth National Independence Day（06-19 適逢週六，週五補假）
+  '2027-07-05', // Independence Day（07-04 適逢週日，週一補假）
+  '2027-09-06', // Labor Day
+  '2027-11-25', // Thanksgiving Day（11-26 早收盤算開市、不列入）
+  '2027-12-24', // Christmas Day（12-25 適逢週六，週五補假）
 ]
 
-// TWSE 尚未公告 2027（ROC 116）行事曆、故涵蓋終點退到 2026-12-31；NYSE 2027 雖已公告、
-// 為與台股表對稱一併留待年度更新。time-bomb 會在 2026-12 初逼補（屬預期）。
+// TWSE 尚未公告 2027（ROC 116）行事曆、故涵蓋終點仍在 2026-12-31；NYSE 2027 已先補入，
+// 涵蓋終點要等台股表補齊才推進。time-bomb 會在 2026-12 初逼補（屬預期）。
 export const HOLIDAY_COVERAGE_END = '2026-12-31'
 
 export const HOLIDAY_FRESHNESS_MIN_DAYS = 30

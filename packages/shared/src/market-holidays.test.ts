@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { previousTradingDay } from './market-freshness.js'
 import {
   classifyPublicationDay,
   daysUntilHolidayCoverageExhausted,
@@ -89,5 +90,38 @@ describe('isTwseTradingDay', () => {
   // 補班日是行政機關上班、股市不開：只看「是不是上班日」會把它判成開市。
   it('週六補班日不開市', () => {
     expect(isTwseTradingDay('2025-02-08')).toBe(false)
+  })
+})
+
+// 2027 逐筆對照 NYSE Holidays & Trading Hours（https://www.nyse.com/markets/hours-calendars，查證日 2026-11-11）
+describe('美股 2027 休市表', () => {
+  it('與 NYSE 公告的 2027 全日休市逐筆相符', () => {
+    expect(US_MARKET_HOLIDAYS.filter(d => d.startsWith('2027-'))).toEqual([
+      '2027-01-01',
+      '2027-01-18',
+      '2027-02-15',
+      '2027-03-26',
+      '2027-05-31',
+      '2027-06-18',
+      '2027-07-05',
+      '2027-09-06',
+      '2027-11-25',
+      '2027-12-24',
+    ])
+  })
+  it('juneteenth 補假（06-18 週五）跳過', () => {
+    expect(previousTradingDay('2027-06-21', 'us')).toBe('2027-06-17')
+  })
+  it('聖誕節補假（12-24 週五）跳過', () => {
+    expect(previousTradingDay('2027-12-27', 'us')).toBe('2027-12-23')
+  })
+  it('跨年：元旦 2027-01-01 週五休市', () => {
+    expect(previousTradingDay('2027-01-04', 'us')).toBe('2026-12-31')
+  })
+  it('感恩節隔天早收盤算開市', () => {
+    expect(previousTradingDay('2027-11-29', 'us')).toBe('2027-11-26')
+  })
+  it('美股獨立紀念日補假但台股有開 → 照出', () => {
+    expect(classifyPublicationDay('2027-07-06')).toEqual({ kind: 'weekday-brief' })
   })
 })

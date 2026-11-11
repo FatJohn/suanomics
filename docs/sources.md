@@ -54,6 +54,7 @@
 | FRED | https://api.stlouisfed.org/fred/series/observations | 官方 API | https://fred.stlouisfed.org/docs/api/terms_of_use.html | 數字。部分序列版權屬第三方，個人使用以外須取得所有者同意，維護者 2026-11-08 複核接受 |
 | TAIFEX | https://www.taifex.com.tw | 官方網站 | https://www.taifex.com.tw/cht/5/copyright | 數字。維護者 2026-11-08 複核接受 |
 | Nasdaq | https://api.nasdaq.com | 商業 API | https://www.nasdaq.com/legal | 數字。維護者 2026-11-08 複核接受 |
+| NYSE 休市表 | https://www.nyse.com/markets/hours-calendars | 官方網頁 | https://www.ice.com/privacy-security-center/terms-of-use | 休市日期。人工年度核對後寫進 `packages/shared/src/market-holidays.ts`，pipeline 不抓取 |
 
 ## 不接的來源
 
