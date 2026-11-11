@@ -184,20 +184,24 @@ describe('台股 2027 休市表（暫定）', () => {
 // 暫定表核對期限：TWSE 公告 116 年開休市日期後，照公告核對 2027 台股表（春節前僅交割日最可能要補），
 // 核對完把 TW_HOLIDAYS_PROVISIONAL_UNTIL 設為 null。期限到了 TWSE 仍未公告時，延後期限並寫明原因。
 describe('台股暫定表核對期限', () => {
-  it('期限前一天 → 未逾期', () => {
-    const until = new Date(`${TW_HOLIDAYS_PROVISIONAL_UNTIL}T00:00:00Z`)
-    expect(isTwHolidayProvisionalReviewOverdue(new Date(until.getTime() - 86_400_000))).toBe(false)
+  // 邊界用固定日期，常數改成 null 之後仍測得到比較邏輯。
+  it('期限前一刻 → 未逾期', () => {
+    expect(isTwHolidayProvisionalReviewOverdue(new Date('2027-01-14T23:59:59Z'), '2027-01-15')).toBe(false)
   })
-  it('期限當天 → 逾期', () => {
-    const until = new Date(`${TW_HOLIDAYS_PROVISIONAL_UNTIL}T00:00:00Z`)
-    expect(isTwHolidayProvisionalReviewOverdue(until)).toBe(true)
+  it('期限當天 UTC 00:00（台北 08:00）起 → 逾期', () => {
+    expect(isTwHolidayProvisionalReviewOverdue(new Date('2027-01-15T00:00:00Z'), '2027-01-15')).toBe(true)
   })
-  // 刻意用真實 new Date()：期限一到就紅、逼人照 TWSE 公告核對（同上方 time-bomb，非 flaky）。
+  it('null（已核對）→ 永不逾期', () => {
+    expect(isTwHolidayProvisionalReviewOverdue(new Date('2099-01-01T00:00:00Z'), null)).toBe(false)
+  })
+  // 刻意用真實 new Date()：期限一到就紅、逼人照 TWSE 公告核對。這是預期設計、非 flaky——
+  // 請勿因為它擋住 PR 就刪除；TWSE 仍未公告時延後期限並寫明原因。
   it('暫定表須在期限前照 TWSE 公告核對', () => {
     expect(
       isTwHolidayProvisionalReviewOverdue(new Date()),
       `2027 台股休市表仍是暫定版（依人事總處辦公日曆表），已過核對期限 ${TW_HOLIDAYS_PROVISIONAL_UNTIL}；`
-      + `請照 TWSE 116 年市場開休市日期核對 packages/shared/src/market-holidays.ts，核對完把 TW_HOLIDAYS_PROVISIONAL_UNTIL 設為 null`,
+      + `請照 TWSE 116 年市場開休市日期核對 packages/shared/src/market-holidays.ts，核對完把 TW_HOLIDAYS_PROVISIONAL_UNTIL 設為 null；`
+      + `TWSE 仍未公告時延後期限並在註解寫明原因，不要刪除本測試`,
     ).toBe(false)
   })
 })

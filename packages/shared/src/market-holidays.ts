@@ -77,12 +77,16 @@ export function daysUntilHolidayCoverageExhausted(now: Date): number {
 // 2027 台股表是暫定版，涵蓋終點的 time-bomb 要到 2027-12 才會叫，擋不住「TWSE 公告後沒人核對」。
 // 另設核對期限：期限一到測試就紅。選 2027-01-15 是為了趕在春節前停止交易的日子（往例是除夕前
 // 兩個交易日，2027 推估為 02-02、02-03）之前核對完。核對完設為 null。
+// 期限以 UTC 00:00 起算（台北 08:00），與上方涵蓋終點的算法一致。
 export const TW_HOLIDAYS_PROVISIONAL_UNTIL: string | null = '2027-01-15'
 
-export function isTwHolidayProvisionalReviewOverdue(now: Date): boolean {
-  if (TW_HOLIDAYS_PROVISIONAL_UNTIL === null)
+export function isTwHolidayProvisionalReviewOverdue(
+  now: Date,
+  until: string | null = TW_HOLIDAYS_PROVISIONAL_UNTIL,
+): boolean {
+  if (until === null)
     return false
-  return now.getTime() >= new Date(`${TW_HOLIDAYS_PROVISIONAL_UNTIL}T00:00:00Z`).getTime()
+  return now.getTime() >= new Date(`${until}T00:00:00Z`).getTime()
 }
 
 const TW_HOLIDAY_SET = new Set(TW_MARKET_HOLIDAYS)
