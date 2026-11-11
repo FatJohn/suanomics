@@ -23,7 +23,7 @@ export const CalendarEventSchema = z.object({
 
 export type CalendarEvent = z.infer<typeof CalendarEventSchema>
 
-/** category 未指定或 'macro' 視為總經事件；其餘為公司事件。 */
+/** 只有 ex-dividend／investor-conference 是公司事件；其餘（未指定、macro、derivatives-expiry）排在總經區塊。 */
 export function isCompanyCalendarEvent(e: CalendarEvent): boolean {
   return e.category === 'ex-dividend' || e.category === 'investor-conference'
 }

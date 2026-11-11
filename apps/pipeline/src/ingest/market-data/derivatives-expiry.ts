@@ -8,7 +8,8 @@ import { HOLIDAY_COVERAGE_END, isTwseTradingDay, US_MARKET_HOLIDAYS } from '@sua
 // - 台指期：期交所臺股期貨契約規格「最後交易日為各該契約交割月份第三個星期三……若為假日或因
 //   不可抗力因素未能進行交易時，以其最近之次一營業日為最後交易日」「最後結算日同最後交易日」。
 //   春節前「無交易僅辦理結算交割」的日子也不是營業日（2023-01-18 起停止交易，官方結算日 01-30）。
-// - 美股四巫日：3、6、9、12 月第三個週五；OCC 標準到期日遇休市提前到前一個營業日。
+// - 美股四巫日：3、6、9、12 月第三個週五，遇休市提前到前一個營業日（Cboe 2026 到期日曆：06-19
+//   Juneteenth 休市，6 月標準到期標在 06-18）。
 //
 // 2027 台股休市表是暫定的（market-holidays.ts 的 TW_HOLIDAYS_PROVISIONAL_UNTIL），算出的
 // 2027 台指期結算日跟著它走；TWSE 公告後核對休市表，這裡不用改。
@@ -26,6 +27,8 @@ const HOLIDAY_COVERAGE_START = '2026-07-21'
 
 const US_HOLIDAY_SET = new Set(US_MARKET_HOLIDAYS)
 
+// isTwseTradingDay 只看週末與 TW_MARKET_HOLIDAYS：春節前「僅辦理結算交割」的日子要列進休市表，
+// 台指期結算日才會跟著順延。2027 暫定表還沒列這些日子，但 2027-02 第三個週三 02-17 在連假之後，不受影響。
 const TW_RULES: MarketRules = {
   isTradingDay: isTwseTradingDay,
   coverageStart: HOLIDAY_COVERAGE_START,
@@ -42,6 +45,14 @@ const US_RULES: MarketRules = {
 }
 
 const QUARTER_MONTHS = new Set([3, 6, 9, 12])
+
+// 規則日與順延方向的單一定義：公開函式與 deriveExpiryEvents 都從這裡算，告警報的規則日才會跟實際用的一致。
+interface ExpiryRule {
+  weekday: number
+  step: 1 | -1
+}
+const TW_SETTLEMENT: ExpiryRule = { weekday: 3, step: 1 }
+const US_QUAD_WITCHING: ExpiryRule = { weekday: 5, step: -1 }
 
 function pad(n: number): string {
   return String(n).padStart(2, '0')
@@ -71,16 +82,20 @@ function rollToTradingDay(raw: string, step: 1 | -1, rules: MarketRules): string
   return null
 }
 
+function resolveExpiry(rule: ExpiryRule, year: number, month: number, rules: MarketRules): string | null {
+  return rollToTradingDay(thirdWeekdayOfMonth(year, month, rule.weekday), rule.step, rules)
+}
+
 /** 台指期月契約最後結算日；超出休市表涵蓋範圍回 null。 */
 export function twIndexFuturesSettlement(year: number, month: number, rules: MarketRules = TW_RULES): string | null {
-  return rollToTradingDay(thirdWeekdayOfMonth(year, month, 3), 1, rules)
+  return resolveExpiry(TW_SETTLEMENT, year, month, rules)
 }
 
 /** 美股四巫日（季月）；超出休市表涵蓋範圍回 null。 */
 export function usQuadWitching(year: number, month: number, rules: MarketRules = US_RULES): string | null {
   if (!QUARTER_MONTHS.has(month))
     throw new Error(`四巫日只在季月：${year}-${pad(month)}`)
-  return rollToTradingDay(thirdWeekdayOfMonth(year, month, 5), -1, rules)
+  return resolveExpiry(US_QUAD_WITCHING, year, month, rules)
 }
 
 export interface UncoveredExpiry {
@@ -90,25 +105,25 @@ export interface UncoveredExpiry {
 }
 
 interface ExpiryKind {
+  rule: ExpiryRule
+  rules: MarketRules
   applies: (month: number) => boolean
-  raw: (year: number, month: number) => string
-  resolve: (year: number, month: number) => string | null
   title: (ym: string) => string
   region: CalendarEvent['region']
 }
 
 const EXPIRY_KINDS: ExpiryKind[] = [
   {
+    rule: TW_SETTLEMENT,
+    rules: TW_RULES,
     applies: () => true,
-    raw: (y, m) => thirdWeekdayOfMonth(y, m, 3),
-    resolve: (y, m) => twIndexFuturesSettlement(y, m),
     title: ym => `台指期 ${ym} 月契約最後結算日`,
     region: 'TW',
   },
   {
+    rule: US_QUAD_WITCHING,
+    rules: US_RULES,
     applies: m => QUARTER_MONTHS.has(m),
-    raw: (y, m) => thirdWeekdayOfMonth(y, m, 5),
-    resolve: (y, m) => usQuadWitching(y, m),
     title: ym => `美股四巫日（${ym} 季度期貨與選擇權到期）`,
     region: 'US',
   },
@@ -132,8 +147,8 @@ export function deriveExpiryEvents(start: string, end: string): { events: Calend
   while (`${year}-${pad(month)}` <= end.slice(0, 7)) {
     const ym = `${year}-${pad(month)}`
     for (const kind of EXPIRY_KINDS.filter(k => k.applies(month))) {
-      const date = kind.resolve(year, month)
-      const raw = kind.raw(year, month)
+      const raw = thirdWeekdayOfMonth(year, month, kind.rule.weekday)
+      const date = rollToTradingDay(raw, kind.rule.step, kind.rules)
       if (date === null) {
         if (raw >= start && raw <= end)
           uncovered.push({ title: kind.title(ym), rawDate: raw })
