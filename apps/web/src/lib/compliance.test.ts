@@ -14,11 +14,15 @@ describe('redactBlockedSentences', () => {
     expect(redactBlockedSentences('油價上漲。建議**買**進。')).toBe('油價上漲。')
   })
 
-  it('換行拆開禁用語時整段不顯示', () => {
-    expect(redactBlockedSentences('建\n議買進')).toBe('')
+  it('換行拆開禁用語時，從尾端丟句直到整段通過', () => {
+    expect(redactBlockedSentences('建\n議買進')).toBe('建\n')
   })
 
-  it('個股與方向詞跨句靠近時，整段不顯示', () => {
-    expect(redactBlockedSentences('台積電法說會在週四。市場加碼')).toBe('')
+  it('個股與方向詞跨句靠近時，從尾端丟句而不是清空整段', () => {
+    expect(redactBlockedSentences('台積電法說會在週四。市場加碼')).toBe('台積電法說會在週四。')
+  })
+
+  it('整段通過時原樣保留，不因切句拆開主詞與動詞而誤刪', () => {
+    expect(redactBlockedSentences('外資。加碼台積電。')).toBe('外資。加碼台積電。')
   })
 })
