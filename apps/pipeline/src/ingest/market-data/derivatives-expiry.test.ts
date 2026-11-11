@@ -68,6 +68,8 @@ describe('twIndexFuturesSettlement', () => {
 
   it('超出休市表涵蓋範圍回 null，不產出未經調整的日期', () => {
     expect(twIndexFuturesSettlement(2026, 6)).toBeNull()
+    // 2026-07 第三個週三 07-15 在涵蓋起點 07-21 之前：起點往前挪就會產出未經休市核對的日期。
+    expect(twIndexFuturesSettlement(2026, 7)).toBeNull()
     expect(twIndexFuturesSettlement(BEYOND, 1)).toBeNull()
   })
 
