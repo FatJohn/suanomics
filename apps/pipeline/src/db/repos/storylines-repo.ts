@@ -143,7 +143,7 @@ export interface ApplyEditorResultParams {
   /**
    * open 線上限，預設 `OPEN_CAP`（10）。**只有測試會傳**：cap 看的是全表 open 數，
    * 本機有真實資料時會把測試想新建的線一併吃掉（症狀是 `created` 回 0 而非 1）。
-   * production 呼叫端（`apps/server/src/jobs/handlers/brief-worker.ts`）不傳。
+   * production 呼叫端（`apps/pipeline/src/orchestrator/daily.deps.ts`）不傳。
    */
   openCap?: number
   /**

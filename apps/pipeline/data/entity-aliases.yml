@@ -1,7 +1,7 @@
 # Entity normalization seed.
 #
 # decomposer 出英文 entity（Fed / FOMC / TSMC）、
-# 但 enrichment 對中文新聞 tag 用中文（聯準會 / 台積電）。retriever
+# 但 v0 的 Gemini enrichment 對中文新聞 tag 用中文（聯準會 / 台積電）。retriever
 # 的 GIN `entities @> [{name: E}]` 字面比對、字面不一致就 miss。
 #
 # 此 yml 是 alias dict source-of-truth、由 `apps/pipeline/src/agents/
@@ -324,7 +324,7 @@ groups:
 
   # ===== 國際半導體 supply chain partner =====
   # tier 1 Analyst 提名 nextTierEntities 多為國際具名、corpus 用英文 source 報導、
-  # LLM 抽 entity 中英混雜、加 alias 提高 retriever GIN 命中率
+  # v0 的 Gemini 抽 entity 中英混雜、加 alias 提高 retriever GIN 命中率
 
   - canonical: asml
     aliases: [ASML, ASML Holding, 艾司摩爾, 阿斯麥, EUV, DUV]
