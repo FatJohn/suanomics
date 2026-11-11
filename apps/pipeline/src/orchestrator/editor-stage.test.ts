@@ -47,4 +47,12 @@ describe('selectNewsViaEditor', () => {
     await selectNewsViaEditor({ ...params, selected: [] })
     expect(callEditor).not.toHaveBeenCalled()
   })
+
+  it('休市後第一個交易日把統整指示傳給 editor，一般交易日不傳', async () => {
+    vi.mocked(callEditor).mockRejectedValue(new Error('bad'))
+    await selectNewsViaEditor({ ...params, date: '2026-09-29' })
+    expect(vi.mocked(callEditor).mock.calls[0]?.[0].closureBlock).toContain('9/25（五）至 9/28（一）')
+    await selectNewsViaEditor({ ...params, date: '2026-09-30' })
+    expect(vi.mocked(callEditor).mock.calls[1]?.[0].closureBlock ?? null).toBeNull()
+  })
 })

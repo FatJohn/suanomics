@@ -6,12 +6,11 @@ import { CostGateError } from '../agents/cost-gate.js'
 import { getRelevanceCandidates } from '../db/repos/news-repo.js'
 import { getSourceFetchHistory, recordSourceFetchResults } from '../db/repos/source-fetch-repo.js'
 import { refreshMarketData } from './market-data/refresh.js'
+import { candidateWindowDays, selectAcrossClosure } from './news/candidate-window.js'
 import { runNewsRefresh } from './news/refresh.js'
-import { DEFAULT_SELECTION_TOTAL, parseCategoryFloors, selectWithCategoryFloors } from './news/selection.js'
+import { DEFAULT_SELECTION_TOTAL, parseCategoryFloors } from './news/selection.js'
 import { CONSECUTIVE_FAILURE_THRESHOLD, findConsecutiveFailures, formatSourceAlert } from './news/source-failure-alert.js'
 import { ingestEconCalendar, ingestMaterialAnnouncements, refreshTwseOpenapi } from './structured.js'
-
-const CANDIDATE_WINDOW_DAYS = 2
 
 export type IngestResult
   = | { status: 'skipped', date: string }
@@ -57,8 +56,9 @@ export async function runIngest(options: { now?: Date, date?: string, force?: bo
   if (market)
     console.warn(`[ingest] market-data ${market.pointsUpserted} points, failed series: ${market.failures.join(', ') || 'none'}`)
 
-  const candidates = await getRelevanceCandidates(date, CANDIDATE_WINDOW_DAYS)
-  const selected = selectWithCategoryFloors(candidates, {
+  // 休市後第一個交易日的窗往回涵蓋整段休市期間，選稿逐日分散，見 candidate-window.ts。
+  const candidates = await getRelevanceCandidates(date, candidateWindowDays(date))
+  const selected = selectAcrossClosure(candidates, date, {
     total: DEFAULT_SELECTION_TOTAL,
     floors: parseCategoryFloors(process.env.NEWS_CATEGORY_FLOORS),
   })

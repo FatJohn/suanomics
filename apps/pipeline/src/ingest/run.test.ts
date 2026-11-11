@@ -78,7 +78,8 @@ describe('runIngest', () => {
   it('交易日依台北日期取候選，並把入選新聞與成交量前段的公司交給重訊過濾', async () => {
     const { repo, structured } = await mocks()
     const result = await runIngest({ now: MONDAY })
-    expect(repo.getRelevanceCandidates).toHaveBeenCalledWith('2026-11-09', 2)
+    // 週一往回涵蓋到上週五那次執行（candidate-window.ts）。
+    expect(repo.getRelevanceCandidates).toHaveBeenCalledWith('2026-11-09', 4)
     expect(structured.ingestMaterialAnnouncements).toHaveBeenCalledWith(['台積電擴產\n內文'], [{ code: '2330', name: '台積電' }], [{ code: '2317', name: '鴻海' }])
     expect(result).toMatchObject({ status: 'done', date: '2026-11-09', failures: [] })
   })

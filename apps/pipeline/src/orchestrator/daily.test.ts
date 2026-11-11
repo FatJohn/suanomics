@@ -1,4 +1,5 @@
 import type { DailyDeps, DailyLogEvent } from './daily.js'
+import { isTwseTradingDay } from '@suanomics/shared'
 import { describe, expect, it, vi } from 'vitest'
 import { DailyCostGate, DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { runDaily } from './daily.js'
@@ -190,5 +191,24 @@ describe('runDaily', () => {
     expect(deps.events.find(e => e.event === 'stage_start' && e.stage === 'ingest')).toBeDefined()
     expect(deps.events.find(e => e.event === 'stage_end' && e.stage === 'ingest')).toMatchObject({ calls: 2, usd: 0.5 })
     expect(deps.events.find(e => e.event === 'stage_end' && e.stage === 'editor')).toMatchObject({ calls: 0, usd: 0 })
+  })
+})
+
+// 交易日只看 TWSE：用正式的 isTwseTradingDay，不是 fake。
+describe('runDaily 依 TWSE 開休市決定是否產出', () => {
+  it.each([
+    ['2026-09-12', '週六'],
+    ['2026-09-13', '週日'],
+    ['2026-10-09', 'TWSE 休市日（國慶補假）'],
+    ['2026-12-25', '台美都休市（行憲紀念日／Christmas）'],
+  ])('%s（%s）回 skipped: non-trading-day', async (date) => {
+    const deps = fakeDeps({ isTradingDay: isTwseTradingDay })
+    expect(await runDaily({ date, force: false }, deps)).toEqual({ status: 'skipped', reason: 'non-trading-day', date })
+    expect(deps.ingest).not.toHaveBeenCalled()
+  })
+
+  it('美股休市但台股開盤（2026-11-26 感恩節）照常產出', async () => {
+    const deps = fakeDeps({ isTradingDay: isTwseTradingDay })
+    expect(await runDaily({ date: '2026-11-26', force: false }, deps)).toEqual({ status: 'complete', date: '2026-11-26', briefId: 7 })
   })
 })

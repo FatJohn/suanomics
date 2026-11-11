@@ -5,6 +5,7 @@ import type { MarketContext } from '../ingest/market-data/context.js'
 import { CostGateError } from '../agents/cost-gate.js'
 import { sanitizeSelection, sanitizeStoryline } from '../agents/editor-output.js'
 import { callEditor } from '../agents/editor.js'
+import { buildMarketClosureBlock } from '../agents/market-closure.js'
 import { buildStorylineBlock, continuityHintFromEntries, entriesFromEditorResult } from '../agents/storyline-block.js'
 import { getRecentBriefSummaries, selectNewsForBrief } from '../db/repos/news-repo.js'
 import { getOpenStorylines } from '../db/repos/storylines-repo.js'
@@ -54,6 +55,7 @@ export async function selectNewsViaEditor(p: SelectNewsParams): Promise<EditorSt
       marketSnapshot: p.market.snapshotBlock,
       calendarBlock: p.market.calendarBlock,
       officialBlock: p.market.officialBlock,
+      closureBlock: buildMarketClosureBlock(p.date),
       ...(p.onCallRecord !== undefined ? { onCallRecord: p.onCallRecord } : {}),
     })
     if (parsed.schemaDroppedEntries > 0)

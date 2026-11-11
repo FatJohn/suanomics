@@ -20,6 +20,8 @@ export interface CallEditorParams {
   // 官方公告 block（央行／金管會／證交所的一手公告）。**背景素材、不是候選新聞**——
   // 它們不在 candidates 裡，editor 不能選它們當主題，只能用來判斷今天有沒有政策事件。
   officialBlock?: string | null
+  // 休市後第一個交易日的統整指示（market-closure.ts）；一般交易日為 null。
+  closureBlock?: string | null
   onCallRecord?: (r: LlmCallRecord) => void
 }
 
@@ -33,6 +35,9 @@ export async function callEditor(p: CallEditorParams): Promise<EditorParseResult
 
 export function formatUserContent(p: CallEditorParams): string {
   const lines: string[] = []
+  // 放最前面：editor 讀候選之前就要知道候選橫跨整段休市期間。
+  if (p.closureBlock)
+    lines.push(p.closureBlock, '')
   lines.push(EDITOR_USER_TEXT.candidatesHeading(p.candidates.length))
   for (const c of p.candidates) lines.push(`[${c.id}][${ITEM_CATEGORY_LABEL[c.category]}] ${clampString(c.title, 120)} — ${clampString(c.excerpt, 150)}`)
   lines.push('')
