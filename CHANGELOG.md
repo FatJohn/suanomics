@@ -11,7 +11,7 @@
 - 架構改成每日排程的批次 pipeline 加靜態網站，不再有常駐 server：GitHub Actions 跑 pipeline，Astro 在同一個 job 內讀 Postgres 產出純 HTML，部署到 Cloudflare Pages（`suanomics.everbegin.net`）。
 - 觸發器以 Cloudflare Worker 的 Cron Trigger 為主，Actions `schedule` 為備援。
 - 持久狀態放 Neon Postgres，drizzle schema 與 migration 沿用。
-- LLM 呼叫層改用 Vercel AI SDK（`generateText` 加 `Output.object`）；預設 provider 是 Anthropic，Gemini 只給品質評審。
+- LLM 呼叫層改用 Vercel AI SDK（`generateText` 加 `Output.object`）；provider 目前全部是 Anthropic，品質評審（judge）用哪一家在接回 judge 時決定。
 - 網站由 Vue SPA 改成 Astro 靜態產生。
 - monorepo 縮成三個 workspace：`packages/shared`、`apps/pipeline`、`apps/web`。
 - 新聞來源只收官方機構與發行商自己的 feed，正文在 pipeline 內抽取。
