@@ -1,5 +1,5 @@
 import type { DailyDeps } from './daily.js'
-import { isTwseTradingDay } from '@suanomics/shared'
+import { isTwseTradingDay, taipeiDateOf } from '@suanomics/shared'
 import { getDailyCostGate } from '../agents/cost-gate.js'
 import { hasCompleteBriefOnOrAfter } from '../db/repos/brief-rerun.js'
 import { getDailyBriefByDate, saveDailyBrief, saveIncompleteDailyBrief } from '../db/repos/news-repo.js'
@@ -17,6 +17,7 @@ export function createDailyDeps(): DailyDeps {
     isTradingDay: isTwseTradingDay,
     findExistingBrief: getDailyBriefByDate,
     refreshNews: async () => (await runNewsRefresh()).totalInserted,
+    today: () => taipeiDateOf(new Date()),
     hasCompleteBriefOnOrAfter,
     ingest: async (date) => {
       // 交易日已由 orchestrator 判斷過，這裡帶 force 只是略過 ingest 自己的同一道檢查。

@@ -16,6 +16,7 @@ function fakeDeps(overrides: Partial<DailyDeps> = {}): DailyDeps & { events: Dai
     isTradingDay: () => true,
     findExistingBrief: vi.fn(async () => null),
     refreshNews: vi.fn(async () => 3),
+    today: () => DATE,
     hasCompleteBriefOnOrAfter: vi.fn(async () => false),
     ingest: vi.fn(async () => []),
     loadMarket: vi.fn(async () => ({}) as never),
@@ -48,11 +49,23 @@ describe('runDaily', () => {
     expect(deps.events).toContainEqual({ event: 'non_trading_refresh', date: DATE, inserted: 3, calls: 0, usd: 0 })
   })
 
-  it('非交易日抓新聞的 LLM 花費記在該日期名下', async () => {
-    const deps = fakeDeps({ isTradingDay: () => false })
-    const setReportDate = vi.spyOn(deps.gate, 'setReportDate')
+  it('非交易日抓新聞的 LLM 花費記在該日期名下：先設報告日再抓', async () => {
+    const order: string[] = []
+    const deps = fakeDeps({ isTradingDay: () => false, refreshNews: vi.fn(async () => {
+      order.push('refresh')
+      return 0
+    }) })
+    vi.spyOn(deps.gate, 'setReportDate').mockImplementation((d) => {
+      order.push(`setReportDate:${d}`)
+    })
     await runDaily({ date: DATE, force: false }, deps)
-    expect(setReportDate).toHaveBeenCalledWith(DATE)
+    expect(order).toEqual([`setReportDate:${DATE}`, 'refresh'])
+  })
+
+  it('補跑過去的非交易日不抓新聞：抓到的是今天的 feed，花費會記錯日期', async () => {
+    const deps = fakeDeps({ isTradingDay: () => false, today: () => '2026-11-11' })
+    expect(await runDaily({ date: DATE, force: true }, deps)).toEqual({ status: 'skipped', reason: 'non-trading-day', date: DATE })
+    expect(deps.refreshNews).not.toHaveBeenCalled()
   })
 
   it('非交易日抓新聞失敗時 run 失敗，不吞錯', async () => {

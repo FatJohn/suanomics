@@ -44,6 +44,8 @@ export interface DailyDeps {
   findExistingBrief: (date: string) => Promise<{ status: string } | null>
   // 只抓新聞進候選池，回傳新增則數。
   refreshNews: () => Promise<number>
+  // 台北今天的日期；補跑舊日期時用來判斷 feed 是否還代表那一天。
+  today: () => string
   hasCompleteBriefOnOrAfter: (date: string) => Promise<boolean>
   ingest: (date: string) => Promise<RelevanceCandidate[]>
   loadMarket: (date: string) => Promise<MarketContext>
@@ -116,7 +118,10 @@ async function runStages(date: string, isRerun: boolean, deps: DailyDeps, progre
 export async function runDaily(options: { date: string, force: boolean }, deps: DailyDeps): Promise<DailyResult> {
   const { date, force } = options
   if (!deps.isTradingDay(date)) {
-    // 只保留最新幾則的 feed 撐不到下一個交易日，休市期間的新聞當天就要進候選池。
+    // 補跑舊日期時抓到的是今天的 feed，花費會記到那個舊日期名下，所以只在當天抓。
+    if (date !== deps.today())
+      return { status: 'skipped', reason: 'non-trading-day', date }
+    // 有些 feed 只留一定則數，撐不到下一個交易日，休市期間的新聞當天就要進候選池。
     deps.gate.setReportDate(date)
     const inserted = await deps.refreshNews()
     deps.log({ event: 'non_trading_refresh', date, inserted, calls: deps.gate.callCount, usd: roundUsd(deps.gate.totalUsd) })

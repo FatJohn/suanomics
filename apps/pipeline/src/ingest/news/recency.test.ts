@@ -5,7 +5,7 @@ const now = new Date('2026-11-08T00:00:00Z')
 const entry = (publishedAt: Date | null) => ({ publishedAt })
 
 describe('fEED_WINDOW_HOURS', () => {
-  // 非交易日不跑 ingest，窗要大於最長休市（2026 春節 02-12 到 02-22，共 11 天）。
+  // 窗要大於最長休市（2026 春節 02-12 到 02-22，共 11 天），非交易日那幾次抓取失敗時才補得回來。
   it('涵蓋最長連休', () => {
     expect(FEED_WINDOW_HOURS).toBeGreaterThanOrEqual(11 * 24)
   })
