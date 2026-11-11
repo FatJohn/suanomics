@@ -37,7 +37,7 @@ type NarrativeRetryReason = RetryReason
 //   3. Sanitize forbidden + ticker-direction in-place（沿用 SAFE_REWRITE_MAP、不 retry）
 //   4. Clamp string fields（防 sanitize 撐爆 max 400/250）
 //   5. Final Zod re-parse sanity check
-// Retry：1 retry on (1) Zod fail (2) Gemini API fail、第二次失敗 → null + audit
+// Retry：1 retry on (1) Zod fail (2) LLM API fail、第二次失敗 → null + audit
 
 export interface CallNarrativeWriterParams {
   brief: MarketBrief
@@ -155,7 +155,7 @@ export async function callNarrativeWriter(
       })
 
       // clamp BEFORE parse（沿用 synthesizer.ts normalizeForSynthesizerSchema pattern）
-      // Gemini 偶會超 schema max（intro>250 / body>400 / outro>250）、與其讓 Zod 直接 throw
+      // LLM 偶會超 schema max（intro>250 / body>400 / outro>250；v0 在 Gemini 上觀察到）、與其讓 Zod 直接 throw
       // 整批 retry、不如先 truncate 再 parse、保留 narrative 連續性。
       // 加 citationUrls 過濾 + 空集 fallback：drop unknown urls、若空則塞 first valid url
       const validCitationUrls = p.citations.map(c => c.url)

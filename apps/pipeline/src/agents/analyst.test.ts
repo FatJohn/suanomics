@@ -255,7 +255,7 @@ describe('analyst · quote truncation hotfix', () => {
     vi.resetAllMocks()
   })
 
-  it('should truncate cascadeChains[].citations[].quote when Gemini returns > 600 chars', async () => {
+  it('should truncate cascadeChains[].citations[].quote when the LLM returns > 600 chars', async () => {
     const longQuote = 'A'.repeat(700)
     vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'x',
@@ -298,7 +298,7 @@ describe('callAnalystTier2', () => {
     nextTierEntities: ['愛德萬測試', '京瓷'],
   }
 
-  it('returns tier 2 cascadeChains from Gemini output', async () => {
+  it('returns tier 2 cascadeChains from LLM output', async () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'tier 2 partner impact',
       cascadeChains: [{
@@ -365,8 +365,8 @@ describe('callAnalystTier2', () => {
     expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(2)
   })
 
-  // empty retrieved 時 prompt 指示 Gemini 留空、單次 call 完成
-  it('returns empty cascadeChains and single call when retrieved is empty (Gemini follows instruction)', async () => {
+  // empty retrieved 時 prompt 指示 LLM 留空、單次 call 完成
+  it('returns empty cascadeChains and single call when retrieved is empty (LLM follows instruction)', async () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'p',
       cascadeChains: [],
@@ -382,9 +382,9 @@ describe('callAnalystTier2', () => {
     expect(vi.mocked(wrapper.callAgent)).toHaveBeenCalledTimes(1)
   })
 
-  // edge case：retrieved 空但 Gemini 沒守紀律仍掰 url、allowedUrls 空集合 → 全 fabricated
+  // edge case：retrieved 空但 LLM 沒守紀律仍掰 url、allowedUrls 空集合 → 全 fabricated
   // → 應 retry maxRetries 次然後 strip 成空 citations
-  it('loops to maxRetries and strips when retrieved is empty but Gemini fabricates URLs', async () => {
+  it('loops to maxRetries and strips when retrieved is empty but the LLM fabricates URLs', async () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue({
       primaryImpact: 'p',
       cascadeChains: [{
@@ -411,13 +411,13 @@ describe('callAnalystTier2', () => {
 // NOTE: 這 describe 驗證 Zod parse path（AnalystOutputSchema.parse 保 nextTierEntities）。
 // LLM response schema（AnalystTier1Response）本身的 shape 由 prod 路徑
 // 驗、不在 unit test 範圍 — 因為 mock 攔截 callAgent、
-// Gemini structured-output 的 schema 永遠用不到。
+// LLM structured-output 的 schema 永遠用不到。
 describe('callAnalystTier1 nextTierEntities', () => {
   beforeEach(() => {
     vi.resetAllMocks()
   })
 
-  it('preserves nextTierEntities when Gemini outputs them', async () => {
+  it('preserves nextTierEntities when the LLM outputs them', async () => {
     // eslint-disable-next-line ts/no-explicit-any -- mock implementation, generic T type not inferrable at mock boundary
     vi.mocked(wrapper.callAgent).mockImplementation(async (_name: any, _input: any, _schema: any, options: any) => {
       options.onCallRecord?.({

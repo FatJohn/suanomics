@@ -1,7 +1,7 @@
 import { truncateString } from './_truncate.js'
 
-// 兩個 tier 的 Analyst Gemini RESPONSE_SCHEMA 都允許 citations[].quote 自由長度、
-// 但實際存 DB / API surface 限定每段 quote ≤ 600 字、避免 Gemini 把整段 article 塞進來。
+// 兩個 tier 的 Analyst response schema 都允許 citations[].quote 自由長度、
+// 但實際存 DB / API surface 限定每段 quote ≤ 600 字、避免 LLM 把整段 article 塞進來。
 // 在 schema-parse 之前先 clamp、shared by tier1 / tier2。
 const MAX_CITATIONS = 5
 
