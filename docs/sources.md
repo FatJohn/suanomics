@@ -47,13 +47,15 @@
 
 | 名稱 | 端點 | 類型 | 條款連結 | 允許用法 |
 |---|---|---|---|---|
-| TWSE OpenAPI | https://openapi.twse.com.tw/v1 底下的 MI_INDEX、MI_QFIIS_cat、MI_MARGN、STOCK_DAY_ALL、t187ap04_L | 官方 OpenAPI | https://www.twse.com.tw/zh/terms/use.html | 數字與事件。OpenAPI 平台歡迎介接 |
+| TWSE OpenAPI | https://openapi.twse.com.tw/v1 底下的 MI_INDEX、MI_QFIIS_cat、MI_MARGN、STOCK_DAY_ALL、t187ap04_L、holidaySchedule | 官方 OpenAPI | https://www.twse.com.tw/zh/terms/use.html | 數字與事件。OpenAPI 平台歡迎介接；holidaySchedule 只供人工核對休市表，pipeline 不抓取 |
 | TWSE 傳統 JSON | https://www.twse.com.tw/rwd/zh/ 底下的 BFI82U、MI_MARGN、TWT93U | 官方 JSON | https://www.twse.com.tw/zh/terms/use.html | 數字。使用條款限制自動化下載，既有序列沿用，維護者 2026-11-08 複核接受 |
 | TPEx OpenAPI | https://www.tpex.org.tw/openapi/v1 底下的 tpex_mainboard_daily_close_quotes、mopsfin_t187ap04_O | 官方 OpenAPI | https://www.tpex.org.tw/zh-tw/gtsm_disclaimer.html?l=zh-tw | 數字與事件。OpenAPI 平台歡迎介接 |
 | Fed 行事曆 | https://www.federalreserve.gov/json/calendar.json | 官方 JSON | https://www.federalreserve.gov/disclaimer.htm | 事件日期。公共領域 |
 | FRED | https://api.stlouisfed.org/fred/series/observations | 官方 API | https://fred.stlouisfed.org/docs/api/terms_of_use.html | 數字。部分序列版權屬第三方，個人使用以外須取得所有者同意，維護者 2026-11-08 複核接受 |
 | TAIFEX | https://www.taifex.com.tw | 官方網站 | https://www.taifex.com.tw/cht/5/copyright | 數字。維護者 2026-11-08 複核接受 |
 | Nasdaq | https://api.nasdaq.com | 商業 API | https://www.nasdaq.com/legal | 數字。維護者 2026-11-08 複核接受 |
+| 人事行政總處辦公日曆表 | https://www.dgpa.gov.tw/information?uid=83&pid=13114 | 官方網頁 | https://www.dgpa.gov.tw/archive?uid=76 | 放假日期。TWSE 未公告當年開休市日期時，暫代台股休市表，人工核對，pipeline 不抓取 |
+| NYSE 休市表 | https://www.nyse.com/markets/hours-calendars | 官方網頁 | https://www.ice.com/privacy-security-center/terms-of-use | 休市日期。人工年度核對後寫進 `packages/shared/src/market-holidays.ts`，pipeline 不抓取 |
 
 ## 不接的來源
 

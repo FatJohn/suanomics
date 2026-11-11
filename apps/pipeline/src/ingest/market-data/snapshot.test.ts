@@ -55,9 +55,9 @@ describe('buildSnapshotBlock', () => {
   it('假日表涵蓋窗外 + 超過絕對曆日門檻 → 仍抑制（降級路徑的抑制分支）', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const out = buildSnapshotBlock(
-      [{ spec: spec('us-sox'), points: [{ date: '2026-12-20', value: 5432 }] }],
-      new Date('2027-01-05T05:10:00+08:00'),
-      '2027-01-05',
+      [{ spec: spec('us-sox'), points: [{ date: '2027-12-20', value: 5432 }] }],
+      new Date('2028-01-05T05:10:00+08:00'),
+      '2028-01-05',
     )
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('超出假日表涵蓋窗'))
     expect(out).toContain('- 費城半導體指數：資料未更新')
@@ -72,12 +72,12 @@ describe('buildSnapshotBlock', () => {
   it('降級路徑錨在 reportDate：補跑舊報告時，距 reportDate 在門檻內就該顯示（即使距 now 已超過門檻）', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const out = buildSnapshotBlock(
-      [{ spec: spec('us-sox'), points: [{ date: '2027-01-02', value: 5432 }] }],
-      new Date('2027-06-01T05:10:00+08:00'), // 執行當下（補跑當天）——距 latest 已遠超 5 天門檻
-      '2027-01-05', // reportDate，距 latest（2027-01-02）僅 3 天（門檻內）
+      [{ spec: spec('us-sox'), points: [{ date: '2028-01-02', value: 5432 }] }],
+      new Date('2028-06-01T05:10:00+08:00'), // 執行當下（補跑當天）——距 latest 已遠超 5 天門檻
+      '2028-01-05', // reportDate，距 latest（2028-01-02）僅 3 天（門檻內）
     )
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('超出假日表涵蓋窗'))
-    expect(out).toContain('- 費城半導體指數：5,432 點（2027-01-02）')
+    expect(out).toContain('- 費城半導體指數：5,432 點（2028-01-02）')
     warnSpy.mockRestore()
   })
 
@@ -89,9 +89,9 @@ describe('buildSnapshotBlock', () => {
   it('降級路徑錨在 reportDate 的 positive control：距 reportDate 也超過門檻時仍抑制', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const out = buildSnapshotBlock(
-      [{ spec: spec('us-sox'), points: [{ date: '2026-11-01', value: 5432 }] }],
-      new Date('2027-06-01T05:10:00+08:00'), // 與上面那條同一個遠期 now
-      '2027-01-05', // reportDate，距 latest（2026-11-01）65 天、遠超 5 天門檻
+      [{ spec: spec('us-sox'), points: [{ date: '2027-11-01', value: 5432 }] }],
+      new Date('2028-06-01T05:10:00+08:00'), // 與上面那條同一個遠期 now
+      '2028-01-05', // reportDate，距 latest（2027-11-01）65 天、遠超 5 天門檻
     )
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('超出假日表涵蓋窗'))
     expect(out).toContain('- 費城半導體指數：資料未更新')
@@ -105,12 +105,12 @@ describe('buildSnapshotBlock', () => {
   it('降級路徑門檻邊界：距 reportDate 剛好等於 STALE_DAYS 天數 → 顯示', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const out = buildSnapshotBlock(
-      [{ spec: spec('us-sox'), points: [{ date: '2027-01-05', value: 5432 }] }],
-      new Date('2027-06-01T05:10:00+08:00'), // 同一組遠期 now，確保基準真的是 reportDate
-      '2027-01-10', // reportDate，距 latest（2027-01-05）剛好 5 天＝STALE_DAYS.daily
+      [{ spec: spec('us-sox'), points: [{ date: '2028-01-05', value: 5432 }] }],
+      new Date('2028-06-01T05:10:00+08:00'), // 同一組遠期 now，確保基準真的是 reportDate
+      '2028-01-10', // reportDate，距 latest（2028-01-05）剛好 5 天＝STALE_DAYS.daily
     )
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('超出假日表涵蓋窗'))
-    expect(out).toContain('- 費城半導體指數：5,432 點（2027-01-05）')
+    expect(out).toContain('- 費城半導體指數：5,432 點（2028-01-05）')
     warnSpy.mockRestore()
   })
 
@@ -118,9 +118,9 @@ describe('buildSnapshotBlock', () => {
   it('降級路徑門檻邊界：距 reportDate 為 STALE_DAYS+1 天 → 抑制', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const out = buildSnapshotBlock(
-      [{ spec: spec('us-sox'), points: [{ date: '2027-01-04', value: 5432 }] }],
-      new Date('2027-06-01T05:10:00+08:00'),
-      '2027-01-10', // reportDate，距 latest（2027-01-04）6 天＝STALE_DAYS.daily+1
+      [{ spec: spec('us-sox'), points: [{ date: '2028-01-04', value: 5432 }] }],
+      new Date('2028-06-01T05:10:00+08:00'),
+      '2028-01-10', // reportDate，距 latest（2028-01-04）6 天＝STALE_DAYS.daily+1
     )
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('超出假日表涵蓋窗'))
     expect(out).toContain('- 費城半導體指數：資料未更新')
@@ -584,13 +584,13 @@ describe('q3b 降級：假日表涵蓋窗外', () => {
   it('warn 出聲並退回舊的絕對曆日粗判（症狀與要修的 bug 同形、不能無聲）', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const out = buildSnapshotBlock(
-      [{ spec: spec('us-sox'), points: [{ date: '2027-01-04', value: 5432 }] }],
-      new Date('2027-01-05T05:10:00+08:00'),
-      '2027-01-05',
+      [{ spec: spec('us-sox'), points: [{ date: '2028-01-04', value: 5432 }] }],
+      new Date('2028-01-05T05:10:00+08:00'),
+      '2028-01-05',
     )
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('超出假日表涵蓋窗'))
     // 涵蓋窗外仍在曆日門檻內 → 數字照給、但不帶落後標注（期望值算不出來）
-    expect(out).toContain('- 費城半導體指數：5,432 點（2027-01-04）')
+    expect(out).toContain('- 費城半導體指數：5,432 點（2028-01-04）')
     expect(out).not.toContain('落後')
     warnSpy.mockRestore()
   })
@@ -670,9 +670,9 @@ describe('selectCitableSeries', () => {
   it('假日表窗外且超過曆日門檻的序列不列入，且不重複發出降級 warn', () => {
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const out = selectCitableSeries(
-      [{ spec: spec('us-sox'), points: [{ date: '2026-12-20', value: 5432 }] }],
-      new Date('2027-01-05T05:10:00+08:00'),
-      '2027-01-05',
+      [{ spec: spec('us-sox'), points: [{ date: '2027-12-20', value: 5432 }] }],
+      new Date('2028-01-05T05:10:00+08:00'),
+      '2028-01-05',
     )
     expect(out).toEqual([])
     // warn 屬渲染路徑（buildSnapshotBlock）的職責；清單路徑再叫一次等於同一次載入警告兩次

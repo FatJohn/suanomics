@@ -40,7 +40,7 @@ describe('expectedAsOf：trading-daily', () => {
     expect(expectedAsOf(US_DAILY_LAG1, '2026-09-29')).toBe('2026-09-28')
   })
   it('超出假日表涵蓋窗回 null（不可信、不硬算）', () => {
-    expect(expectedAsOf(US_DAILY_LAG1, '2027-01-05')).toBeNull()
+    expect(expectedAsOf(US_DAILY_LAG1, '2028-01-05')).toBeNull()
   })
 })
 
@@ -59,7 +59,7 @@ describe('expectedAsOf：weekly', () => {
     expect(expectedAsOf(WEEKLY_WED, '2026-07-29')).toBe('2026-07-20')
   })
   it('超出涵蓋窗回 null', () => {
-    expect(expectedAsOf(WEEKLY_MON, '2027-01-05')).toBeNull()
+    expect(expectedAsOf(WEEKLY_MON, '2028-01-05')).toBeNull()
   })
 })
 
@@ -81,7 +81,7 @@ describe('expectedAsOf：monthly（不需假日表、涵蓋窗外仍可算）', 
     expect(expectedAsOf(MONTHLY_PAYROLLS, '2026-08-07')).toBe('2026-07-01')
   })
   it('涵蓋窗外照算（月頻不看交易日曆）', () => {
-    expect(expectedAsOf(MONTHLY_CPI, '2027-03-01')).toBe('2027-01-01')
+    expect(expectedAsOf(MONTHLY_CPI, '2028-03-01')).toBe('2028-01-01')
   })
   it('跨年往回找參考月', () => {
     expect(expectedAsOf(MONTHLY_CPI, '2027-01-10')).toBe('2026-11-01')
@@ -138,7 +138,7 @@ describe('classifyFreshness：五種狀態', () => {
     expect(r).toMatchObject({ state: 'missing', lagCycles: null, actualAsOf: null })
   })
   it('涵蓋窗外 → unknown（不標注落後、交給降級路徑判）', () => {
-    const r = classifyFreshness({ ...base, reportDate: '2027-01-05', actualAsOf: '2026-12-30' })
+    const r = classifyFreshness({ ...base, reportDate: '2028-01-05', actualAsOf: '2027-12-30' })
     expect(r).toMatchObject({ state: 'unknown', expectedAsOf: null, lagCycles: null })
   })
 })

@@ -12,27 +12,58 @@ export interface PublicationDay {
 
 // 假日表：TWSE 休市日與 NYSE 假日（皆排除週末、半日交易算開市不列入）。年度手動更新、
 // 下方 time-bomb 測試在涵蓋終點前 30 天自動紅、逼更新（比照 econ-calendar 前例）。
-// 來源（查證日 2026-07-20，見下列出處）：
-//   TWSE OpenAPI holidaySchedule（僅公告至 2026、ROC 115）
-//   NYSE hours-calendars（full-day holidays）
-// 涵蓋窗口：2026-07-21 起至 HOLIDAY_COVERAGE_END；台美兩表對稱截於此窗、2027 待年度更新一併補。
+// 來源：
+//   2026 台股：TWSE OpenAPI holidaySchedule（查證日 2026-07-20）
+//   2027 台股（暫定）：TWSE 尚未公告 116 年開休市日期，先用人事行政總處 116 年政府行政機關
+//     辦公日曆表的平日放假日（查證日 2026-11-11）。TWSE 公告後要逐筆核對，春節前「市場無交易，
+//     僅辦理結算交割」的日子不在辦公日曆表上，可能要補。
+//   美股：NYSE hours-calendars（full-day holidays；2026 查證日 2026-07-20、2027 查證日 2026-11-11）
+// 涵蓋窗口：2026-07-21 起至 HOLIDAY_COVERAGE_END；台美兩表對稱截於此窗。
 export const TW_MARKET_HOLIDAYS: readonly string[] = [
   '2026-09-25', // 中秋節
   '2026-09-28', // 孔子誕辰紀念日／教師節
   '2026-10-09', // 國慶日補假（10-10 適逢週六）
   '2026-10-26', // 臺灣光復節補假（10-25 適逢週日）
   '2026-12-25', // 行憲紀念日
+  // 2027（暫定，見上方來源說明）
+  '2027-01-01', // 中華民國開國紀念日
+  '2027-02-04', // 農曆除夕前一日
+  '2027-02-05', // 農曆除夕
+  '2027-02-08', // 春節（初三）
+  '2027-02-09', // 春節補假（初一 02-06 適逢週六）
+  '2027-02-10', // 春節補假（初二 02-07 適逢週日）
+  '2027-03-01', // 和平紀念日補假（02-28 適逢週日）
+  '2027-04-05', // 民族掃墓節
+  '2027-04-06', // 兒童節補假（04-04 適逢週日）
+  '2027-04-30', // 勞動節補假（05-01 適逢週六）
+  '2027-06-09', // 端午節
+  '2027-09-15', // 中秋節
+  '2027-09-28', // 孔子誕辰紀念日／教師節
+  '2027-10-11', // 國慶日補假（10-10 適逢週日）
+  '2027-10-25', // 臺灣光復暨金門古寧頭大捷紀念日
+  '2027-12-24', // 行憲紀念日補假（12-25 適逢週六）
+  '2027-12-31', // 中華民國開國紀念日補假（2028-01-01 適逢週六）
 ]
 
 export const US_MARKET_HOLIDAYS: readonly string[] = [
   '2026-09-07', // Labor Day
   '2026-11-26', // Thanksgiving Day
   '2026-12-25', // Christmas Day
+  // 2027：NYSE hours-calendars 已公告（查證日 2026-11-11）
+  '2027-01-01', // New Year's Day
+  '2027-01-18', // Martin Luther King, Jr. Day
+  '2027-02-15', // Washington's Birthday
+  '2027-03-26', // Good Friday
+  '2027-05-31', // Memorial Day
+  '2027-06-18', // Juneteenth National Independence Day（06-19 適逢週六，週五補假）
+  '2027-07-05', // Independence Day（07-04 適逢週日，週一補假）
+  '2027-09-06', // Labor Day
+  '2027-11-25', // Thanksgiving Day（11-26 早收盤算開市、不列入）
+  '2027-12-24', // Christmas Day（12-25 適逢週六，週五補假）
 ]
 
-// TWSE 尚未公告 2027（ROC 116）行事曆、故涵蓋終點退到 2026-12-31；NYSE 2027 雖已公告、
-// 為與台股表對稱一併留待年度更新。time-bomb 會在 2026-12 初逼補（屬預期）。
-export const HOLIDAY_COVERAGE_END = '2026-12-31'
+// 2027 台股表是暫定版（見上方來源說明）；time-bomb 會在 2027-12 初逼下一次年度更新（屬預期）。
+export const HOLIDAY_COVERAGE_END = '2027-12-31'
 
 export const HOLIDAY_FRESHNESS_MIN_DAYS = 30
 
@@ -41,6 +72,21 @@ const MS_PER_DAY = 86_400_000
 export function daysUntilHolidayCoverageExhausted(now: Date): number {
   const end = new Date(`${HOLIDAY_COVERAGE_END}T00:00:00Z`).getTime()
   return Math.floor((end - now.getTime()) / MS_PER_DAY)
+}
+
+// 2027 台股表是暫定版，涵蓋終點的 time-bomb 要到 2027-12 才會叫，擋不住「TWSE 公告後沒人核對」。
+// 另設核對期限：期限一到測試就紅。選 2027-01-15 是為了趕在春節前停止交易的日子（往例是除夕前
+// 兩個交易日，2027 推估為 02-02、02-03）之前核對完。核對完設為 null。
+// 期限以 UTC 00:00 起算（台北 08:00），與上方涵蓋終點的算法一致。
+export const TW_HOLIDAYS_PROVISIONAL_UNTIL: string | null = '2027-01-15'
+
+export function isTwHolidayProvisionalReviewOverdue(
+  now: Date,
+  until: string | null = TW_HOLIDAYS_PROVISIONAL_UNTIL,
+): boolean {
+  if (until === null)
+    return false
+  return now.getTime() >= new Date(`${until}T00:00:00Z`).getTime()
 }
 
 const TW_HOLIDAY_SET = new Set(TW_MARKET_HOLIDAYS)
