@@ -1,5 +1,7 @@
+import { HOLIDAY_COVERAGE_END } from '@suanomics/shared'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { loadMarketContext } from './context.js'
+import { thirdWeekdayOfMonth } from './derivatives-expiry.js'
 
 // 攔住 LLM 呼叫層：衍生品到期事件是規則算出來的，載入行事曆時一次都不該碰到 generateText。
 const { generateText } = vi.hoisted(() => ({ generateText: vi.fn() }))
@@ -54,10 +56,14 @@ describe('loadMarketContext 衍生品到期事件', () => {
 
   it('視窗超出休市表涵蓋範圍：不帶未經調整的日期，並 warn 列出是哪幾筆', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const ctx = await load('2028-03-13')
+    // 休市表涵蓋終點隔年的 3 月：補表後跟著往後移，不會因為年度補表變紅。
+    const beyond = Number(HOLIDAY_COVERAGE_END.slice(0, 4)) + 1
+    const tw = thirdWeekdayOfMonth(beyond, 3, 3)
+    const us = thirdWeekdayOfMonth(beyond, 3, 5)
+    const ctx = await load(tw)
     expect(ctx.calendarEvents).toEqual([])
     const messages = warn.mock.calls.map(c => String(c[0]))
-    expect(messages.some(m => m.includes('休市表涵蓋範圍') && m.includes('2028-03-15') && m.includes('2028-03-17'))).toBe(true)
+    expect(messages.some(m => m.includes('休市表涵蓋範圍') && m.includes(tw) && m.includes(us))).toBe(true)
   })
 
   it('涵蓋範圍內不發涵蓋告警', async () => {

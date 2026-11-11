@@ -54,6 +54,10 @@ interface ExpiryRule {
 const TW_SETTLEMENT: ExpiryRule = { weekday: 3, step: 1 }
 const US_QUAD_WITCHING: ExpiryRule = { weekday: 5, step: -1 }
 
+// 涵蓋範圍外不知道會順延幾天，用這個上限判斷規則日在視窗外的那筆會不會落進視窗。
+// 已知最長的是 2023-01 台指期：規則日 01-18、結算日 01-30，順延 12 天。
+const MAX_ROLL_DAYS = 14
+
 function pad(n: number): string {
   return String(n).padStart(2, '0')
 }
@@ -129,28 +133,36 @@ const EXPIRY_KINDS: ExpiryKind[] = [
   },
 ]
 
+// 調整後的日期可能落在 [start, end] 的話回 true：往後順延的規則日最早要看到 start 前 MAX_ROLL_DAYS 天，
+// 往前提前的最晚要看到 end 後 MAX_ROLL_DAYS 天。寧可多告警一筆，不漏掉落進視窗的那筆。
+function mayLandInWindow(raw: string, step: 1 | -1, start: string, end: string): boolean {
+  return step === 1
+    ? raw >= shiftDays(start, -MAX_ROLL_DAYS) && raw <= end
+    : raw >= start && raw <= shiftDays(end, MAX_ROLL_DAYS)
+}
+
 /**
  * [start, end]（含兩端，YYYY-MM-DD）內的衍生品到期事件。
- * 休市表涵蓋不到的月份不產出事件，而是把規則日期落在視窗內的那幾筆列進 uncovered，
+ * 休市表涵蓋不到的月份不產出事件，而是把調整後可能落在視窗內的那幾筆列進 uncovered，
  * 讓呼叫端出聲；不拿未經調整的日期充數。
  */
 export function deriveExpiryEvents(start: string, end: string): { events: CalendarEvent[], uncovered: UncoveredExpiry[] } {
   const events: CalendarEvent[] = []
   const uncovered: UncoveredExpiry[] = []
-  // 從 start 前一個月掃起：上個月的台指期結算日順延後可能落進視窗。
+  // 前後各多掃一個月：上個月的台指期結算日順延、下個月的四巫日提前都可能落進視窗。
   let year = Number(start.slice(0, 4))
   let month = Number(start.slice(5, 7)) - 1
   if (month === 0) {
     year -= 1
     month = 12
   }
-  while (`${year}-${pad(month)}` <= end.slice(0, 7)) {
+  while (`${year}-${pad(month)}` <= shiftDays(end, 31).slice(0, 7)) {
     const ym = `${year}-${pad(month)}`
     for (const kind of EXPIRY_KINDS.filter(k => k.applies(month))) {
       const raw = thirdWeekdayOfMonth(year, month, kind.rule.weekday)
       const date = rollToTradingDay(raw, kind.rule.step, kind.rules)
       if (date === null) {
-        if (raw >= start && raw <= end)
+        if (mayLandInWindow(raw, kind.rule.step, start, end))
           uncovered.push({ title: kind.title(ym), rawDate: raw })
       }
       else if (date >= start && date <= end) {

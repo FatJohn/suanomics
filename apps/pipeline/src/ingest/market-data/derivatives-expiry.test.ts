@@ -1,6 +1,10 @@
 import type { MarketRules } from './derivatives-expiry.js'
+import { HOLIDAY_COVERAGE_END } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
 import { deriveExpiryEvents, thirdWeekdayOfMonth, twIndexFuturesSettlement, usQuadWitching } from './derivatives-expiry.js'
+
+// 休市表涵蓋終點的隔年：年度補表後跟著往後移，涵蓋範圍外的案例不會因為補表變紅。
+const BEYOND = Number(HOLIDAY_COVERAGE_END.slice(0, 4)) + 1
 
 // 用指定休市日組出規則，給休市表涵蓋範圍以前的官方實例用（2023、2026 上半年）。
 function rulesWith(holidays: string[], coverageStart: string, coverageEnd: string): MarketRules {
@@ -13,6 +17,12 @@ function rulesWith(holidays: string[], coverageStart: string, coverageEnd: strin
       return dow !== 0 && dow !== 6 && !set.has(d)
     },
   }
+}
+
+function shiftIso(date: string, days: number): string {
+  const d = new Date(`${date}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
 }
 
 describe('thirdWeekdayOfMonth', () => {
@@ -58,7 +68,7 @@ describe('twIndexFuturesSettlement', () => {
 
   it('超出休市表涵蓋範圍回 null，不產出未經調整的日期', () => {
     expect(twIndexFuturesSettlement(2026, 6)).toBeNull()
-    expect(twIndexFuturesSettlement(2028, 1)).toBeNull()
+    expect(twIndexFuturesSettlement(BEYOND, 1)).toBeNull()
   })
 
   it('順延途中走出涵蓋範圍也回 null', () => {
@@ -91,7 +101,7 @@ describe('usQuadWitching', () => {
 
   it('超出休市表涵蓋範圍回 null', () => {
     expect(usQuadWitching(2026, 6)).toBeNull()
-    expect(usQuadWitching(2028, 3)).toBeNull()
+    expect(usQuadWitching(BEYOND, 3)).toBeNull()
   })
 })
 
@@ -120,11 +130,27 @@ describe('deriveExpiryEvents', () => {
   })
 
   it('超出休市表涵蓋範圍：不產出事件，uncovered 列出未經調整的候選日', () => {
-    const { events, uncovered } = deriveExpiryEvents('2028-03-13', '2028-03-20')
+    const tw = thirdWeekdayOfMonth(BEYOND, 3, 3)
+    const us = thirdWeekdayOfMonth(BEYOND, 3, 5)
+    const { events, uncovered } = deriveExpiryEvents(tw, us)
     expect(events).toEqual([])
     expect(uncovered).toEqual([
-      { title: '台指期 2028-03 月契約最後結算日', rawDate: '2028-03-15' },
-      { title: '美股四巫日（2028-03 季度期貨與選擇權到期）', rawDate: '2028-03-17' },
+      { title: `台指期 ${BEYOND}-03 月契約最後結算日`, rawDate: tw },
+      { title: `美股四巫日（${BEYOND}-03 季度期貨與選擇權到期）`, rawDate: us },
     ])
+  })
+
+  // 涵蓋範圍外不知道會順延幾天：台指期往後順延、四巫日往前提前，規則日在視窗外也可能落進來。
+  it('超出涵蓋範圍時，規則日在視窗前的台指期、在視窗後的四巫日也列進 uncovered', () => {
+    const tw = thirdWeekdayOfMonth(BEYOND, 3, 3)
+    const us = thirdWeekdayOfMonth(BEYOND, 3, 5)
+    const twOnly = deriveExpiryEvents(shiftIso(tw, 1), shiftIso(tw, 1))
+    expect(twOnly.uncovered.map(u => u.rawDate)).toContain(tw)
+    const usOnly = deriveExpiryEvents(shiftIso(us, -1), shiftIso(us, -1))
+    expect(usOnly.uncovered.map(u => u.rawDate)).toContain(us)
+  })
+
+  it('涵蓋範圍內規則日在視窗外、調整後也不進視窗的，不列 uncovered 也不產出', () => {
+    expect(deriveExpiryEvents('2027-06-18', '2027-06-20')).toEqual({ events: [], uncovered: [] })
   })
 })

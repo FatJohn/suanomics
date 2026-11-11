@@ -302,7 +302,7 @@ async function loadCalendar(
   const expiry = deriveExpiryEvents(reportDate, windowEnd)
   if (expiry.uncovered.length > 0) {
     console.warn(
-      `[market-context] 衍生品到期日超出休市表涵蓋範圍、未列入行事曆：`
+      `[market-context] 衍生品到期日超出休市表涵蓋範圍、可能落在視窗內但未列入行事曆：`
       + `${expiry.uncovered.map(u => `${u.title}（規則日 ${u.rawDate}）`).join('、')}`,
     )
   }
