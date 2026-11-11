@@ -3,8 +3,16 @@ import { checkCompliance, stripViolatingProseBy } from '@suanomics/shared'
 // 空白也拿掉：換行與空白在瀏覽器上不會把一個詞拆開給讀者看。
 const MARKDOWN_MARKS = /[*_`~\s]/g
 
+// 空行在 markdown 渲染成不同段落，對讀者是句界（#76）。比照 markdown-it：
+// 先把 \r\n 與單獨的 \r 視為換行，空行只容許空格與 tab。
+const LINE_BREAK = /\r\n?/g
+const PARAGRAPH_BREAK = /\n[ \t]*\n/
+
+// 兩種讀法任一命中就擋：全部壓平防拆字繞過；保留段落界防前段主詞替後段方向詞背書。
+// 取聯集，結果只會比原本的全壓平更嚴；前提是 MARKDOWN_MARKS 拿掉所有空白，join('') 才等於舊判定。
 function isBlocked(text: string): boolean {
-  return checkCompliance(text.replace(MARKDOWN_MARKS, '')) !== null
+  const paragraphs = text.replace(LINE_BREAK, '\n').split(PARAGRAPH_BREAK).map(p => p.replace(MARKDOWN_MARKS, ''))
+  return checkCompliance(paragraphs.join('')) !== null || checkCompliance(paragraphs.join('\n')) !== null
 }
 
 /** 拿掉被 compliance 規則攔截的句子：切句與丟句與 pipeline 共用，判定用網站自己的 isBlocked（先去掉標記與空白）。 */
