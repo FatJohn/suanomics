@@ -56,8 +56,8 @@
 | Nasdaq | https://api.nasdaq.com | 商業 API | https://www.nasdaq.com/legal | 數字。維護者 2026-11-08 複核接受 |
 | 人事行政總處辦公日曆表 | https://www.dgpa.gov.tw/information?uid=83&pid=13114 | 官方網頁 | https://www.dgpa.gov.tw/archive?uid=76 | 放假日期。TWSE 未公告當年開休市日期時，暫代台股休市表，人工核對，pipeline 不抓取 |
 | NYSE 休市表 | https://www.nyse.com/markets/hours-calendars | 官方網頁 | https://www.ice.com/privacy-security-center/terms-of-use | 休市日期。人工年度核對後寫進 `packages/shared/src/market-holidays.ts`，pipeline 不抓取 |
-| 期交所臺股期貨契約規格與指數期貨最後結算價 | https://www.taifex.com.tw/cht/2/tX 、https://www.taifex.com.tw/cht/5/futIndxFSP | 官方網頁 | https://www.taifex.com.tw/cht/5/copyright | 結算日規則與歷史結算日。人工核對 `apps/pipeline/src/ingest/market-data/derivatives-expiry.ts` 的台指期結算日，pipeline 不抓取；查無機器可讀的未來結算日表 |
-| Cboe 選擇權到期日曆、OCC 到期規則 | https://www.cboe.com/markets/us/options/trading/codes/ 、https://www.theocc.com/company-information/expiration-calendar | 官方網頁 | https://www.cboe.com/terms | 四巫日規則與遇休市調整。人工核對，pipeline 不抓取；查無公開 API，OCC 頁面擋非瀏覽器請求 |
+| 期交所臺股期貨契約規格與指數期貨最後結算價 | https://www.taifex.com.tw/cht/2/tX 、https://www.taifex.com.tw/cht/5/futIndxFSP | 官方網頁 | https://www.taifex.com.tw/cht/edu/userTerms | 結算日規則與歷史結算日。人工核對 `apps/pipeline/src/ingest/market-data/derivatives-expiry.ts` 的台指期結算日，pipeline 不抓取；查無機器可讀的結算日預告表 |
+| Cboe 美股選擇權休市表與年度到期日曆 | https://www.cboe.com/about/hours/us-options/ | 官方網頁 | https://www.cboe.com/terms | 四巫日與遇休市提前的實例（年度到期日曆 PDF，例如 2026-06 標在 06-18）。人工核對，pipeline 不抓取；查無公開 API |
 
 ## 不接的來源
 
