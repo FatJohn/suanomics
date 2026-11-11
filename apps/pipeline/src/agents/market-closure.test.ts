@@ -1,4 +1,4 @@
-import { checkCompliance, containsForbiddenPhrase, FORBIDDEN_PHRASES } from '@suanomics/shared'
+import { checkCompliance, containsForbiddenPhrase, FORBIDDEN_PHRASES, HOLIDAY_COVERAGE_END } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
 import { buildMarketClosureBlock, marketClosureBefore } from './market-closure.js'
 
@@ -28,6 +28,18 @@ describe('marketClosureBefore', () => {
     expect(marketClosureBefore('2026-09-15')).toBeNull()
   })
 
+  it('報告日本身不是交易日（例如 force 在週日跑）時不算休市後第一個交易日', () => {
+    expect(marketClosureBefore('2026-09-13')).toBeNull()
+  })
+
+  it('超出休市表涵蓋終點時不判定：錯的休市區間進 prompt 比沒有更壞', () => {
+    // 由涵蓋終點推算，休市表往後延伸時這條仍然成立，不寫死 2027 日期。
+    const afterEnd = new Date(Date.parse(`${HOLIDAY_COVERAGE_END}T00:00:00Z`) + 86_400_000)
+    while (afterEnd.getUTCDay() !== 1)
+      afterEnd.setUTCDate(afterEnd.getUTCDate() + 1)
+    expect(marketClosureBefore(afterEnd.toISOString().slice(0, 10))).toBeNull()
+  })
+
   it('美股休市不算：感恩節（11-26）台股照開，11-27 不是休市後第一個交易日', () => {
     expect(marketClosureBefore('2026-11-27')).toBeNull()
   })
@@ -46,6 +58,12 @@ describe('buildMarketClosureBlock', () => {
     expect(block).toContain('統整')
     // 只講「昨夜」會把四天的事件壓成一晚。
     expect(block).toContain('昨夜')
+  })
+
+  it('交代 system prompt 的「昨日收盤」「前夜美股」今天指哪一天，不讓兩邊指示互相矛盾', () => {
+    const block = buildMarketClosureBlock('2026-09-29') ?? ''
+    expect(block).toMatch(/「昨日收盤」[^\n]*9\/24（四）/)
+    expect(block).toContain('「前夜美股」')
   })
 
   it('帶入 shared 的 compliance 禁用語清單', () => {

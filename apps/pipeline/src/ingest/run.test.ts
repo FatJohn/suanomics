@@ -84,6 +84,17 @@ describe('runIngest', () => {
     expect(result).toMatchObject({ status: 'done', date: '2026-11-09', failures: [] })
   })
 
+  it('週一選稿逐日分散：當日新聞再多，週末的新聞仍入選（candidate-window.ts）', async () => {
+    const { repo, structured } = await mocks()
+    const at = (iso: string): Date => new Date(iso)
+    const monday = Array.from({ length: 40 }, (_, i) => ({ id: 100 + i, title: `mon-${i}`, url: 'u', contentText: null, category: 'macro' as const, publishedAt: at('2026-11-08T20:00:00Z'), fetchedAt: at('2026-11-08T21:00:00Z'), sourceSlug: 'cna', topicTags: [] }))
+    const saturday = { id: 200, title: 'sat', url: 'u', contentText: null, category: 'macro' as const, publishedAt: at('2026-11-07T04:00:00Z'), fetchedAt: at('2026-11-08T21:00:00Z'), sourceSlug: 'cna', topicTags: [] }
+    vi.mocked(repo.getRelevanceCandidates).mockResolvedValue([...monday, saturday])
+    const result = await runIngest({ now: MONDAY })
+    expect(result.status === 'done' && result.selected.map(c => c.id)).toContain(200)
+    expect(structured.ingestMaterialAnnouncements).toHaveBeenCalled()
+  })
+
   it('單一步驟失敗不中斷其他步驟，失敗列在 failures', async () => {
     const { structured } = await mocks()
     vi.mocked(structured.ingestEconCalendar).mockRejectedValue(new Error('boom'))

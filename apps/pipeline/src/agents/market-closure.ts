@@ -1,4 +1,4 @@
-import { FORBIDDEN_PHRASES, previousTradingDay } from '@suanomics/shared'
+import { FORBIDDEN_PHRASES, HOLIDAY_COVERAGE_END, isTwseTradingDay, previousTradingDay } from '@suanomics/shared'
 import { MARKET_CLOSURE_USER_TEXT } from '../prompts/market-closure.user-content.js'
 
 export interface MarketClosure {
@@ -17,7 +17,11 @@ function shiftDays(date: string, days: number): string {
 
 // 只看 TWSE：美股休市不影響台股是否開盤，也就不構成「休市期間」。
 // 條件是距上一個交易日超過 1 個曆日，不寫死週一，連假後同樣適用。
+// 超出休市表涵蓋終點時交易日曆不可信，寧可不判定（同 market-freshness.ts 的取捨）；
+// 報告日本身休市（force 補跑）也不是「休市後第一個交易日」。
 export function marketClosureBefore(briefDate: string): MarketClosure | null {
+  if (briefDate > HOLIDAY_COVERAGE_END || !isTwseTradingDay(briefDate))
+    return null
   const previous = previousTradingDay(briefDate, 'tw')
   const calendarDays = Math.round((Date.parse(`${briefDate}T00:00:00Z`) - Date.parse(`${previous}T00:00:00Z`)) / MS_PER_DAY)
   if (calendarDays <= 1)
@@ -46,7 +50,7 @@ export function buildMarketClosureBlock(briefDate: string): string | null {
     MARKET_CLOSURE_USER_TEXT.heading,
     MARKET_CLOSURE_USER_TEXT.summaryLine(labelled(closure.previousTradingDay), range, closure.calendarDays),
     MARKET_CLOSURE_USER_TEXT.coverageLine,
-    MARKET_CLOSURE_USER_TEXT.datingLine,
+    MARKET_CLOSURE_USER_TEXT.datingLine(labelled(closure.previousTradingDay)),
     MARKET_CLOSURE_USER_TEXT.complianceLine(FORBIDDEN_PHRASES.join('、')),
   ].join('\n')
 }
