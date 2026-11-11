@@ -39,7 +39,7 @@ flowchart LR
 | 部分 | 職責 | 託管 | 決策紀錄 |
 |---|---|---|---|
 | 觸發器 | Cloudflare Worker 的 Cron Trigger 每日 05:00（台北）呼叫 GitHub API `workflow_dispatch`；Actions 自己的 `schedule` 在 05:20 當備援，pipeline 開頭查當日已有產出就結束 | Cloudflare Workers 免費層 | [觸發器以 Cloudflare Worker 為主、Actions schedule 為備援](../adr/0009-cron-trigger-via-cloudflare-worker.md) |
-| Pipeline | TypeScript CLI：判斷交易日、抓資料、跑 agent、寫 brief 到 Postgres；非交易日（週末與 TWSE 休市日）直接結束 | GitHub Actions（public repo 免費） | 同 0002 |
+| Pipeline | TypeScript CLI：判斷交易日、抓資料、跑 agent、寫 brief 到 Postgres；非交易日（週末與 TWSE 休市日）只抓新聞、不產報告 | GitHub Actions（public repo 免費） | 同 0002 |
 | 持久狀態 | storylines（跨日敘事線與週回顧）、近日 brief 摘要、market data 歷史、news 候選池；drizzle schema 與 repos | Neon Postgres 免費層 | [持久狀態放 Neon Postgres、沿用 drizzle](../adr/0003-neon-postgres.md) |
 | 網站 | Astro 在同一個 Actions job 內 build，直接讀 Postgres 產成純 HTML，`wrangler pages deploy` 上線 | Cloudflare Pages，自訂網域 `suanomics.everbegin.net` | [網站用 Astro 靜態產生](../adr/0005-astro-static-site.md) |
 | 每日花費閘 | pipeline 累計每次 LLM 呼叫的 `totalCostUsd`，超過設定上限即停止並標記該日報告未完成 | pipeline 內 | — |
@@ -50,13 +50,13 @@ Pipeline 的一次執行是固定順序的 DAG，不是 agent 自主迴圈：每
 
 ## 交易日與休市期間
 
-是否產報告只看 TWSE 開休市，美股休市不影響。週末與 TWSE 休市日都是非交易日，`daily` 回 `skipped: non-trading-day`，不產報告；週日特輯不在每日流程內。交易日判斷用 `packages/shared` 的手動休市表，表的涵蓋終點前 30 天由 time-bomb 測試轉紅，逼年度更新。
+是否產報告只看 TWSE 開休市，美股休市不影響。週末與 TWSE 休市日都是非交易日，`daily` 回 `skipped: non-trading-day`，不產報告，但先把新聞抓進候選池：有些 feed 只留一定則數，撐不到下一個交易日，休市期間的新聞要在休市日就抓進來。週日特輯不在每日流程內。交易日判斷用 `packages/shared` 的手動休市表，表的涵蓋終點前 30 天由 time-bomb 測試轉紅，逼年度更新。
 
 距上一個交易日超過 1 個曆日的交易日是「休市後第一個交易日」，條件不寫死週一，連假後同樣適用。這天的報告統整上一個交易日收盤後到當日開盤前的整段休市期間：
 
 | 環節 | 規則 | 理由 |
 |---|---|---|
-| 候選窗 | 往回涵蓋到上一個交易日那次執行抓到的新聞：曆日差加 1 天，上限 14 天。一般交易日仍是 2 天 | 窗以上一個交易日為錨，日後非交易日也抓新聞時，那幾天抓到的新聞自動落在窗內 |
+| 候選窗 | 往回涵蓋到上一個交易日那次執行抓到的新聞：曆日差加 1 天，上限 14 天。一般交易日仍是 2 天 | 窗以上一個交易日為錨，非交易日抓到的新聞都落在窗內 |
 | 選稿名額 | 總數維持 36、各類保底不變，不隨天數放大；休市期間逐日輪流入選，上一個交易日之前的舊聞排最後 | 名額放大會讓 editor 輸入與花費跟著連假長度漲；逐日輪流就足以避免休市期間的新聞被當日新聞擠掉 |
 | prompt | editor 與 narrative-writer 的 user content 加一段統整指示：交代上一個交易日與休市區間、要求統整整段期間、事件一律寫出日期、不用「昨日收盤」「前夜美股」這類相對標籤，並帶入 compliance 禁用語清單。一般交易日不加 | 只進 editor 時主文仍會把多日事件講成一晚 |
 
