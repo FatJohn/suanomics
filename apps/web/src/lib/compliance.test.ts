@@ -38,8 +38,16 @@ describe('redactBlockedSentences', () => {
     expect(redactBlockedSentences('外資\n \n加碼台積電')).toBe('外資\n \n')
   })
 
-  it('單一換行渲染後仍在同一段，同句歸因照常放行（#76）', () => {
+  it('整段只有單一換行時，渲染後仍在同一段，同句歸因照常放行（#76）', () => {
     expect(redactBlockedSentences('外資\n加碼台積電')).toBe('外資\n加碼台積電')
+  })
+
+  it('markdown 把單獨的 \\r 當換行，連續兩個 \\r 也算分段（#76）', () => {
+    expect(redactBlockedSentences('外資\r\r加碼台積電')).toBe('')
+  })
+
+  it('只含全形空白的行在 markdown 不算空行，同句歸因照常放行（#76）', () => {
+    expect(redactBlockedSentences('外資\n　\n加碼台積電')).toBe('外資\n　\n加碼台積電')
   })
 
   it('換行拆開公司名時，個股與方向詞仍被攔下（#76）', () => {
