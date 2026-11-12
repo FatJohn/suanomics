@@ -94,6 +94,13 @@ describe('lagCycles', () => {
     expect(lagCycles(US_DAILY_LAG1, '2026-07-30', '2026-07-29')).toBe(1)
     expect(lagCycles(US_DAILY_LAG1, '2026-07-27', '2026-07-23')).toBe(2) // 週一 vs 前週四
   })
+  it('trading-daily 計數跳過各自市場的休市日', () => {
+    // 美股 11-26 感恩節休市：11-25 到 11-27 只隔 1 個美股交易日
+    expect(lagCycles(US_DAILY_LAG1, '2026-11-27', '2026-11-25')).toBe(1)
+    // 台股 09-25 中秋、09-28 教師節休市：09-24 到 09-29 只隔 1 個台股交易日，美股是 3 個
+    expect(lagCycles(TW_DAILY, '2026-09-29', '2026-09-24')).toBe(1)
+    expect(lagCycles(US_DAILY_LAG1, '2026-09-29', '2026-09-24')).toBe(3)
+  })
   it('weekly 以發布週期計數', () => {
     expect(lagCycles(WEEKLY_MON, '2026-07-24', '2026-07-24')).toBe(0)
     expect(lagCycles(WEEKLY_MON, '2026-07-24', '2026-07-17')).toBe(1)

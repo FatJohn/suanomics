@@ -59,7 +59,7 @@ pnpm knip
 python3 tools/agents-guideline/check_docs.py --repo .
 ```
 
-最後一行要是 `RESULT PASS`。設定在根目錄 `.writing-principles.conf`，排除的檔與理由寫在該檔註解；`docs/adr/` 與 `CHANGELOG.md` 不在掃描範圍。決策紀錄（`docs/adr/`）不改寫，只追加或改狀態；`CHANGELOG.md` 只追加，改動寫進 `## [Unreleased]` 區段。
+最後一行要是 `RESULT PASS`。設定在根目錄 `.writing-principles.conf`，排除的檔與理由寫在該檔註解；`docs/adr/` 與 `CHANGELOG.md` 不在掃描範圍。決策紀錄（`docs/adr/`）不改寫，只追加或改狀態；`CHANGELOG.md` 已發版的區段只追加、不改寫；改動寫進 `## [Unreleased]` 區段，這個區段的既有條目可以修訂。
 
 改了 [程式碼規則](docs/rules/coding.md) 的 `###` 標題後，重跑產生指令讓 `AGENTS.md` 的規則清單同步：
 
