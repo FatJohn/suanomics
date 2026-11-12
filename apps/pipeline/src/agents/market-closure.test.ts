@@ -2,7 +2,7 @@ import { checkCompliance, containsForbiddenPhrase, FORBIDDEN_PHRASES, HOLIDAY_CO
 import { describe, expect, it } from 'vitest'
 import { buildMarketClosureBlock, marketClosureBefore } from './market-closure.js'
 
-// 日期全落在 2026 年、假日表已涵蓋的範圍（2026-07-21 起），不依賴 2027 資料。
+// 日期全落在 2026 年、假日表已涵蓋的範圍（`HOLIDAY_COVERAGE_START` 起），不依賴 2027 資料。
 describe('marketClosureBefore', () => {
   it('週五到週一：上一個交易日是週五、休市期間是週六日', () => {
     expect(marketClosureBefore('2026-09-14')).toEqual({
