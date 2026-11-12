@@ -5,7 +5,7 @@
 // 而少一個交易日的日頻序列（us-sox 靜默 T-1）又抓不到。
 // 這裡改成先算「此刻應該有哪一天的資料」（expectedAsOf），再看實際落後幾個發布週期。
 import { z } from 'zod'
-import { HOLIDAY_COVERAGE_END, TW_MARKET_HOLIDAYS, US_MARKET_HOLIDAYS } from './market-holidays.js'
+import { HOLIDAY_COVERAGE_END, isNyseTradingDay, isTwseTradingDay } from './market-holidays.js'
 
 /**
  * 每條序列的發布節奏。值必須來自對來源發布日曆的實測、不可推測——
@@ -41,8 +41,6 @@ export type SeriesFreshness = z.infer<typeof SeriesFreshnessSchema>
  */
 export const STALE_HIDE_CYCLES = 3
 
-const TW_HOLIDAYS = new Set(TW_MARKET_HOLIDAYS)
-const US_HOLIDAYS = new Set(US_MARKET_HOLIDAYS)
 const MS_PER_DAY = 86_400_000
 
 function toUtc(date: string): Date {
@@ -76,10 +74,7 @@ function previousMonthStart(monthStart: string): string {
 }
 
 function isTradingDay(date: string, market: 'tw' | 'us'): boolean {
-  const dow = dowOf(date)
-  if (dow === 0 || dow === 6)
-    return false
-  return !(market === 'tw' ? TW_HOLIDAYS : US_HOLIDAYS).has(date)
+  return market === 'tw' ? isTwseTradingDay(date) : isNyseTradingDay(date)
 }
 
 /** 給讀者面用：判斷某筆資料是不是「該市場最近一個交易日」的值。 */
