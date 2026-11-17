@@ -5,7 +5,7 @@
 // 而少一個交易日的日頻序列（us-sox 靜默 T-1）又抓不到。
 // 這裡改成先算「此刻應該有哪一天的資料」（expectedAsOf），再看實際落後幾個發布週期。
 import { z } from 'zod'
-import { HOLIDAY_COVERAGE_END, isNyseTradingDay, isTwseTradingDay } from './market-holidays.js'
+import { HOLIDAY_COVERAGE_END, HOLIDAY_COVERAGE_START, isNyseTradingDay, isTwseTradingDay } from './market-holidays.js'
 
 /**
  * 每條序列的發布節奏。值必須來自對來源發布日曆的實測、不可推測——
@@ -126,7 +126,12 @@ export function expectedAsOf(rule: FreshnessRule, reportDate: string): string | 
   return shiftDays(release, -rule.coverageLagDays)
 }
 
-function tradingDaysBetween(from: string, to: string, market: 'tw' | 'us'): number {
+function tradingDaysBetween(from: string, to: string, market: 'tw' | 'us'): number | null {
+  // 涵蓋起點之前的休市日沒收錄、會被當成交易日多算；回 null 讓上游走 unknown 降級，
+  // 理由同 withinHolidayCoverage。只計 from 之後的日子，所以 from 是起點前一天仍可判定。
+  // to 是 expectedAsOf，只受涵蓋終點約束；報告日本身早於起點的情況這裡不處理。
+  if (shiftDays(from, 1) < HOLIDAY_COVERAGE_START)
+    return null
   // 計「嚴格晚於 from 且不晚於 to」的交易日數
   let count = 0
   let cursor = to
@@ -149,7 +154,8 @@ function assertNeverCadence(rule: never): never {
   throw new Error(`unhandled freshness cadence: ${JSON.stringify(rule)}`)
 }
 
-export function lagCycles(rule: FreshnessRule, expected: string, actual: string): number {
+/** null＝無法判定（trading-daily 的 actual 早於假日表涵蓋起點）。 */
+export function lagCycles(rule: FreshnessRule, expected: string, actual: string): number | null {
   // 實際比期望新＝來源提前發布、不是落後
   if (actual >= expected)
     return 0
@@ -183,6 +189,8 @@ export function classifyFreshness(args: ClassifyFreshnessArgs): SeriesFreshness 
     return { ...base, lagCycles: null, state: 'unknown' }
 
   const lag = lagCycles(args.rule, expected, args.actualAsOf)
+  if (lag == null)
+    return { ...base, lagCycles: null, state: 'unknown' }
   const state = lag === 0 ? 'fresh' : lag >= STALE_HIDE_CYCLES ? 'stale' : 'lagging'
   return { ...base, lagCycles: lag, state }
 }

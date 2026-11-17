@@ -1,4 +1,5 @@
 import type { SeriesLatest } from './snapshot.js'
+import { HOLIDAY_COVERAGE_START } from '@suanomics/shared'
 import { describe, expect, it, vi } from 'vitest'
 import { SERIES_SPECS } from './series-config.js'
 import { buildSnapshotBlock, displayValueOf, formatSeriesValue, resolveSeriesRenderState, selectCitableSeries, selectSeriesAnchors } from './snapshot.js'
@@ -312,35 +313,38 @@ describe('buildSnapshotBlock', () => {
 
   // 全文契約：三區各至少 1 條（含一條過舊、一條帶前期比較）、把 ## 標題 / ### 階層 /
   // 空行 / 行序整塊釘死。這串是給 LLM 的 prompt 契約、結構若被小改動悄悄破壞、此測試先紅。
+  // 日期要落在假日表涵蓋窗內，交易日落後標注才算得出來；取 REPORT_DATE 往後 26 週的同一個週五。
+  const CONTRACT_NOW = new Date('2026-12-11T08:00:00Z')
+  const CONTRACT_REPORT_DATE = '2026-12-11'
   it('pins the full block structure (LLM prompt contract)', () => {
     const out = buildSnapshotBlock([
-      // us-macro：帶前月比較 + 過舊（失業率 2026-02 落後期望 3 個月、達硬上限）
-      { spec: spec('us-cpi-yoy'), points: [{ date: '2026-05-01', value: 3.1 }, { date: '2026-04-01', value: 3.3 }] },
-      { spec: spec('us-unemployment'), points: [{ date: '2026-02-01', value: 4.0 }] },
+      // us-macro：帶前月比較 + 過舊（失業率 2026-08 落後期望 3 個月、達硬上限）
+      { spec: spec('us-cpi-yoy'), points: [{ date: '2026-11-01', value: 3.1 }, { date: '2026-10-01', value: 3.3 }] },
+      { spec: spec('us-unemployment'), points: [{ date: '2026-08-01', value: 4.0 }] },
       // rates-markets：daily 帶前值
-      { spec: spec('us-10y-yield'), points: [{ date: '2026-06-11', value: 4.32 }, { date: '2026-06-10', value: 4.28 }] },
+      { spec: spec('us-10y-yield'), points: [{ date: '2026-12-10', value: 4.32 }, { date: '2026-12-09', value: 4.28 }] },
       // us-equity：落後 1 個交易日（靜默沿用 T-1 時的標注格式）
-      { spec: spec('us-sox'), points: [{ date: '2026-06-10', value: 5432 }] },
+      { spec: spec('us-sox'), points: [{ date: '2026-12-09', value: 5432 }] },
       // taiwan：億元帶正號 + 加權指數
-      { spec: spec('taiex-close'), points: [{ date: '2026-06-11', value: 23150 }] },
-      { spec: spec('taiex-institutional-net'), points: [{ date: '2026-06-11', value: 505.698 }] },
-    ], NOW, REPORT_DATE)
+      { spec: spec('taiex-close'), points: [{ date: '2026-12-10', value: 23150 }] },
+      { spec: spec('taiex-institutional-net'), points: [{ date: '2026-12-10', value: 505.698 }] },
+    ], CONTRACT_NOW, CONTRACT_REPORT_DATE)
     expect(out).toMatchInlineSnapshot(`
       "## 市場數據（含與前期變化、各序列日期見各行、非報告當日）
 
       ### 美國總經
-      - CPI 年增率：3.1%（2026-05、前月 3.3%、較前月 -0.2 個百分點）
-      - 失業率：資料未更新（最新僅到 2026-02）
+      - CPI 年增率：3.1%（2026-11、前月 3.3%、較前月 -0.2 個百分點）
+      - 失業率：資料未更新（最新僅到 2026-08）
 
       ### 利率與市場
-      - 美債 10 年期殖利率：4.32%（2026-06-11、前值 4.28%、較前值 +0.04 個百分點）
+      - 美債 10 年期殖利率：4.32%（2026-12-10、前值 4.28%、較前值 +0.04 個百分點）
 
       ### 美股
-      - 費城半導體指數：5,432 點（2026-06-10、落後 1 個交易日）
+      - 費城半導體指數：5,432 點（2026-12-09、落後 1 個交易日）
 
       ### 台股
-      - 加權指數：23,150 點（2026-06-11）
-      - 三大法人買賣超：+506 億元（2026-06-11）"
+      - 加權指數：23,150 點（2026-12-10）
+      - 三大法人買賣超：+506 億元（2026-12-10）"
     `)
   })
 })
@@ -592,6 +596,18 @@ describe('q3b 降級：假日表涵蓋窗外', () => {
     // 涵蓋窗外仍在曆日門檻內 → 數字照給、但不帶落後標注（期望值算不出來）
     expect(out).toContain('- 費城半導體指數：5,432 點（2028-01-04）')
     expect(out).not.toContain('落後')
+    warnSpy.mockRestore()
+  })
+  it('最新資料日早於涵蓋起點：警告講明原因，不叫人更新假日表，仍走曆日粗判抑制', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const out = buildSnapshotBlock(
+      [{ spec: spec('us-sox'), points: [{ date: '2026-07-02', value: 5432 }] }],
+      new Date('2026-07-31T05:10:00+08:00'),
+      '2026-07-31',
+    )
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`早於假日表涵蓋起點 ${HOLIDAY_COVERAGE_START}`))
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('請更新 market-holidays.ts'))
+    expect(out).toContain('- 費城半導體指數：資料未更新')
     warnSpy.mockRestore()
   })
 })

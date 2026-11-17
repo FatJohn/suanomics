@@ -27,6 +27,8 @@ describe('key number 宣告序（＝攤平版的顯示序）', () => {
 
 // 2026-06-15（一）：台股序列的期望 as-of ＝前一個交易日 06-12（五）。
 const REPORT_DATE = '2026-06-15'
+// 交易日落後要在假日表涵蓋窗內才算得出來；取 REPORT_DATE 往後 26 週的同一個週一。
+const IN_COVERAGE_REPORT_DATE = '2026-12-14'
 
 describe('buildKeyNumbers', () => {
   it('shouldMarkLevelSeriesUpWhenLatestExceedsPrevious', () => {
@@ -106,13 +108,13 @@ describe('關鍵數字卡的落後判定', () => {
   })
 
   it('落後一個交易日的美股序列標交易日單位', () => {
-    // us-sox：2026-06-15（一）期望 06-12（五）；給 06-11 → 落後 1 個交易日
-    const res = buildKeyNumbers({ 'us-sox': [{ date: '2026-06-11', value: 5432 }] }, REPORT_DATE)
+    // us-sox：2026-12-14（一）期望 12-11（五）；給 12-10 → 落後 1 個交易日
+    const res = buildKeyNumbers({ 'us-sox': [{ date: '2026-12-10', value: 5432 }] }, IN_COVERAGE_REPORT_DATE)
     expect(res.series[0]?.lagLabel).toBe('落後 1 個交易日')
   })
 
   it('落後達硬上限仍照給數字與標籤（卡片不隱藏、與 LLM 那份 snapshot 的取捨不同）', () => {
-    const res = buildKeyNumbers({ 'taiex-close': [{ date: '2026-06-08', value: 23000 }] }, REPORT_DATE)
+    const res = buildKeyNumbers({ 'taiex-close': [{ date: '2026-12-07', value: 23000 }] }, IN_COVERAGE_REPORT_DATE)
     expect(res.series[0]?.freshness.state).toBe('stale')
     expect(res.series[0]?.lagLabel).toBe('落後 4 個交易日')
   })
@@ -141,7 +143,7 @@ describe('isLatestTradingDay：讀者面要不要附日期', () => {
   })
 
   it('遲到的美股序列：false 且帶落後標籤（日期與落後都要出現）', () => {
-    const res = buildKeyNumbers({ 'us-sox': [{ date: '2026-06-11', value: 5432 }] }, REPORT_DATE)
+    const res = buildKeyNumbers({ 'us-sox': [{ date: '2026-12-10', value: 5432 }] }, IN_COVERAGE_REPORT_DATE)
     expect(res.series[0]?.isLatestTradingDay).toBe(false)
     expect(res.series[0]?.lagLabel).toBe('落後 1 個交易日')
   })
