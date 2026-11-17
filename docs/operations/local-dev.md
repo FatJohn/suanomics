@@ -8,7 +8,7 @@
 ## 前置條件
 
 - Node 26：版本寫在根目錄 `.nvmrc`，用 nvm、mise 等版本管理工具切換。
-- pnpm 11.8.0：版本由根目錄 `package.json` 的 `packageManager` 鎖定，安裝方式見 [pnpm 官方安裝說明](https://pnpm.io/installation)。
+- pnpm 12.21.0：版本由根目錄 `package.json` 的 `packageManager` 鎖定，安裝方式見 [pnpm 官方安裝說明](https://pnpm.io/installation)。
 - gitleaks：husky 的 pre-commit hook 會呼叫它，沒裝就 commit 不了；macOS 用 `brew install gitleaks`。
 - Docker：起本機 Postgres 18 用。
 - git commit 簽章：`rewrite` 的 ruleset 要求 commit 有簽章，設定方式見 [GitHub 的 commit 簽章說明](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)。
@@ -71,7 +71,7 @@
 
 | 項目 | 驗證 |
 |---|---|
-| 步驟 1–3 全部以 0 結束 | 已實測（2026-11-08，macOS arm64、Node 26.13.0、pnpm 11.8.0） |
+| 步驟 1–3 全部以 0 結束 | 已實測（2026-11-17，macOS arm64、Node 26.13.1、pnpm 12.21.0） |
 | 步驟 4–5 在 `postgres:18` container 上印出 `[db:migrate] done` | 已實測（2026-11-08，macOS arm64、Docker） |
 | 步驟 6 開發伺服器回 HTTP 200，非互動 shell 下以背景模式啟動 | 已實測（2026-11-08，macOS arm64） |
 
