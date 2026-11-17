@@ -100,6 +100,19 @@ li {
   }
 }
 
+/* 講義各節共用的標題與節距；Viewpoints 等子元件也在 .brief 裡，所以不放元件 scoped style。 */
+.brief section {
+  margin-top: 40px;
+  scroll-margin-top: 16px;
+}
+
+.brief h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
 /* 敘事 markdown 只會產出段落與粗斜體（lib/markdown.ts）。 */
 .prose-handout p {
   margin: 0.75em 0;

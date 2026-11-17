@@ -21,6 +21,7 @@ const { thesis, industries } = Astro.props
                 <span class="no">{i + 1}</span>
                 <span class="name">{industry.name}</span>
                 <DirectionMark direction={industry.direction} />
+                <svg class="toggle" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
               </summary>
               <p class="why">
                 {industry.reasoning || '這筆沒有附理由。'}
@@ -42,7 +43,8 @@ const { thesis, industries } = Astro.props
     background: var(--sheet);
     padding: 18px 14px 6px;
   }
-  h2 {
+  /* 用 .box > h2 提高權重，蓋過 global.css 的 .brief h2 節標題樣式。 */
+  .box > h2 {
     position: absolute;
     top: -0.85em;
     left: 10px;
@@ -77,7 +79,7 @@ const { thesis, industries } = Astro.props
   }
   summary {
     display: grid;
-    grid-template-columns: 1.4em 1fr auto;
+    grid-template-columns: 1.4em 1fr auto 12px;
     align-items: baseline;
     gap: 6px;
     padding: 8px 0;
@@ -93,6 +95,19 @@ const { thesis, industries } = Astro.props
     text-decoration: underline;
     text-decoration-color: var(--blue);
     text-underline-offset: 0.22em;
+  }
+  .toggle {
+    align-self: center;
+    color: var(--ink-2);
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  details[open] .toggle {
+    transform: rotate(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toggle {
+      transition: none;
+    }
   }
   .no {
     font-weight: 900;
