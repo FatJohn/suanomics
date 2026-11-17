@@ -12,7 +12,7 @@
 - 觸發器以 Cloudflare Worker 的 Cron Trigger 為主，Actions `schedule` 為備援。
 - 持久狀態放 Neon Postgres，drizzle schema 與 migration 沿用。
 - LLM 呼叫層改用 Vercel AI SDK（`generateText` 加 `Output.object`）；provider 全部是 Anthropic，品質評審（judge）也是。
-- 品質評審由兩份報告兩兩比較（pairwise）改成單份報告的 checklist，分數只算 judge 引文對得上報告原文的項目；以 `eval:judge` 手動執行。
+- 品質評審由兩份報告兩兩比較（pairwise）改成單份報告的 checklist，分數只算 judge 引文對得上報告原文的項目；每天 Daily Brief 成功後由 Actions 的 `judge.yml` 評當天報告，也可用 `eval:judge` 手動補評。
 - 網站由 Vue SPA 改成 Astro 靜態產生。
 - monorepo 縮成三個 workspace：`packages/shared`、`apps/pipeline`、`apps/web`。
 - 新聞來源只收官方機構與發行商自己的 feed，正文在 pipeline 內抽取。
