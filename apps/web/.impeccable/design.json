@@ -1,0 +1,359 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-17T05:46:12+00:00",
+  "title": "Design System: 掐指連總經",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "影印紙",
+        "canonical": "#f4f6f8",
+        "oklch": "oklch(97.2% 0.003 247.9)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242527",
+          "#414244",
+          "#606163",
+          "#818284",
+          "#a3a5a7",
+          "#c7c9cb",
+          "#edeff0"
+        ]
+      },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "亮紙",
+        "canonical": "#fbfcfd",
+        "oklch": "oklch(99.1% 0.002 247.8)",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#242526",
+          "#414243",
+          "#606162",
+          "#818283",
+          "#a4a5a6",
+          "#c8c9ca",
+          "#eeeeef"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "墨黑",
+        "canonical": "#16202b",
+        "oklch": "oklch(23.9% 0.026 251.3)",
+        "tonalRamp": [
+          "#050c15",
+          "#1c2631",
+          "#39434e",
+          "#59626d",
+          "#7b838d",
+          "#9ea6af",
+          "#c3cad2",
+          "#ebeff4"
+        ]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "淡墨",
+        "canonical": "#4a5562",
+        "oklch": "oklch(44.5% 0.026 252.7)",
+        "tonalRamp": [
+          "#060c12",
+          "#1e262f",
+          "#39434f",
+          "#58626f",
+          "#7a838f",
+          "#9da6b0",
+          "#c3cad3",
+          "#ebeff4"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "格線",
+        "canonical": "#cfd6de",
+        "oklch": "oklch(87.3% 0.013 251.6)",
+        "tonalRamp": [
+          "#070c11",
+          "#20262c",
+          "#3d4349",
+          "#5c6269",
+          "#7d838a",
+          "#9fa6ad",
+          "#c3cad2",
+          "#eaeff5"
+        ]
+      },
+      "blue": {
+        "role": "primary",
+        "displayName": "藍筆",
+        "canonical": "#1e4fd8",
+        "oklch": "oklch(49.0% 0.216 264.4)",
+        "tonalRamp": [
+          "#020040",
+          "#011070",
+          "#0b30a3",
+          "#1f50d9",
+          "#487af0",
+          "#73a1ff",
+          "#9fc8ff",
+          "#d7efff"
+        ]
+      },
+      "red": {
+        "role": "secondary",
+        "displayName": "紅筆",
+        "canonical": "#d7262e",
+        "oklch": "oklch(56.9% 0.210 25.4)",
+        "tonalRamp": [
+          "#2d0000",
+          "#570000",
+          "#850006",
+          "#b60f1e",
+          "#e23d3e",
+          "#ff716a",
+          "#ffa096",
+          "#ffd8d1"
+        ]
+      },
+      "hl": {
+        "role": "secondary",
+        "displayName": "螢光黃",
+        "canonical": "#ffe14d",
+        "oklch": "oklch(90.9% 0.163 97.5)",
+        "tonalRamp": [
+          "#150800",
+          "#322300",
+          "#524100",
+          "#746000",
+          "#988200",
+          "#bea51c",
+          "#e5c93b",
+          "#fff097"
+        ]
+      },
+      "up": {
+        "role": "tertiary",
+        "displayName": "上漲紅",
+        "canonical": "#d7262e",
+        "oklch": "oklch(56.9% 0.210 25.4)",
+        "tonalRamp": [
+          "#2d0000",
+          "#570000",
+          "#850006",
+          "#b60f1e",
+          "#e23d3e",
+          "#ff716a",
+          "#ffa096",
+          "#ffd8d1"
+        ]
+      },
+      "down": {
+        "role": "tertiary",
+        "displayName": "下跌綠",
+        "canonical": "#1f7a4d",
+        "oklch": "oklch(51.5% 0.110 156.8)",
+        "tonalRamp": [
+          "#001202",
+          "#003014",
+          "#00502d",
+          "#1a7348",
+          "#4a946a",
+          "#78b590",
+          "#a5d7b7",
+          "#dbf7e4"
+        ]
+      },
+      "flat": {
+        "role": "tertiary",
+        "displayName": "持平灰",
+        "canonical": "#4a5562",
+        "oklch": "oklch(44.5% 0.026 252.7)",
+        "tonalRamp": [
+          "#060c12",
+          "#1e262f",
+          "#39434f",
+          "#58626f",
+          "#7a838f",
+          "#9da6b0",
+          "#c3cad3",
+          "#ebeff4"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "講義大標",
+        "purpose": "每日講義的 H1。"
+      },
+      "headline": {
+        "displayName": "節標題",
+        "purpose": "講義各節 H2。"
+      },
+      "title": {
+        "displayName": "小標",
+        "purpose": "正反觀點欄標題與總結。"
+      },
+      "lead": {
+        "displayName": "主軸與結論",
+        "purpose": "本日主軸句與每節紅筆結論句。"
+      },
+      "body": {
+        "displayName": "內文",
+        "purpose": "敘事段落，68ch 欄寬，等寬數字。"
+      },
+      "label": {
+        "displayName": "框上標籤",
+        "purpose": "本日必考重點框的藍底標籤。"
+      },
+      "caption": {
+        "displayName": "欄位小字",
+        "purpose": "回次／閱讀時間／來源數列與歷史頁日期列。"
+      }
+    },
+    "shadows": [
+      {
+        "name": "pen-underline",
+        "value": "inset 0 -2px 0 var(--blue)",
+        "purpose": "導覽列所在頁的藍筆底線；系統沒有投影。"
+      }
+    ],
+    "motion": [
+      {
+        "name": "hl-sweep",
+        "value": "background-size 30% → 100%, 900ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both",
+        "purpose": "主軸句的螢光筆劃過，只在 prefers-reduced-motion: no-preference 下執行。"
+      },
+      {
+        "name": "toggle-rotate",
+        "value": "transform 200ms cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "產業列展開時 V 形箭頭轉 180°；reduced motion 下關閉。"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "viewpoints-2col",
+        "value": "640px"
+      },
+      {
+        "name": "toc-sidebar",
+        "value": "1024px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "閱讀原文按鈕",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "唯一的實心主要按鈕，用在新聞頁導向原站。",
+      "html": "<a class=\"ds-btn-primary\" href=\"#\">閱讀原文<svg viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M4.5 2H10v5.5M10 2 2.5 9.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/></svg></a>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--blue,#1e4fd8);color:#fff;font:700 15px/1.6 var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);text-decoration:none;border-radius:0} .ds-btn-primary:hover{background:#1a44b8} .ds-btn-primary:focus-visible{outline:2px solid var(--blue,#1e4fd8);outline-offset:2px;border-radius:2px}"
+    },
+    {
+      "name": "本日必考重點框",
+      "kind": "card",
+      "refersTo": "key-points-frame",
+      "description": "藍框加框上標籤，裝本日主軸（螢光筆）與牽動產業列；每頁一個。",
+      "html": "<section class=\"ds-key\"><h2 class=\"ds-key-tag\">本日必考重點</h2><p class=\"ds-key-thesis\"><mark class=\"ds-hl\">美國10年期殖利率升至5.1%，費半單日重挫5.28%。</mark></p><ol class=\"ds-key-list\"><li><span class=\"ds-key-no\">1</span><span class=\"ds-key-name\">半導體與AI供應鏈</span><span class=\"ds-mark ds-down\">&#9660; 負向</span></li><li><span class=\"ds-key-no\">2</span><span class=\"ds-key-name\">銀行與區域金融</span><span class=\"ds-mark ds-flat\">&#8693; 好壞參半</span></li></ol></section>",
+      "css": ".ds-key{position:relative;margin-top:22px;border:2px solid var(--blue,#1e4fd8);background:var(--sheet,#fbfcfd);padding:18px 14px 6px;font-family:var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);color:var(--ink,#16202b)} .ds-key-tag{position:absolute;top:-.85em;left:10px;margin:0;background:var(--blue,#1e4fd8);color:#fff;font-size:13px;font-weight:700;letter-spacing:.2em;line-height:1.6;padding:1px 8px 1px 10px} .ds-key-thesis{margin:0;font-size:15.5px;font-weight:500;line-height:1.8} .ds-hl{background:linear-gradient(transparent 58%,var(--hl,#ffe14d) 58%);color:inherit} .ds-key-list{list-style:none;margin:8px 0 0;padding:0} .ds-key-list li{display:grid;grid-template-columns:1.4em 1fr auto;gap:6px;padding:8px 0;font-size:14.5px;cursor:pointer} .ds-key-list li+li{border-top:1px dashed var(--rule,#cfd6de)} .ds-key-list li:hover .ds-key-name{text-decoration:underline;text-decoration-color:var(--blue,#1e4fd8);text-underline-offset:.22em} .ds-key-no{font-weight:900;color:var(--blue,#1e4fd8)} .ds-key-name{font-weight:700} .ds-mark{font-size:13px;font-weight:700;white-space:nowrap} .ds-down{color:var(--down,#1f7a4d)} .ds-flat{color:var(--flat,#4a5562)}"
+    },
+    {
+      "name": "方向記號",
+      "kind": "chip",
+      "refersTo": "direction-up",
+      "description": "紅漲綠跌，三角形記號加文字，不靠顏色單獨表意。",
+      "html": "<span class=\"ds-dir ds-dir-up\"><svg viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M6 1.5 11 10H1z\"/></svg>正向</span> <span class=\"ds-dir ds-dir-down\"><svg viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M6 10.5 1 2h10z\"/></svg>負向</span> <span class=\"ds-dir ds-dir-flat\"><svg viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M6 .8 9.6 5H2.4zM6 11.2 2.4 7h7.2z\"/></svg>好壞參半</span> <span class=\"ds-dir ds-dir-flat\"><svg viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"><circle cx=\"6\" cy=\"6\" r=\"4.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/></svg>不確定</span>",
+      "css": ".ds-dir{display:inline-flex;align-items:center;gap:.3em;font:700 13px/1.4 var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);white-space:nowrap} .ds-dir svg{fill:currentColor;flex:none} .ds-dir-up{color:var(--up,#d7262e)} .ds-dir-down{color:var(--down,#1f7a4d)} .ds-dir-flat{color:var(--flat,#4a5562)}"
+    },
+    {
+      "name": "講義抬頭與導覽",
+      "kind": "nav",
+      "refersTo": "nav-link",
+      "description": "品牌與日期壓在 3px 墨線上，下方兩個導覽連結，所在頁加 2px 藍底線。",
+      "html": "<header class=\"ds-mast\"><a class=\"ds-brand\" href=\"#\"><b>掐指連總經</b><small>賽博半仙・算命不如算力</small></a><p class=\"ds-meta\">開盤前重點講義<strong>2026-11-17（二）</strong></p></header><nav class=\"ds-nav\"><a href=\"#\" aria-current=\"page\">今日講義</a><a href=\"#\">歷史講義</a></nav>",
+      "css": ".ds-mast{display:grid;grid-template-columns:1fr auto;align-items:end;gap:12px;padding:14px 0 8px;border-bottom:3px solid var(--ink,#16202b);font-family:var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif)} .ds-brand{color:var(--ink,#16202b);text-decoration:none;line-height:1.35} .ds-brand b{display:block;font-size:20px;font-weight:900;letter-spacing:.06em} .ds-brand small{display:block;font-size:12px;color:var(--ink-2,#4a5562);letter-spacing:.12em} .ds-meta{margin:0;font-size:12px;line-height:1.5;text-align:right} .ds-meta strong{display:block;color:var(--blue,#1e4fd8);font-size:14px} .ds-nav{display:flex;gap:18px;padding:6px 0 14px;font:14px var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif)} .ds-nav a{color:var(--ink-2,#4a5562);text-decoration:none;padding:4px 0} .ds-nav a:hover{color:var(--blue,#1e4fd8)} .ds-nav a[aria-current=page]{color:var(--ink,#16202b);font-weight:700;box-shadow:inset 0 -2px 0 var(--blue,#1e4fd8)} .ds-nav a:focus-visible{outline:2px solid var(--blue,#1e4fd8);outline-offset:2px}"
+    },
+    {
+      "name": "講義欄位列",
+      "kind": "custom",
+      "refersTo": "field-chip",
+      "description": "回次、閱讀分鐘、來源則數，每格底下一條短線。",
+      "html": "<p class=\"ds-fields\"><span>第 7 回</span><span>閱讀 5 分鐘</span><span>來源 7 則</span></p>",
+      "css": ".ds-fields{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;padding:6px 0;border-bottom:1px solid var(--rule,#cfd6de);font:12.5px var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);color:var(--ink-2,#4a5562)} .ds-fields span{border-bottom:1px solid var(--ink-2,#4a5562);padding:0 4px;line-height:1.6}"
+    },
+    {
+      "name": "分節詳解標題與紅筆結論",
+      "kind": "custom",
+      "description": "藍色「詳解 N／M」接節標題，下方一句 2px 紅色劃線的結論。",
+      "html": "<h2 class=\"ds-sec\"><span class=\"ds-sec-no\">詳解 1／3</span>實質利率推升估值壓力</h2><p class=\"ds-take\">利率上行壓縮成長股評價，半導體首當其衝。</p><p class=\"ds-src\"><b>出處</b><a href=\"#\">Fed 聲明</a>、<a href=\"#\">Reuters</a></p>",
+      "css": ".ds-sec{margin:0 0 6px;font:900 19px/1.5 var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);color:var(--ink,#16202b)} .ds-sec-no{white-space:nowrap;margin-right:.5em;font-size:.8em;color:var(--blue,#1e4fd8);letter-spacing:.12em} .ds-take{margin:6px 0 0;font:500 15.5px/1.75 var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);text-decoration:underline;text-decoration-color:var(--red,#d7262e);text-decoration-thickness:2px;text-underline-offset:.32em} .ds-src{margin:10px 0 0;font:13.5px/1.7 var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);color:var(--ink-2,#4a5562)} .ds-src b{margin-right:.4em} .ds-src a{color:var(--blue,#1e4fd8);text-decoration-thickness:1px;text-underline-offset:.22em} .ds-src a:hover{text-decoration-thickness:2px}"
+    },
+    {
+      "name": "本講義目錄",
+      "kind": "nav",
+      "description": "桌機右欄 sticky 目錄，3px 墨線頂、虛線分隔。",
+      "html": "<nav class=\"ds-toc\"><p class=\"ds-toc-title\">本講義目錄</p><ol><li><a href=\"#\">本日必考重點</a></li><li><a href=\"#\">導讀</a></li><li><a href=\"#\">詳解 1：實質利率</a></li></ol></nav>",
+      "css": ".ds-toc{width:15rem;border-top:3px solid var(--ink,#16202b);padding-top:8px;font:13.5px/1.6 var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif)} .ds-toc-title{margin:0 0 6px;font-weight:900;letter-spacing:.12em} .ds-toc ol{margin:0;padding:0;list-style:none} .ds-toc li{padding:5px 0;border-top:1px dashed var(--rule,#cfd6de)} .ds-toc a{color:var(--ink,#16202b);text-decoration-color:var(--rule,#cfd6de)} .ds-toc a:hover{color:var(--blue,#1e4fd8);text-decoration-color:var(--blue,#1e4fd8)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "名師的開盤前重點講義",
+    "overview": "整個網站是一張補教名師每天發的影印講義：冷白紙上印墨黑字，老師用藍筆畫框、標序號、牽連結，用紅筆在每節底下劃一句結論，黃色螢光筆只劃本日主軸那一句。讀者一打開先看到講義抬頭與「本日必考重點」框，想深讀才往下看分節詳解與出處。\n\n密度偏高但有節奏：單欄正文寬 68ch，行高 1.85，節與節之間用 40px 空白與粗細不同的墨線分隔，不靠卡片或陰影。桌機在右側多一欄固定的「本講義目錄」，手機只有一欄。拒絕財經新聞站的文章頁排法（麵包屑、標籤雲、一大片無結構內文）。",
+    "keyCharacteristics": [
+      "冷白紙底（`paper`）上只有一張略亮的紙（`sheet`），用在「本日必考重點」框內。",
+      "線條是唯一的層次工具：3px 墨線收抬頭與頁尾，2px 藍框圈重點，1px 實線與虛線分隔列表。",
+      "直角、無陰影、無圓角，像影印紙上的筆跡。",
+      "方向照台股紅漲綠跌，每個方向同時配三角形記號與文字。",
+      "全站唯一的進場動畫是螢光筆從主軸句開頭劃到句尾。"
+    ],
+    "rules": [
+      {
+        "name": "The Red Is Up Rule",
+        "body": "紅色在本站代表上漲，所以紅色不印在數字或內文上：紅筆以劃線或短標籤出現，方向一律紅漲綠跌，並配三角形記號與「正向／負向」文字，不靠顏色單獨表意。",
+        "section": "colors"
+      },
+      {
+        "name": "The One Highlighter Rule",
+        "body": "黃色螢光筆一頁只劃一處，就是本日主軸那一句；其他強調用粗體或紅筆劃線。",
+        "section": "colors"
+      },
+      {
+        "name": "The Blue Pen Rule",
+        "body": "藍色是老師的筆：框、連結、序號、focus。藍色實心底只用在三個地方：重點框的框上標籤、主要按鈕、跳到本文連結。",
+        "section": "colors"
+      },
+      {
+        "name": "The Keep-All Rule",
+        "body": "H1 與 H2 只在標點與空白處換行（`word-break: keep-all`，放不下才 `overflow-wrap: anywhere`），避免「納指」這類詞被拆成兩行；標題另加 `text-wrap: balance`，段落與列表加 `text-wrap: pretty`。",
+        "section": "typography"
+      },
+      {
+        "name": "The Tabular Figures Rule",
+        "body": "全站數字用等寬數字，讓百分比與金額在列表裡對齊。",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Paper Rule",
+        "body": "介面元素不加投影、不加漸層浮起；要分層就換線的粗細或改成藍框。",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** 把每日最重要的一句放進「本日必考重點」藍框，並只在那一句上套螢光筆。",
+      "**Do** 方向一律紅漲綠跌，並同時給三角形記號與「正向／負向／好壞參半／不確定」文字。",
+      "**Do** 用線條粗細分層：3px 墨線收抬頭與頁尾，2px 藍框圈重點，1px 實線或虛線分隔列。",
+      "**Do** 正文欄寬維持 68ch、內文 16px／1.85，數字用等寬數字。",
+      "**Do** 每節結論用紅筆劃線（2px 紅色 underline），不是紅字。",
+      "**Do** 圖示用 12×12 的內嵌 SVG，跟著 `currentColor`。"
+    ],
+    "donts": [
+      "**Don't** 把紅色印在數字或段落文字上；紅色在本站等於上漲。",
+      "**Don't** 在主軸以外的地方用螢光黃。",
+      "**Don't** 加陰影、圓角或卡片式浮起；講義是一張平的紙。",
+      "**Don't** 用綠色表示上漲、成功或任何方向以外的意義。",
+      "**Don't** 只用顏色區分方向。",
+      "**Don't** 在標題上方加小字標籤或分類 kicker；節的編號寫在標題同一行（「詳解 N／M」）。"
+    ]
+  }
+}
