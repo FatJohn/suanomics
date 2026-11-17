@@ -67,7 +67,7 @@ components:
   button-primary:
     backgroundColor: "{colors.blue}"
     textColor: "#ffffff"
-    typography: "{typography.title}"
+    typography: "{typography.body}"
     rounded: "{rounded.none}"
     padding: "8px 16px"
   button-primary-hover:
@@ -169,8 +169,8 @@ components:
 - **Display**（900，`clamp(21px, 1.2rem + 1vw, 30px)`，1.45）：每日講義的大標題。
 - **Headline**（900，19px，1.5）：講義各節標題（導讀、詳解、正反觀點、本日選稿、引用來源）。
 - **Title**（900，15px）：正反觀點的欄標題與「總結」小標；歷史頁月份標題用 17px。
-- **Lead**（500，15.5px，1.8）：本日主軸句與每節結論句。
-- **Body**（400，16px，1.85）：敘事段落，欄寬上限 68ch；列表項目用 15px、行高 1.7。
+- **Lead**（500，15.5px）：本日主軸句（行高 1.8）與每節結論句（行高 1.75）。
+- **Body**（400，16px，1.85）：敘事段落，欄寬上限 68ch；列表項目用 15px，行高 1.7（正反觀點的列表 1.75）。
 - **Label**（700，13px，字距 0.2em）：重點框的框上標籤；目錄標題與「總結」也用 0.12em 字距。
 - **Caption**（400，12.5px）：回次／閱讀時間／來源數列、歷史頁的日期列，字色 `ink-2`。
 

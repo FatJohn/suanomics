@@ -248,7 +248,7 @@
       "refersTo": "button-primary",
       "description": "唯一的實心主要按鈕，用在新聞頁導向原站。",
       "html": "<a class=\"ds-btn-primary\" href=\"#\">閱讀原文<svg viewBox=\"0 0 12 12\" width=\"12\" height=\"12\" aria-hidden=\"true\"><path d=\"M4.5 2H10v5.5M10 2 2.5 9.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/></svg></a>",
-      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--blue,#1e4fd8);color:#fff;font:700 15px/1.6 var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);text-decoration:none;border-radius:0} .ds-btn-primary:hover{background:#1a44b8} .ds-btn-primary:focus-visible{outline:2px solid var(--blue,#1e4fd8);outline-offset:2px;border-radius:2px}"
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--blue,#1e4fd8);color:#fff;font:700 16px/1.85 var(--font-body, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif);text-decoration:none;border-radius:0} .ds-btn-primary:hover{background:#1a44b8} .ds-btn-primary:focus-visible{outline:2px solid var(--blue,#1e4fd8);outline-offset:2px;border-radius:2px}"
     },
     {
       "name": "本日必考重點框",
