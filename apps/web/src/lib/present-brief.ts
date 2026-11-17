@@ -4,6 +4,7 @@ import { redactBlockedMarkdown, redactBlockedSentences } from './compliance'
 
 export interface CitationLink { title: string, url: string }
 export interface NewsLink { id: number, title: string }
+export type IndustryView = Pick<MarketBrief['affectedIndustries'][number], 'name' | 'direction' | 'confidence' | 'reasoning'>
 
 export interface BriefView {
   date: string
@@ -16,6 +17,7 @@ export interface BriefView {
     outro: string
   } | null
   viewpoints: { supportPoints: string[], riskPoints: string[], netRead: string } | null
+  industries: IndustryView[]
   selectedNews: NewsLink[]
   citations: CitationLink[]
   disclaimer: string
@@ -85,6 +87,14 @@ function presentViewpoints(brief: MarketBrief): BriefView['viewpoints'] {
   }
 }
 
+// 產業名被攔截就整筆不顯示：只剩方向沒有對象，讀者無從判斷。
+function presentIndustries(brief: MarketBrief): IndustryView[] {
+  return brief.affectedIndustries.flatMap((i) => {
+    const name = redactBlockedSentences(i.name)
+    return name ? [{ name, direction: i.direction, confidence: i.confidence, reasoning: redactBlockedSentences(i.reasoning) }] : []
+  })
+}
+
 export function presentBrief(date: string, brief: MarketBrief, selectedNews: readonly NewsLink[]): BriefView {
   const citations = citationLinks(brief)
   return {
@@ -94,6 +104,7 @@ export function presentBrief(date: string, brief: MarketBrief, selectedNews: rea
     summary: redactBlockedSentences(brief.summary),
     narrative: presentNarrative(brief, citations),
     viewpoints: presentViewpoints(brief),
+    industries: presentIndustries(brief),
     selectedNews: selectedNews.map(n => ({ id: n.id, title: redactBlockedSentences(n.title) || WITHHELD_NEWS_TITLE })),
     citations,
     disclaimer: brief.disclaimer,

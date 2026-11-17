@@ -1,1 +1,123 @@
 @import 'tailwindcss';
+
+/* 講義紙的世界：冷白影印紙、墨黑字、藍筆畫框與連結、紅筆寫結論、黃色螢光筆只劃本日主軸。
+   方向照台股紅漲綠跌，所以紅色同時是「正向」與紅筆；兩者都另配字樣，不靠顏色區分。 */
+:root {
+  color-scheme: light;
+  --paper: #f4f6f8;
+  --sheet: #fbfcfd;
+  --ink: #16202b;
+  --ink-2: #4a5562;
+  --rule: #cfd6de;
+  --blue: #1e4fd8;
+  --blue-deep: #1a44b8;
+  --red: #d7262e;
+  --hl: #ffe14d;
+  --up: #d7262e;
+  --down: #1f7a4d;
+  --flat: #4a5562;
+  --font-body: 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', 'Heiti TC', sans-serif;
+}
+
+html {
+  background: var(--paper);
+  scrollbar-color: var(--rule) var(--paper);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 16px/1.85 var(--font-body);
+  caret-color: var(--blue);
+  font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: var(--hl);
+  color: var(--ink);
+}
+
+a {
+  color: var(--blue);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/* 標題只在標點與空白處換行，避免「納指」被拆成兩行；真的放不下才任意斷。 */
+h1,
+h2 {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+p,
+li {
+  text-wrap: pretty;
+}
+
+/* 螢光筆：只用在本日主軸。從已可見的一小段劃到整句，是全站唯一的進場動態。 */
+.hl {
+  background-color: transparent;
+  background-image: linear-gradient(transparent 58%, var(--hl) 58%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color: inherit;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .hl {
+    animation: hl-sweep 900ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+  }
+}
+
+@keyframes hl-sweep {
+  from {
+    background-size: 30% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+
+/* 講義各節共用的標題與節距；Viewpoints 等子元件也在 .brief 裡，所以不放元件 scoped style。 */
+.brief section {
+  margin-top: 40px;
+  scroll-margin-top: 16px;
+}
+
+.brief h2 {
+  margin: 0 0 6px;
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.5;
+}
+
+/* 敘事 markdown 只會產出段落與粗斜體（lib/markdown.ts）。 */
+.prose-handout p {
+  margin: 0.75em 0;
+}
+
+.prose-handout strong {
+  font-weight: 700;
+}
