@@ -180,13 +180,11 @@ describe('dailyCostGate 的 recordCall', () => {
 })
 
 describe('installDailyCostGate', () => {
-  it('裝上的閘就是 process 共用的閘，不再建帶 DB 帳本的預設閘', () => {
+  // process 共用的閘裝上就拆不掉，兩個行為放同一個測試，才不依賴測試執行順序。
+  it('裝上的閘就是 process 共用的閘；之後拒絕替換，避免花費分在兩個閘', () => {
     const gate = new DailyCostGate(1)
     installDailyCostGate(gate)
     expect(getDailyCostGate()).toBe(gate)
-  })
-
-  it('已經有閘時拒絕替換，避免同一個 process 的花費分在兩個閘', () => {
     expect(() => installDailyCostGate(new DailyCostGate(1))).toThrow(CostGateError)
   })
 })

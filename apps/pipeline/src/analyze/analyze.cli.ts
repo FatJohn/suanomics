@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   const gate = new DailyCostGate(parseDailyCostLimit(process.env.DAILY_COST_LIMIT_USD))
   installDailyCostGate(gate)
   if (!process.env.DATABASE_URL)
-    console.warn('[analyze] 未設定 DATABASE_URL，略過檢索，只能引用輸入的網址')
+    console.warn('[analyze] 未設定 DATABASE_URL，略過檢索與二階連動鏈，只能引用輸入的網址')
   const input = await loadInput(args)
   const date = taipeiDateOf(new Date())
   try {
