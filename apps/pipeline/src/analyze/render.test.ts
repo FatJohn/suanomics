@@ -1,7 +1,7 @@
 import type { AnalystOutput } from '../agents/types.js'
 import { describe, expect, it } from 'vitest'
 import { COMPLIANCE_STRIPPED_PLACEHOLDER } from '../brief/analyzer.js'
-import { findComplianceViolations, renderAnalysisMarkdown, sanitizeAnalysis, titleFromText } from './render.js'
+import { findComplianceViolations, renderAnalysisMarkdown, sanitizeAnalysis, titleFromHtml, titleFromText } from './render.js'
 
 function analysis(overrides: Partial<AnalystOutput> = {}): AnalystOutput {
   return {
@@ -114,5 +114,23 @@ describe('titleFromText', () => {
 
   it('超過 80 字時截斷', () => {
     expect(titleFromText('字'.repeat(100))).toBe(`${'字'.repeat(79)}…`)
+  })
+})
+
+describe('titleFromHtml', () => {
+  it('優先取 og:title', () => {
+    expect(titleFromHtml('<html><head><title>站名 - 標題</title><meta property="og:title" content="Fed 公布 2027 會議日程"></head></html>')).toBe('Fed 公布 2027 會議日程')
+  })
+
+  it('沒有 og:title 時取 <title>，去掉多餘空白', () => {
+    expect(titleFromHtml('<html><head><title>\n  中央銀行-新聞稿-人民幣業務概況 \n</title></head></html>')).toBe('中央銀行-新聞稿-人民幣業務概況')
+  })
+
+  it('兩者都沒有或是空白時回 null', () => {
+    expect(titleFromHtml('<html><head><title> </title></head><body><p>x</p></body></html>')).toBeNull()
+  })
+
+  it('超過 80 字時截斷', () => {
+    expect(titleFromHtml(`<title>${'字'.repeat(100)}</title>`)).toBe(`${'字'.repeat(79)}…`)
   })
 })

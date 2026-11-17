@@ -12,18 +12,24 @@ import { closeDb } from '../db/client.js'
 import { extractReadableText } from '../ingest/external/article-extract.js'
 import { scrapeArticle } from '../ingest/external/scraper.js'
 import { parseAnalyzeArgs } from './args.js'
-import { findComplianceViolations, renderAnalysisMarkdown, sanitizeAnalysis, titleFromText } from './render.js'
+import { findComplianceViolations, renderAnalysisMarkdown, sanitizeAnalysis, titleFromHtml, titleFromText } from './render.js'
 import { analyzeSingleNews } from './run.js'
 
 async function loadInput(args: AnalyzeArgs): Promise<SingleNewsInput> {
   if (args.source === 'text')
     return { title: args.title ?? titleFromText(args.text), text: args.text }
-  const scraped = await scrapeArticle(args.url, { extract: extractReadableText })
+  let pageTitle: string | null = null
+  const scraped = await scrapeArticle(args.url, {
+    extract: (html) => {
+      pageTitle = titleFromHtml(html)
+      return extractReadableText(html)
+    },
+  })
   if (!scraped.ok)
     throw new Error(`抓取 ${args.url} 失敗：${scraped.reason}（${scraped.detail}）`)
   if (scraped.text === null)
     throw new Error(`${args.url} 抽不出正文，改用 --text 貼上內文`)
-  return { title: args.title ?? titleFromText(scraped.text), text: scraped.text, url: args.url }
+  return { title: args.title ?? pageTitle ?? titleFromText(scraped.text), text: scraped.text, url: args.url }
 }
 
 async function main(): Promise<void> {

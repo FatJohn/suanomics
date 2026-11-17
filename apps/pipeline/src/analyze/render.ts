@@ -1,5 +1,6 @@
 import type { AnalystOutput, CascadeChain } from '../agents/types.js'
 import { checkCompliance, stripViolatingProse } from '@suanomics/shared'
+import { load } from 'cheerio'
 import { rewriteText } from '../agents/narrative-shared.js'
 import { COMPLIANCE_STRIPPED_PLACEHOLDER } from '../brief/analyzer.js'
 
@@ -35,9 +36,20 @@ export function findComplianceViolations(markdown: string): string[] {
   return markdown.split('\n').filter(line => checkCompliance(line) !== null)
 }
 
+function clampTitle(title: string): string {
+  return title.length > MAX_TITLE_LENGTH ? `${title.slice(0, MAX_TITLE_LENGTH - 1)}…` : title
+}
+
 export function titleFromText(text: string): string {
-  const first = text.split('\n').map(line => line.trim()).find(line => line.length > 0) ?? ''
-  return first.length > MAX_TITLE_LENGTH ? `${first.slice(0, MAX_TITLE_LENGTH - 1)}…` : first
+  return clampTitle(text.split('\n').map(line => line.trim()).find(line => line.length > 0) ?? '')
+}
+
+// 正文第一行常是日期或麵包屑（「首頁」「:::」），標題要從頁面 metadata 拿。
+export function titleFromHtml(html: string): string | null {
+  const $ = load(html)
+  const candidates = [$('meta[property="og:title"]').attr('content'), $('title').first().text()]
+  const title = candidates.map(c => (c ?? '').replace(/\s+/g, ' ').trim()).find(c => c.length > 0)
+  return title === undefined ? null : clampTitle(title)
 }
 
 function chainHeading(c: CascadeChain): string {
