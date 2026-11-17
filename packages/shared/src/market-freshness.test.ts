@@ -6,6 +6,7 @@ import {
   lagCycles,
   STALE_HIDE_CYCLES,
 } from './market-freshness.js'
+import { HOLIDAY_COVERAGE_START } from './market-holidays.js'
 
 // 規則實例取自 2026-07-31 對 FRED release 日曆的實測
 const US_DAILY_LAG1 = { cadence: 'trading-daily', market: 'us', lagTradingDays: 1 } as const
@@ -101,6 +102,13 @@ describe('lagCycles', () => {
     expect(lagCycles(TW_DAILY, '2026-09-29', '2026-09-24')).toBe(1)
     expect(lagCycles(US_DAILY_LAG1, '2026-09-29', '2026-09-24')).toBe(3)
   })
+  it('trading-daily 的實際日早於假日表涵蓋起點 → null（窗外休市日沒收錄、數不準）', () => {
+    // 07-03 是美股獨立紀念日補假，但不在假日表裡；照算會多數一個交易日
+    expect(lagCycles(US_DAILY_LAG1, '2026-07-30', '2026-07-02')).toBeNull()
+    expect(lagCycles(TW_DAILY, '2026-07-30', '2026-07-20')).toBeNull()
+    // 起點當天仍可判定
+    expect(lagCycles(US_DAILY_LAG1, '2026-07-23', HOLIDAY_COVERAGE_START)).toBe(2)
+  })
   it('weekly 以發布週期計數', () => {
     expect(lagCycles(WEEKLY_MON, '2026-07-24', '2026-07-24')).toBe(0)
     expect(lagCycles(WEEKLY_MON, '2026-07-24', '2026-07-17')).toBe(1)
@@ -147,6 +155,10 @@ describe('classifyFreshness：五種狀態', () => {
   it('涵蓋窗外 → unknown（不標注落後、交給降級路徑判）', () => {
     const r = classifyFreshness({ ...base, reportDate: '2028-01-05', actualAsOf: '2027-12-30' })
     expect(r).toMatchObject({ state: 'unknown', expectedAsOf: null, lagCycles: null })
+  })
+  it('trading-daily 的實際日早於涵蓋起點 → unknown（保留 expectedAsOf）', () => {
+    const r = classifyFreshness({ ...base, actualAsOf: '2026-07-02' })
+    expect(r).toMatchObject({ state: 'unknown', expectedAsOf: '2026-07-30', lagCycles: null })
   })
 })
 

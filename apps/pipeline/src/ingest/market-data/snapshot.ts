@@ -1,6 +1,6 @@
 import type { SeriesAnchor, SeriesFreshness } from '@suanomics/shared'
 import type { SeriesSection, SeriesSpec } from './series-config.js'
-import { buildCrossMarketSignals, classifyFreshness, formatLagLabel } from '@suanomics/shared'
+import { buildCrossMarketSignals, classifyFreshness, formatLagLabel, HOLIDAY_COVERAGE_START } from '@suanomics/shared'
 import { SERIES_SPECS } from './series-config.js'
 
 export interface SeriesLatest {
@@ -244,14 +244,17 @@ export function resolveSeriesRenderState(
   // 標注也救不回來。附上實際日期讓下游知道舊到哪。
   if (freshness.state === 'stale')
     return { state: 'suppressed', text: `資料未更新（最新僅到 ${dateLabel(spec, latest.date)}）` }
-  // 降級路徑：假日表涵蓋窗外算不出期望值時退回舊的絕對曆日粗判。
-  // 出聲是必要的——這條路徑代表假日表過期（time-bomb 測試沒被理會），而它的症狀
-  // （整批序列悄悄退回舊門檻）跟先前修掉的那個 bug 一模一樣，沒有 log 就無從察覺。
+  // 降級路徑：假日表涵蓋窗外算不出期望值、或最新資料日早於涵蓋起點數不出落後幾個交易日時，
+  // 退回舊的絕對曆日粗判。出聲是必要的——報告日超出窗代表假日表過期（time-bomb 測試沒被理會），
+  // 而它的症狀（整批序列悄悄退回舊門檻）跟先前修掉的那個 bug 一模一樣，沒有 log 就無從察覺。
   if (freshness.state === 'unknown') {
     if (opts.warnOnDegrade) {
       console.warn(
-        `[snapshot] ${spec.seriesId}：報告日 ${reportDate} 超出假日表涵蓋窗、`
-        + `期望值判定停用、退回 STALE_DAYS 粗判——請更新 market-holidays.ts 的假日表`,
+        freshness.expectedAsOf == null
+          ? `[snapshot] ${spec.seriesId}：報告日 ${reportDate} 超出假日表涵蓋窗、`
+          + `期望值判定停用、退回 STALE_DAYS 粗判——請更新 market-holidays.ts 的假日表`
+          : `[snapshot] ${spec.seriesId}：最新資料日 ${latest.date} 早於假日表涵蓋起點 ${HOLIDAY_COVERAGE_START}、`
+            + `數不出落後幾個交易日、退回 STALE_DAYS 粗判`,
       )
     }
     // 粗判的比較基準是 reportDate、不是 now（同一理由見 calendarDaysBetween 的註解）。

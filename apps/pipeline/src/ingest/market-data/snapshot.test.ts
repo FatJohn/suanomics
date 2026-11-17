@@ -1,4 +1,5 @@
 import type { SeriesLatest } from './snapshot.js'
+import { HOLIDAY_COVERAGE_START } from '@suanomics/shared'
 import { describe, expect, it, vi } from 'vitest'
 import { SERIES_SPECS } from './series-config.js'
 import { buildSnapshotBlock, displayValueOf, formatSeriesValue, resolveSeriesRenderState, selectCitableSeries, selectSeriesAnchors } from './snapshot.js'
@@ -595,6 +596,18 @@ describe('q3b 降級：假日表涵蓋窗外', () => {
     // 涵蓋窗外仍在曆日門檻內 → 數字照給、但不帶落後標注（期望值算不出來）
     expect(out).toContain('- 費城半導體指數：5,432 點（2028-01-04）')
     expect(out).not.toContain('落後')
+    warnSpy.mockRestore()
+  })
+  it('最新資料日早於涵蓋起點：警告講明原因，不叫人更新假日表，仍走曆日粗判抑制', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const out = buildSnapshotBlock(
+      [{ spec: spec('us-sox'), points: [{ date: '2026-07-02', value: 5432 }] }],
+      new Date('2026-07-31T05:10:00+08:00'),
+      '2026-07-31',
+    )
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining(`早於假日表涵蓋起點 ${HOLIDAY_COVERAGE_START}`))
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('請更新 market-holidays.ts'))
+    expect(out).toContain('- 費城半導體指數：資料未更新')
     warnSpy.mockRestore()
   })
 })
