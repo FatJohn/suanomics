@@ -25,3 +25,5 @@ pipeline 是固定的 DAG：15 個階段各自「給 system prompt 與結構化�
 - 補記（#54）：開啟 claim ledger 後實測 8 則新聞 US$1.01，18 則在 finalize 前已達 US$1.30，超過 1.20 的上限，當天產不出新報告。`DAILY_COST_LIMIT_USD` 改為 3.00：LLM 花費改以 Max 方案附帶的每月 API credits 計（US$100），依維護者的決定，一天額度抓 US$3。這個變數不能留空，未設定時 pipeline 拒絕執行。credits 用完後 API 會直接拒絕請求。
 - 補記（#62）：維護者決定花費閘維持每次 run 獨立計算、上限 3.00（約一份報告的 2～3 倍），不累計當日已花費，補跑不互相影響。每日異常靠 `llm_calls` 帳本事後查（`llm:usage` CLI、Actions job summary）。帳本寫入失敗不擋 run：閘不讀帳本，為事後查帳丟掉已付費的報告不划算，改留 annotation 與整列 log。額度、帳務、認證錯誤（`LlmAccountError`）穿透降級 catch 讓 run 失敗，避免 credits 用完時發佈殘缺報告。
 - narrative-writer 不升級模型：兩次實跑都一次完成，無 retry，也沒有截斷。品質還沒有 judge 分數，接回 judge 時（#33）再評估。
+- 補記（#33）：維護者決定 judge 維持 Anthropic，不另接其他家的 provider；上面「judge 用哪一家在接回 judge 時（#33）決定」一條就此定案。理由：judge 每次都是全新 context，只照 checklist 逐條判定，分數只算引文對得上報告原文的項目，品質取決於 prompt 寫得對不對，同家族自評的偏誤由原文比對壓低，不值得多維護一家 provider。judge 預設 Sonnet 5.5，驗收改用 Opus 5.5（effort 預設 medium），v1 的 5 天各跑兩個 judge 共 10 次呼叫，花費 US$1.08。
+- 補記（#33）：narrative-writer 是否升級模型仍未評估：judge 已接回，但只跑過一次 5 天的驗收，還沒有累積分數可比。等 #89 讓 judge 每日自動跑、累積幾週分數後再評估。
