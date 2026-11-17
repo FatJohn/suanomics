@@ -26,7 +26,8 @@ type _ExhaustiveSections = Exclude<SeriesSection, (typeof SECTIONS)[number][0]> 
 const _exhaustiveSections: _ExhaustiveSections = true
 void _exhaustiveSections
 
-// 過舊門檻（曆日）——**只剩降級路徑在用**（假日表涵蓋窗外、freshness 判 unknown 時）。
+// 過舊門檻（曆日）——**只剩降級路徑在用**（freshness 判 unknown 時：報告日超出假日表涵蓋窗，
+// 或最新資料日早於涵蓋起點）。
 // 正常路徑改看「落後幾個發布週期」（@suanomics/shared 的 classifyFreshness）。
 // 為什麼不再用它當主判：它用絕對曆日量按發布節奏更新的資料，兩頭都錯——2026-07-31 實測，
 // 這組門檻把 26 行裡的 12 行判成「資料未更新」（整個美國總經區塊、M2 因 57 天發布落差

@@ -128,8 +128,9 @@ export function expectedAsOf(rule: FreshnessRule, reportDate: string): string | 
 
 function tradingDaysBetween(from: string, to: string, market: 'tw' | 'us'): number | null {
   // 涵蓋起點之前的休市日沒收錄、會被當成交易日多算；回 null 讓上游走 unknown 降級，
-  // 理由同 withinHolidayCoverage。to 不必另擋：它是 expectedAsOf，已受涵蓋終點約束。
-  if (from < HOLIDAY_COVERAGE_START)
+  // 理由同 withinHolidayCoverage。只計 from 之後的日子，所以 from 是起點前一天仍可判定。
+  // to 是 expectedAsOf，只受涵蓋終點約束；報告日本身早於起點的情況這裡不處理。
+  if (shiftDays(from, 1) < HOLIDAY_COVERAGE_START)
     return null
   // 計「嚴格晚於 from 且不晚於 to」的交易日數
   let count = 0

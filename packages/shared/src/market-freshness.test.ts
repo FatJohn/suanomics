@@ -102,11 +102,12 @@ describe('lagCycles', () => {
     expect(lagCycles(TW_DAILY, '2026-09-29', '2026-09-24')).toBe(1)
     expect(lagCycles(US_DAILY_LAG1, '2026-09-29', '2026-09-24')).toBe(3)
   })
-  it('trading-daily 的實際日早於假日表涵蓋起點 → null（窗外休市日沒收錄、數不準）', () => {
+  it('trading-daily 的計數範圍跨到假日表涵蓋起點之前 → null（窗外休市日沒收錄、數不準）', () => {
     // 07-03 是美股獨立紀念日補假，但不在假日表裡；照算會多數一個交易日
     expect(lagCycles(US_DAILY_LAG1, '2026-07-30', '2026-07-02')).toBeNull()
-    expect(lagCycles(TW_DAILY, '2026-07-30', '2026-07-20')).toBeNull()
-    // 起點當天仍可判定
+    expect(lagCycles(TW_DAILY, '2026-07-30', '2026-07-19')).toBeNull()
+    // 起點前一天仍可判定：只計之後的日子，全在涵蓋窗內（07-21～07-30 共 8 個台股交易日）
+    expect(lagCycles(TW_DAILY, '2026-07-30', '2026-07-20')).toBe(8)
     expect(lagCycles(US_DAILY_LAG1, '2026-07-23', HOLIDAY_COVERAGE_START)).toBe(2)
   })
   it('weekly 以發布週期計數', () => {
