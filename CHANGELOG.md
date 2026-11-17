@@ -20,7 +20,7 @@
 
 ### 移除
 
-- 線上即時分析（`/brief/analyze`），改為維護者本機的 CLI。
+- 線上即時分析（`/brief/analyze`），改為維護者本機的 CLI `pnpm --filter @suanomics/pipeline run analyze --url <url>`（或 `--text`），印出 Markdown、不寫資料庫。
 - in-process job runner 與 `background_jobs` 表。
 - OpenAI 相容端點路徑與自寫的 provider adapter。
 - Gemini TTS 路徑。
