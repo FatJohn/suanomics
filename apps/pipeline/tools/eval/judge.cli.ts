@@ -1,10 +1,12 @@
-// 對指定日期的 brief 跑 quality／continuity judge，逐日一次呼叫、序列執行。不在每日路徑上，手動或每週跑。
+// 對指定日期的 brief 跑 quality／continuity judge，逐日一次呼叫、序列執行。不在每日報告的路徑上：
+// 每天由 .github/workflows/judge.yml 在 Daily Brief 成功後另跑，也可手動補評。
 // 先 --dry-run 看每次呼叫的輸入長度（不打 LLM），估好呼叫數與費用再真跑（AGENTS.md 的批次規則）。
 //
 // DATABASE_URL 與 ANTHROPIC_API_KEY 用 op run 注入，例如：
 //   ANTHROPIC_API_KEY='op://suanomics/Anthropic API Key/密碼' DATABASE_URL='op://suanomics/<item>/DATABASE_URL' \
 //     op run --account johnnyhtw.1password.com -- pnpm --filter @suanomics/pipeline run eval:judge \
 //     --dates 2026-11-11,2026-11-12 [--judge quality|continuity|all] [--max-usd 3] [--dry-run] [--out .eval-out/judge]
+// 每日自動跑另帶 --skip-missing --skip-judged，見 judge-args.ts。
 // 換 model 用 AGENT_MODELS，例如 AGENT_MODELS=brief-quality-judge:anthropic/claude-opus-5-5。
 
 import type { AgentInput } from '../../src/agents/call-agent.js'
@@ -25,12 +27,13 @@ import { dbLedger } from '../../src/db/repos/llm-calls-repo.js'
 import { runContinuityJudge } from './continuity-judge.js'
 import { buildContinuityUserContent, CONTINUITY_JUDGE_SYSTEM_PROMPT } from './continuity-judge.prompt.js'
 import { parseJudgeArgs } from './judge-args.js'
+import { pendingJudges } from './judge-plan.js'
 import { renderContinuityTable, renderQualityTable } from './judge-report.js'
-import { loadContinuityInput, loadQualityFacts, loadStoredBrief } from './load-inputs.js'
+import { loadContinuityInput, loadJudgedAgents, loadQualityFacts, loadStoredBrief } from './load-inputs.js'
 import { runQualityJudge } from './quality-judge.js'
 import { buildQualityUserContent, QUALITY_JUDGE_SYSTEM_PROMPT } from './quality-judge.prompt.js'
 
-interface Runner { gate: DailyCostGate, lastCostUsd: number }
+interface Runner { gate: DailyCostGate, lastCostUsd: number, skipped: string[] }
 
 function makeCall(runner: Runner): JudgeCall {
   return async <T>(name: AgentName, input: AgentInput, schema: Parameters<typeof callAgent<T>>[2]) => {
@@ -48,9 +51,18 @@ function logDryRun(date: string, judge: string, systemPrompt: string, userConten
 
 async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { quality: JudgeRow<QualityScore>[], continuity: JudgeRow<ContinuityScore>[] }): Promise<void> {
   const stored = await loadStoredBrief(date)
+  if (stored === null) {
+    if (!args.skipMissing)
+      throw new Error(`${date} 沒有 complete 的 daily_briefs`)
+    runner.skipped.push(`${date} 沒有 complete 的 brief（非交易日或報告未完成），略過`)
+    return
+  }
+  const judges = args.skipJudged ? pendingJudges(args.judges, await loadJudgedAgents(date)) : args.judges
+  for (const kind of args.judges.filter(k => !judges.includes(k)))
+    runner.skipped.push(`${date} 的 ${kind} 已評過，略過`)
   runner.gate.setReportDate(date)
   const call = makeCall(runner)
-  if (args.judges.includes('quality')) {
+  if (judges.includes('quality')) {
     const input = { date, brief: stored.brief, facts: await loadQualityFacts(stored) }
     if (args.dryRun) {
       logDryRun(date, 'quality', QUALITY_JUDGE_SYSTEM_PROMPT, buildQualityUserContent(input))
@@ -61,10 +73,10 @@ async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { 
       rows.quality.push({ date, score: result.score, costUsd: runner.lastCostUsd })
     }
   }
-  if (args.judges.includes('continuity')) {
+  if (judges.includes('continuity')) {
     const input = await loadContinuityInput(stored)
     if (input.priors.length === 0) {
-      console.warn(`[eval:judge] ${date} 之前沒有 brief，略過 continuity`)
+      runner.skipped.push(`${date} 之前沒有 brief，略過 continuity`)
     }
     else if (args.dryRun) {
       logDryRun(date, 'continuity', CONTINUITY_JUDGE_SYSTEM_PROMPT, buildContinuityUserContent(input))
@@ -77,26 +89,30 @@ async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { 
   }
 }
 
-function summary(args: JudgeArgs, rows: { quality: JudgeRow<QualityScore>[], continuity: JudgeRow<ContinuityScore>[] }): string {
+function summary(args: JudgeArgs, runner: Runner, rows: { quality: JudgeRow<QualityScore>[], continuity: JudgeRow<ContinuityScore>[] }): string {
   const model = (name: AgentName) => resolveAgentModel(name).model
   const parts = [`# Judge 結果（${args.dates.join('、')}）`, '']
   if (rows.quality.length > 0)
     parts.push(`## quality（${model('brief-quality-judge')}）`, '', renderQualityTable(rows.quality), '')
   if (rows.continuity.length > 0)
     parts.push(`## continuity（${model('brief-continuity-judge')}）`, '', renderContinuityTable(rows.continuity), '')
+  if (runner.skipped.length > 0)
+    parts.push('## 略過', '', ...runner.skipped.map(s => `- ${s}`), '')
   return parts.join('\n')
 }
 
 async function main(): Promise<void> {
   const args = parseJudgeArgs(process.argv.slice(2))
   mkdirSync(args.out, { recursive: true })
-  const runner: Runner = { gate: new DailyCostGate(args.maxUsd, { ledger: dbLedger }), lastCostUsd: 0 }
+  const runner: Runner = { gate: new DailyCostGate(args.maxUsd, { ledger: dbLedger }), lastCostUsd: 0, skipped: [] }
   const rows = { quality: [] as JudgeRow<QualityScore>[], continuity: [] as JudgeRow<ContinuityScore>[] }
   for (const date of args.dates)
     await judgeDate(date, args, runner, rows)
+  for (const note of runner.skipped)
+    console.warn(`[eval:judge] ${note}`)
   if (args.dryRun)
     return
-  const text = summary(args, rows)
+  const text = summary(args, runner, rows)
   writeFileSync(join(args.out, 'summary.md'), text)
   console.warn(text)
   console.warn(`totalUsd=${runner.gate.totalUsd.toFixed(4)} calls=${runner.gate.callCount}`)
