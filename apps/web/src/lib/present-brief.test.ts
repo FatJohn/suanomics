@@ -63,6 +63,25 @@ describe('presentBrief 過濾後的空內容', () => {
   })
 })
 
+describe('presentBrief 牽動產業', () => {
+  const INDUSTRY = { name: '半導體', direction: 'negative' as const, confidence: 'medium' as const, reasoning: '費半重挫。' }
+
+  it('帶出產業、方向、信心與理由', () => {
+    const view = presentBrief('2095-01-01', { ...BASE, affectedIndustries: [INDUSTRY] }, [])
+    expect(view.industries).toEqual([{ name: '半導體', direction: 'negative', confidence: 'medium', reasoning: '費半重挫。' }])
+  })
+
+  it('理由裡被攔截的句子不進 view', () => {
+    const view = presentBrief('2095-01-01', { ...BASE, affectedIndustries: [{ ...INDUSTRY, reasoning: '費半重挫。建議賣出。' }] }, [])
+    expect(view.industries[0]?.reasoning).toBe('費半重挫。')
+  })
+
+  it('產業名被攔截時整筆不輸出', () => {
+    const view = presentBrief('2095-01-01', { ...BASE, affectedIndustries: [{ ...INDUSTRY, name: '建議買進' }, INDUSTRY] }, [])
+    expect(view.industries.map(i => i.name)).toEqual(['半導體'])
+  })
+})
+
 describe('parseBriefJson', () => {
   it('不合 schema 時帶日期丟錯，擋下這次部署而不是發佈未驗證內容', () => {
     expect(() => parseBriefJson('2095-01-01', null)).toThrow('2095-01-01')
