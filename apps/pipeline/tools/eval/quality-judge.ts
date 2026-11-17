@@ -2,7 +2,7 @@ import type { MarketBrief } from '@suanomics/shared'
 import type { JudgeCall } from './judge-call.js'
 import type { QualityJudgeInput } from './quality-judge.prompt.js'
 import { z } from 'zod'
-import { containsQuote, normalizeQuote, readerBlocks, renderBlocks } from './brief-text.js'
+import { blockTexts, containsQuote, dedupeByQuote, normalizeQuote, readerBlocks, sectionText } from './brief-text.js'
 import { buildQualityUserContent, QUALITY_JUDGE_SYSTEM_PROMPT } from './quality-judge.prompt.js'
 
 // evidence 放在 verdict 前面：先抄證據再下判定。長度與數量不設限，理由同 response-schemas.ts。
@@ -33,41 +33,45 @@ export interface QualityScore {
 }
 
 const BOILERPLATE_MIN_BLOCKS = 3
+// prompt 寫套話是 4 到 20 字，比一般引文的下限短一字。
+const BOILERPLATE_MIN_CHARS = 4
 
-function verified(check: Check, text: string): boolean {
-  return check.verdict === 'pass' && containsQuote(text, check.evidence)
+function verified(check: Check, texts: readonly string[]): boolean {
+  return check.verdict === 'pass' && containsQuote(texts, check.evidence)
 }
 
-function scoreSections(output: QualityJudgeOutput, brief: MarketBrief, text: string) {
-  const headings = brief.narrative?.sections.map(s => s.heading) ?? []
+// 段落檢查只認該段原文：prompt 要 judge 只看 [段落N] 區塊，抄別段的句子不能當這段的證據。
+function scoreSections(output: QualityJudgeOutput, brief: MarketBrief) {
+  const sections = brief.narrative?.sections ?? []
   const byHeading = new Map(output.sections.map(s => [s.heading.trim(), s]))
   let chainPass = 0
   let mechanismPass = 0
   let unverifiedPasses = 0
   const missingSections: string[] = []
-  for (const heading of headings) {
-    const judged = byHeading.get(heading.trim())
+  for (const section of sections) {
+    const judged = byHeading.get(section.heading.trim())
     if (!judged) {
-      missingSections.push(heading)
+      missingSections.push(section.heading)
       continue
     }
+    const own = [sectionText(section)]
     for (const check of [judged.chain, judged.mechanism]) {
-      if (check.verdict === 'pass' && !verified(check, text))
+      if (check.verdict === 'pass' && !verified(check, own))
         unverifiedPasses++
     }
-    chainPass += verified(judged.chain, text) ? 1 : 0
-    mechanismPass += verified(judged.mechanism, text) ? 1 : 0
+    chainPass += verified(judged.chain, own) ? 1 : 0
+    mechanismPass += verified(judged.mechanism, own) ? 1 : 0
   }
-  return { sections: headings.length, chainPass, mechanismPass, unverifiedPasses, missingSections }
+  return { sections: sections.length, chainPass, mechanismPass, unverifiedPasses, missingSections }
 }
 
-function scoreUnsupported(output: QualityJudgeOutput, text: string) {
+function scoreUnsupported(output: QualityJudgeOutput, texts: readonly string[]) {
   const seen = new Set<string>()
   let unsupportedNumbers = 0
   let unsupportedEvents = 0
   let unmatchedQuotes = 0
   for (const item of output.unsupported) {
-    if (!containsQuote(text, item.quote)) {
+    if (!containsQuote(texts, item.quote)) {
       unmatchedQuotes++
       continue
     }
@@ -85,20 +89,20 @@ function scoreUnsupported(output: QualityJudgeOutput, text: string) {
 
 // 套話是否成立用機械計數判：judge 只負責挑候選片語，出現在幾個區塊由程式數。
 function scoreBoilerplate(output: QualityJudgeOutput, brief: MarketBrief) {
-  const blocks = readerBlocks(brief)
-  return output.boilerplate
-    .map(b => ({ phrase: b.phrase, blocks: blocks.filter(block => containsQuote(block.text, b.phrase)).length }))
+  const texts = blockTexts(readerBlocks(brief))
+  return dedupeByQuote(output.boilerplate, b => b.phrase)
+    .map(b => ({ phrase: b.phrase, blocks: texts.filter(t => containsQuote([t], b.phrase, BOILERPLATE_MIN_CHARS)).length }))
     .filter(b => b.blocks >= BOILERPLATE_MIN_BLOCKS)
 }
 
 export function scoreQuality(output: QualityJudgeOutput, brief: MarketBrief): QualityScore {
-  const text = renderBlocks(readerBlocks(brief))
+  const texts = blockTexts(readerBlocks(brief))
   const falsifier = output.falsifier.verdict === 'fail'
     ? 'fail'
-    : verified(output.falsifier, text) ? 'pass' : 'pass-unverified'
+    : verified(output.falsifier, texts) ? 'pass' : 'pass-unverified'
   return {
-    ...scoreSections(output, brief, text),
-    ...scoreUnsupported(output, text),
+    ...scoreSections(output, brief),
+    ...scoreUnsupported(output, texts),
     boilerplate: scoreBoilerplate(output, brief),
     falsifier,
   }

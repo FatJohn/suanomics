@@ -39,17 +39,28 @@ describe('renderBlocks', () => {
 })
 
 describe('containsQuote', () => {
-  const text = '美債 10 年期殖利率升至 5.1%，費半重挫 5.28%。'
+  const texts = ['美債 10 年期殖利率升至 5.1%，費半重挫 5.28%。', '法人賣超 1,144 億元。']
 
   it('忽略空白與全半形差異', () => {
-    expect(containsQuote(text, '殖利率升至5.1％')).toBe(true)
+    expect(containsQuote(texts, '殖利率升至5.1％')).toBe(true)
   })
 
   it('改了數字就對不上', () => {
-    expect(containsQuote(text, '殖利率升至 5.2%')).toBe(false)
+    expect(containsQuote(texts, '殖利率升至 5.2%')).toBe(false)
   })
 
   it('空引文不算命中，免得 judge 交白卷也被當成有證據', () => {
-    expect(containsQuote(text, '  ')).toBe(false)
+    expect(containsQuote(texts, '  ')).toBe(false)
+  })
+
+  it('短於下限的引文不算命中：抄一個字或標點就能對上任何報告', () => {
+    expect(containsQuote(texts, '。')).toBe(false)
+    expect(containsQuote(texts, '億元')).toBe(false)
+    expect(containsQuote(texts, '費半重挫')).toBe(false)
+    expect(containsQuote(texts, '費半重挫', 4)).toBe(true)
+  })
+
+  it('只在單一區塊內比對，跨區塊拼接的引文對不上', () => {
+    expect(containsQuote(texts, '5.28%。法人賣超')).toBe(false)
   })
 })

@@ -75,10 +75,42 @@ describe('scoreContinuity', () => {
       falseContinuity: [{ quote: '延續上週的關稅議題', note: '' }, { quote: '報告沒有的句子', note: '' }],
       restatements: [
         { todayQuote: '殖利率升至 5.1% 壓抑科技股', priorQuote: '殖利率逼近 5%' },
-        { todayQuote: '殖利率升至 5.1% 壓抑科技股', priorQuote: '前日沒有的句子' },
+        { todayQuote: '延續昨日的利率主線', priorQuote: '前日沒有的句子' },
       ],
     })
     expect(scoreContinuity(o, input)).toMatchObject({ falseContinuity: 1, restatements: 1, unverified: 2 })
+  })
+})
+
+describe('scoreContinuity 防灌水', () => {
+  it('極短引文不算對上原文', () => {
+    const o = output({
+      carryOver: [{ item: '週', quote: '美', verdict: 'addressed' }],
+      falseContinuity: [{ quote: '，', note: '' }],
+    })
+    expect(scoreContinuity(o, input)).toMatchObject({ carryOverItems: 0, addressed: 0, falseContinuity: 0, unverified: 2 })
+  })
+
+  it('同一個待觀察項、假連續句、重述句重複列出只算一次', () => {
+    const o = output({
+      carryOver: Array.from({ length: 3 }, () => ({ item: '後續觀察週一公布的 CPI', quote: 'CPI 年增 3.72%', verdict: 'addressed' as const })),
+      falseContinuity: Array.from({ length: 2 }, () => ({ quote: '延續上週的關稅議題', note: '' })),
+      restatements: Array.from({ length: 2 }, () => ({ todayQuote: '殖利率升至 5.1% 壓抑科技股', priorQuote: '殖利率逼近 5%' })),
+    })
+    expect(scoreContinuity(o, input)).toMatchObject({ carryOverItems: 1, addressed: 1, falseContinuity: 1, restatements: 1, unverified: 0 })
+  })
+
+  it('重述句依 prompt 上限只取前 10 筆', () => {
+    const todayLong = makeBrief({ summary: Array.from({ length: 12 }, (_, i) => `第${i}號論點延續不變`).join('。') })
+    const priorLong = makeBrief({ summary: '殖利率逼近 5%，維持原判斷。' })
+    const o = output({
+      storylines: [],
+      carryOver: [],
+      falseContinuity: [],
+      restatements: Array.from({ length: 12 }, (_, i) => ({ todayQuote: `第${i}號論點延續不變`, priorQuote: '殖利率逼近 5%' })),
+    })
+    const score = scoreContinuity(o, { ...input, brief: todayLong, priors: [{ date: '2026-11-13', brief: priorLong }] })
+    expect(score.restatements).toBe(10)
   })
 })
 

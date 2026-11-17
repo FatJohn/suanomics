@@ -1,7 +1,7 @@
 import type { ContinuityJudgeInput } from './continuity-judge.prompt.js'
 import type { JudgeCall } from './judge-call.js'
 import { z } from 'zod'
-import { containsQuote, readerBlocks, renderBlocks } from './brief-text.js'
+import { blockTexts, containsQuote, dedupeByQuote, readerBlocks } from './brief-text.js'
 import { buildContinuityUserContent, CONTINUITY_JUDGE_SYSTEM_PROMPT, touchedStorylineIds } from './continuity-judge.prompt.js'
 
 // 長度與數量不設限，理由同 response-schemas.ts。
@@ -31,7 +31,10 @@ export interface ContinuityScore {
   unverified: number
 }
 
-function scoreStorylines(output: ContinuityJudgeOutput, input: ContinuityJudgeInput, todayText: string) {
+// prompt 對重述句寫「最多 10 筆」；超過的部分不計分，免得 judge 多列就灌高。
+const MAX_RESTATEMENTS = 10
+
+function scoreStorylines(output: ContinuityJudgeOutput, input: ContinuityJudgeInput, todayText: readonly string[]) {
   const touched = touchedStorylineIds(input)
   const byId = new Map(output.storylines.map(s => [s.id, s]))
   const counts = { delta: 0, restated: 0, absent: 0, unverified: 0 }
@@ -50,9 +53,9 @@ function scoreStorylines(output: ContinuityJudgeOutput, input: ContinuityJudgeIn
   return { touched: touched.length, missingStorylines, ...counts }
 }
 
-function scoreCarryOver(output: ContinuityJudgeOutput, yesterdayText: string, todayText: string) {
+function scoreCarryOver(output: ContinuityJudgeOutput, yesterdayText: readonly string[], todayText: readonly string[]) {
   const counts = { carryOverItems: 0, addressed: 0, notAddressed: 0, notDue: 0, unverified: 0 }
-  for (const c of output.carryOver) {
+  for (const c of dedupeByQuote(output.carryOver, c => c.item)) {
     const itemOk = containsQuote(yesterdayText, c.item)
     if (!itemOk || (c.verdict === 'addressed' && !containsQuote(todayText, c.quote))) {
       counts.unverified++
@@ -72,13 +75,15 @@ function scoreCarryOver(output: ContinuityJudgeOutput, yesterdayText: string, to
 }
 
 export function scoreContinuity(output: ContinuityJudgeOutput, input: ContinuityJudgeInput): ContinuityScore {
-  const todayText = renderBlocks(readerBlocks(input.brief))
-  const priorTexts = input.priors.map(p => renderBlocks(readerBlocks(p.brief, { withAnalysis: false })))
-  const yesterdayText = priorTexts.at(-1) ?? ''
+  const todayText = blockTexts(readerBlocks(input.brief))
+  const priorTexts = input.priors.map(p => blockTexts(readerBlocks(p.brief, { withAnalysis: false })))
+  const yesterdayText = priorTexts.at(-1) ?? []
   const storylines = scoreStorylines(output, input, todayText)
   const carryOver = scoreCarryOver(output, yesterdayText, todayText)
-  const falseOk = output.falseContinuity.filter(f => containsQuote(todayText, f.quote)).length
-  const restateOk = output.restatements.filter(r => containsQuote(todayText, r.todayQuote) && priorTexts.some(t => containsQuote(t, r.priorQuote))).length
+  const falseList = dedupeByQuote(output.falseContinuity, f => f.quote)
+  const restateList = dedupeByQuote(output.restatements, r => r.todayQuote).slice(0, MAX_RESTATEMENTS)
+  const falseOk = falseList.filter(f => containsQuote(todayText, f.quote)).length
+  const restateOk = restateList.filter(r => containsQuote(todayText, r.todayQuote) && priorTexts.some(t => containsQuote(t, r.priorQuote))).length
   return {
     touched: storylines.touched,
     delta: storylines.delta,
@@ -92,7 +97,7 @@ export function scoreContinuity(output: ContinuityJudgeOutput, input: Continuity
     falseContinuity: falseOk,
     restatements: restateOk,
     unverified: storylines.unverified + carryOver.unverified
-      + (output.falseContinuity.length - falseOk) + (output.restatements.length - restateOk),
+      + (falseList.length - falseOk) + (restateList.length - restateOk),
   }
 }
 

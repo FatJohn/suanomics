@@ -1,4 +1,4 @@
-import type { MarketBrief } from '@suanomics/shared'
+import type { MarketBrief, NarrativeSection } from '@suanomics/shared'
 
 export interface ReaderBlock { label: string, text: string }
 
@@ -13,8 +13,7 @@ export function readerBlocks(brief: MarketBrief, opts: { withAnalysis?: boolean 
   if (brief.narrative) {
     blocks.push({ label: '開場', text: brief.narrative.intro })
     brief.narrative.sections.forEach((s, i) => {
-      const takeaway = s.takeaway ? `\n重點：${s.takeaway}` : ''
-      blocks.push({ label: `段落${i + 1}「${s.heading}」`, text: `${s.body}${takeaway}` })
+      blocks.push({ label: `段落${i + 1}「${s.heading}」`, text: sectionText(s) })
     })
     blocks.push({ label: '收尾', text: brief.narrative.outro })
   }
@@ -29,6 +28,10 @@ export function readerBlocks(brief: MarketBrief, opts: { withAnalysis?: boolean 
   return blocks
 }
 
+export function sectionText(s: NarrativeSection): string {
+  return s.takeaway ? `${s.body}\n重點：${s.takeaway}` : s.body
+}
+
 export function renderBlocks(blocks: readonly ReaderBlock[]): string {
   return blocks.map(b => `[${b.label}] ${b.text}`).join('\n')
 }
@@ -38,7 +41,27 @@ export function normalizeQuote(s: string): string {
   return s.normalize('NFKC').replace(/\s+/g, '')
 }
 
-export function containsQuote(text: string, quote: string): boolean {
+// prompt 要 judge 抄 5 到 60 字；太短的引文（一個字、一個標點）幾乎對得上任何報告，等於沒驗。
+export const MIN_QUOTE_CHARS = 5
+
+// 逐區塊比對而不是比對 render 後的整串：區塊標籤不是報告內容，跨區塊拼接也違反「連續文字」。
+export function containsQuote(texts: readonly string[], quote: string, minChars = MIN_QUOTE_CHARS): boolean {
   const q = normalizeQuote(quote)
-  return q.length > 0 && normalizeQuote(text).includes(q)
+  return q.length >= minChars && texts.some(t => normalizeQuote(t).includes(q))
+}
+
+export function blockTexts(blocks: readonly ReaderBlock[]): string[] {
+  return blocks.map(b => b.text)
+}
+
+// judge 重複列同一筆就能灌高計數；以正規化後的引文為鍵只留第一筆。
+export function dedupeByQuote<T>(items: readonly T[], key: (item: T) => string): T[] {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    const k = normalizeQuote(key(item))
+    if (seen.has(k))
+      return false
+    seen.add(k)
+    return true
+  })
 }

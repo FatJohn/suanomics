@@ -74,6 +74,30 @@ describe('scoreQuality', () => {
     expect(scoreQuality(output({ falsifier: fail('沒有') }), brief).falsifier).toBe('fail')
   })
 
+  it('段落的證據只認該段原文，抄別段的句子不算通過', () => {
+    const o = output({ sections: [
+      { heading: '利率壓過 AI', chain: pass('折現率上升使台積電等成長股評價承壓'), mechanism: pass('折現率上升使台積電等成長股評價承壓') },
+      { heading: '台股資金', chain: pass('折現率上升使台積電等成長股評價承壓'), mechanism: fail('x') },
+    ] })
+    expect(scoreQuality(o, brief)).toMatchObject({ chainPass: 1, unverifiedPasses: 1 })
+  })
+
+  it('區塊標籤與極短引文不算原文', () => {
+    const o = output({
+      sections: [
+        { heading: '利率壓過 AI', chain: pass('段落1「利率壓過 AI」'), mechanism: pass('。') },
+        { heading: '台股資金', chain: fail('x'), mechanism: fail('x') },
+      ],
+      falsifier: pass('[推理鏈]'),
+    })
+    expect(scoreQuality(o, brief)).toMatchObject({ chainPass: 0, mechanismPass: 0, unverifiedPasses: 2, falsifier: 'pass-unverified' })
+  })
+
+  it('套話同一片語只算一次，短於 4 字的不算', () => {
+    const o = output({ boilerplate: [{ phrase: '值得持續觀察' }, { phrase: '值得持續 觀察' }, { phrase: '。' }] })
+    expect(scoreQuality(o, brief).boilerplate).toEqual([{ phrase: '值得持續觀察', blocks: 3 }])
+  })
+
   it('沒有 narrative 的報告段落數是 0', () => {
     expect(scoreQuality(output({ sections: [] }), makeBrief())).toMatchObject({ sections: 0, chainPass: 0, missingSections: [] })
   })
