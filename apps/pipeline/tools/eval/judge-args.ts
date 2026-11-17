@@ -7,6 +7,10 @@ export interface JudgeArgs {
   maxUsd: number
   dryRun: boolean
   out: string
+  // 排程自動跑用：沒有 brief 的日子（非交易日、花費閘中止）跳過而非失敗；
+  // 已評過的 judge 不重跑（備援 run 以 already-exists 成功時也會觸發 judge）。
+  skipMissing: boolean
+  skipJudged: boolean
 }
 
 function isCalendarDate(value: string): boolean {
@@ -49,13 +53,13 @@ function parseMaxUsd(raw: string | undefined): number {
 
 export function parseJudgeArgs(argv: readonly string[]): JudgeArgs {
   const values: Record<string, string | undefined> = {}
-  let dryRun = false
+  const flags = new Set<string>()
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--')
       continue
-    if (arg === '--dry-run')
-      dryRun = true
+    if (arg === '--dry-run' || arg === '--skip-missing' || arg === '--skip-judged')
+      flags.add(arg)
     else if (arg === '--dates' || arg === '--judge' || arg === '--max-usd' || arg === '--out')
       values[arg] = argv[++i]
     else
@@ -65,7 +69,9 @@ export function parseJudgeArgs(argv: readonly string[]): JudgeArgs {
     dates: parseDates(values['--dates']),
     judges: parseJudges(values['--judge']),
     maxUsd: parseMaxUsd(values['--max-usd']),
-    dryRun,
+    dryRun: flags.has('--dry-run'),
     out: values['--out'] ?? '.eval-out/judge',
+    skipMissing: flags.has('--skip-missing'),
+    skipJudged: flags.has('--skip-judged'),
   }
 }

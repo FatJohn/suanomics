@@ -9,6 +9,8 @@ describe('parseJudgeArgs', () => {
       maxUsd: 3,
       dryRun: false,
       out: '.eval-out/judge',
+      skipMissing: false,
+      skipJudged: false,
     })
   })
 
@@ -36,5 +38,10 @@ describe('parseJudgeArgs', () => {
     expect(() => parseJudgeArgs(['--dates', '2026-11-17', '--judge', 'brief'])).toThrow(/--judge/)
     expect(() => parseJudgeArgs(['--dates', '2026-11-17', '--max-usd', '0'])).toThrow(/--max-usd/)
     expect(() => parseJudgeArgs(['--dates', '2026-11-17', '--force'])).toThrow(/--force/)
+  })
+
+  it('排程用的 --skip-missing、--skip-judged 預設關，給了才開', () => {
+    expect(parseJudgeArgs(['--dates', '2026-11-17', '--skip-missing', '--skip-judged'])).toMatchObject({ skipMissing: true, skipJudged: true })
+    expect(parseJudgeArgs(['--dates', '2026-11-17', '--skip-judged'])).toMatchObject({ skipMissing: false, skipJudged: true })
   })
 })
