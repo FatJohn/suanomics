@@ -7,6 +7,11 @@ describe('priceFor', () => {
     expect(priceFor('claude-sonnet-5-5')).toEqual({ input: 2.00, output: 10.00 })
   })
 
+  // judge 可用 AGENT_MODELS 覆寫成 Opus（#33），沒價格會在呼叫前被擋下。
+  it('有 Opus 5.5 的價格', () => {
+    expect(priceFor('claude-opus-5-5')).toEqual({ input: 4.00, output: 20.00 })
+  })
+
   it('沒有價格的 model 直接拒絕，不用估計值讓花費閘少算', () => {
     expect(() => priceFor('claude-unpriced')).toThrow(/claude-unpriced/)
   })

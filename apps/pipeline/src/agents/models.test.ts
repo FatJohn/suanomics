@@ -18,15 +18,21 @@ describe('resolveAgentModel 預設值', () => {
     ['viewpoints-debate', SONNET],
     ['narrative-writer', SONNET],
     ['podcast-writer', SONNET],
-    ['brief-judge', SONNET],
     ['brief-quality-judge', SONNET],
     ['brief-continuity-judge', SONNET],
   ] as const)('%s', (agent, expected) => {
     expect(resolveAgentModel(agent, {})).toEqual(expected)
   })
 
-  it('15 個 agent 全部列在表上', () => {
-    expect(AGENT_NAMES).toHaveLength(15)
+  it('14 個 agent 全部列在表上', () => {
+    expect(AGENT_NAMES).toHaveLength(14)
+  })
+})
+
+describe('brief-judge 已移除', () => {
+  // v0 只有模型表條目、沒有實作；#34 的 A/B 改用 brief-quality-judge（#33）。
+  it('覆寫寫到 brief-judge 時當成未知 agent 擋下', () => {
+    expect(() => resolveAgentModel('editor', { AGENT_MODELS: 'brief-judge:anthropic/claude-sonnet-5-5' })).toThrow(/未知 agent：brief-judge/)
   })
 })
 

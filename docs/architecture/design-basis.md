@@ -90,7 +90,7 @@ pnpm workspace 四個成員：
 |---|---|---|
 | 高量、低複雜度 | 便宜、快速的等級 | news-categorizer、news-tagger、chain-grouper、corpus-entity-summary |
 | 分析與綜合 | 能力較高的等級 | decomposer、analyst-tier1、analyst-tier2、synthesizer、editor、viewpoints-debate、narrative-writer、podcast-writer |
-| 品質評審（judge） | 與分析綜合同等級 | brief-judge、brief-quality-judge、brief-continuity-judge |
+| 品質評審（judge） | 與分析綜合同等級 | brief-quality-judge、brief-continuity-judge |
 
 judge 用不同家族的 model 可避免同家族評自己的輸出；全部用 Anthropic，是否換家族在接回 judge 時（#33）決定。system prompt 透過 `providerOptions.anthropic.cacheControl` 開 prompt caching。
 
