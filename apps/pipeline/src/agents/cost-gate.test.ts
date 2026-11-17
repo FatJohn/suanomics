@@ -1,6 +1,6 @@
 import type { LlmCallEntry, LlmLedger, LlmLedgerRow } from './cost-gate.js'
 import { describe, expect, it, vi } from 'vitest'
-import { CostGateError, DailyCostGate, DailyCostLimitExceededError, parseDailyCostLimit } from './cost-gate.js'
+import { CostGateError, DailyCostGate, DailyCostLimitExceededError, getDailyCostGate, installDailyCostGate, parseDailyCostLimit } from './cost-gate.js'
 
 describe('dailyCostGate', () => {
   it('每次 record 累計呼叫數', () => {
@@ -176,5 +176,15 @@ describe('dailyCostGate 的 recordCall', () => {
     await gate.recordCall(ENTRY)
     await gate.recordCall(ENTRY)
     expect(ledger.rows[0]?.id).not.toBe(ledger.rows[1]?.id)
+  })
+})
+
+describe('installDailyCostGate', () => {
+  // process 共用的閘裝上就拆不掉，兩個行為放同一個測試，才不依賴測試執行順序。
+  it('裝上的閘就是 process 共用的閘；之後拒絕替換，避免花費分在兩個閘', () => {
+    const gate = new DailyCostGate(1)
+    installDailyCostGate(gate)
+    expect(getDailyCostGate()).toBe(gate)
+    expect(() => installDailyCostGate(new DailyCostGate(1))).toThrow(CostGateError)
   })
 })

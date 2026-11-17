@@ -152,6 +152,16 @@ export function parseDailyCostLimit(raw: string | undefined): number {
 
 let processGate: DailyCostGate | undefined
 
+/**
+ * 換掉 process 共用的閘，要在第一次 LLM 呼叫前裝。給不寫 DB 的路徑（本機 analyze）
+ * 裝一個沒有帳本的閘；agent 都走 getDailyCostGate，逐層傳 gate 參數要改每個 agent。
+ */
+export function installDailyCostGate(gate: DailyCostGate): void {
+  if (processGate !== undefined)
+    throw new CostGateError('花費閘已建立，不能替換')
+  processGate = gate
+}
+
 /** 整個 process 共用一個閘；沒設上限時拒絕執行，不退回「不設限」。 */
 export function getDailyCostGate(): DailyCostGate {
   processGate ??= new DailyCostGate(parseDailyCostLimit(process.env.DAILY_COST_LIMIT_USD), { ledger: dbLedger })
