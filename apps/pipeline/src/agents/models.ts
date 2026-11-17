@@ -13,7 +13,6 @@ export const AGENT_NAMES = [
   'viewpoints-debate',
   'narrative-writer',
   'podcast-writer',
-  'brief-judge',
   'brief-quality-judge',
   'brief-continuity-judge',
 ] as const
@@ -43,7 +42,6 @@ const AGENT_MODEL_DEFAULTS: Record<AgentName, string> = {
   'viewpoints-debate': SONNET,
   'narrative-writer': SONNET,
   'podcast-writer': SONNET,
-  'brief-judge': SONNET,
   'brief-quality-judge': SONNET,
   'brief-continuity-judge': SONNET,
 }

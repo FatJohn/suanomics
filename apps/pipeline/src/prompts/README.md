@@ -27,7 +27,7 @@
 `macro-frames.ts` 也在這個目錄：它是手寫的總經數據解讀框架，由 `analyst-tier1.prompt.ts` 用
 `renderMacroFramesSection()` 接在 system prompt 尾端，換場景時要一起換。
 
-評測用的 judge prompt 不放這裡：judge 屬於量測工具，不是 production pipeline 的一部分。v0 的 judge 在 `main` 的 `apps/server/tools/eval/`，接回時（#33）搬到 `apps/pipeline/tools/eval/`。
+評測用的 judge prompt 不放這裡：judge 屬於量測工具，不是 production pipeline 的一部分。judge 在 `apps/pipeline/tools/eval/`（#33 從 v0 的 `apps/server/tools/eval/` 接回）。
 
 ## 換語言／市場
 
