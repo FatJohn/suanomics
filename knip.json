@@ -11,7 +11,7 @@
         "src/db/repos/*.ts",
         "src/ingest/market-data/context.ts"
       ],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts", "tools/**/*.ts"]
     },
     "apps/trigger": {
       "entry": ["src/index.ts"],

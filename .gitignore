@@ -9,6 +9,9 @@ node_modules/
 # macOS
 .DS_Store
 
+# eval:judge 的輸出（tools/eval/judge.cli.ts）
+.eval-out/
+
 # Build output
 dist/
 .astro/
