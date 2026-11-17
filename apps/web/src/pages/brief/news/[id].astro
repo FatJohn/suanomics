@@ -19,9 +19,62 @@ const href = safeHttpUrl(item.url)
 ---
 
 <Base title={title}>
-  <h1 class="my-2 text-2xl font-bold">{title}</h1>
-  <p class="text-sm text-neutral-500">
-    {item.sourceName}{item.publishedAt && `・${formatTaipeiDate(item.publishedAt)}`}
-  </p>
-  {href && <p class="my-3"><a class="underline" href={href} rel="noopener">閱讀原文</a></p>}
+  <article class="card">
+    <h1>{title}</h1>
+    <p class="meta">
+      {item.sourceName}{item.publishedAt && `・${formatTaipeiDate(item.publishedAt)}`}
+    </p>
+    <p class="note">這是講義引用的新聞出處。本站只列標題與連結，內容請到原站閱讀。</p>
+    {href && (
+      <a class="go" href={href} rel="noopener">
+        閱讀原文
+        <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4.5 2H10v5.5M10 2 2.5 9.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+      </a>
+    )}
+  </article>
+  <p class="back"><a href="/">回到今日講義</a>・<a href="/dates">歷史講義</a></p>
 </Base>
+
+<style>
+  .card {
+    max-width: 68ch;
+    margin-top: 14px;
+    border: 2px solid var(--blue);
+    background: var(--sheet);
+    padding: 14px 16px 18px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 900;
+    line-height: 1.5;
+  }
+  .meta {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    color: var(--ink-2);
+  }
+  .note {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .go {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 8px 16px;
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .go:hover {
+    background: #1a44b8;
+  }
+  .back {
+    margin-top: 20px;
+    font-size: 14px;
+  }
+</style>

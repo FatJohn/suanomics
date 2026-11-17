@@ -1,0 +1,26 @@
+---
+import type { CitationLink } from '../lib/present-brief'
+
+interface Props { label: string, links: CitationLink[] }
+const { label, links } = Astro.props
+---
+
+{links.length > 0 && (
+  <p class="src">
+    <span class="label">{label}</span>
+    {links.map((c, i) => <>{i > 0 && '、'}<a href={c.url} rel="noopener">{c.title}</a></>)}
+  </p>
+)}
+
+<style>
+  .src {
+    margin: 10px 0 0;
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: var(--ink-2);
+  }
+  .label {
+    margin-right: 0.4em;
+    font-weight: 700;
+  }
+</style>

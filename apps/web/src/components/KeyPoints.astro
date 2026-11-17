@@ -1,0 +1,114 @@
+---
+import type { IndustryView } from '../lib/present-brief'
+import { confidenceLabel } from '../lib/handout'
+import DirectionMark from './DirectionMark.astro'
+
+interface Props { thesis: string, industries: IndustryView[] }
+const { thesis, industries } = Astro.props
+---
+
+<section class="box" id="key" aria-labelledby="key-title">
+  <h2 id="key-title">本日必考重點</h2>
+  {thesis && <p class="thesis"><mark class="hl">{thesis}</mark></p>}
+  {industries.length > 0 && (
+    <>
+      <p class="hint">牽動產業（點開看理由）</p>
+      <ol>
+        {industries.map((industry, i) => (
+          <li>
+            <details>
+              <summary>
+                <span class="no">{i + 1}</span>
+                <span class="name">{industry.name}</span>
+                <DirectionMark direction={industry.direction} />
+              </summary>
+              <p class="why">
+                {industry.reasoning || '這筆沒有附理由。'}
+                <span class="conf">（{confidenceLabel(industry.confidence)}）</span>
+              </p>
+            </details>
+          </li>
+        ))}
+      </ol>
+    </>
+  )}
+</section>
+
+<style>
+  .box {
+    position: relative;
+    margin-top: 22px;
+    border: 2px solid var(--blue);
+    background: var(--sheet);
+    padding: 18px 14px 6px;
+  }
+  h2 {
+    position: absolute;
+    top: -0.85em;
+    left: 10px;
+    margin: 0;
+    background: var(--blue);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    line-height: 1.6;
+    padding: 1px 8px 1px 10px;
+  }
+  .thesis {
+    margin: 0;
+    font-size: 15.5px;
+    font-weight: 500;
+    line-height: 1.8;
+  }
+  .hint {
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: var(--ink-2);
+    letter-spacing: 0.08em;
+  }
+  ol {
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  li + li {
+    border-top: 1px dashed var(--rule);
+  }
+  summary {
+    display: grid;
+    grid-template-columns: 1.4em 1fr auto;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px 0;
+    cursor: pointer;
+    list-style: none;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary:hover .name {
+    text-decoration: underline;
+    text-decoration-color: var(--blue);
+    text-underline-offset: 0.22em;
+  }
+  .no {
+    font-weight: 900;
+    color: var(--blue);
+  }
+  .name {
+    font-weight: 700;
+  }
+  .why {
+    margin: 0 0 10px 1.4em;
+    padding-left: 6px;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--ink-2);
+  }
+  .conf {
+    white-space: nowrap;
+  }
+</style>

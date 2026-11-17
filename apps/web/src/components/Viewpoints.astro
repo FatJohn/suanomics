@@ -1,0 +1,72 @@
+---
+import type { BriefView } from '../lib/present-brief'
+
+interface Props { viewpoints: NonNullable<BriefView['viewpoints']> }
+const { viewpoints } = Astro.props
+const columns = [
+  { title: '支持這個看法', points: viewpoints.supportPoints },
+  { title: '要小心的地方', points: viewpoints.riskPoints },
+].filter(c => c.points.length > 0)
+---
+
+<section id="views" aria-labelledby="views-title">
+  <h2 id="views-title">正反觀點</h2>
+  {columns.length > 0 && (
+    <div class="cols">
+      {columns.map(c => (
+        <div>
+          <h3>{c.title}</h3>
+          <ul>{c.points.map(p => <li>{p}</li>)}</ul>
+        </div>
+      ))}
+    </div>
+  )}
+  {viewpoints.netRead && (
+    <div class="net">
+      <h3>半仙總結</h3>
+      <p>{viewpoints.netRead}</p>
+    </div>
+  )}
+</section>
+
+<style>
+  .cols {
+    display: grid;
+    gap: 4px 28px;
+  }
+  @media (min-width: 640px) {
+    .cols {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  h3 {
+    margin: 14px 0 2px;
+    font-size: 15px;
+    font-weight: 900;
+  }
+  ul {
+    margin: 0;
+    padding-left: 1.2em;
+  }
+  li {
+    margin: 6px 0;
+    font-size: 15px;
+    line-height: 1.75;
+  }
+  li::marker {
+    color: var(--blue);
+  }
+  .net {
+    margin-top: 22px;
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+    padding: 4px 0 8px;
+  }
+  .net h3 {
+    color: var(--red);
+    letter-spacing: 0.12em;
+  }
+  .net p {
+    margin: 4px 0 0;
+  }
+</style>

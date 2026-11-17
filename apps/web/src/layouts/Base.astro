@@ -1,23 +1,136 @@
 ---
 import { SITE_NAME } from '@suanomics/shared'
+import { weekdayLabel } from '../lib/handout'
 import { pageTitle } from '../lib/title'
 import '../styles/global.css'
 
-interface Props { title?: string }
-const { title } = Astro.props
+interface Props {
+  title?: string
+  // 講義抬頭右側的日期；歷史與新聞頁沒有單一日期就不帶。
+  issueDate?: string | undefined
+  current?: 'today' | 'archive'
+}
+const { title, issueDate, current } = Astro.props
 ---
 
 <html lang="zh-Hant-TW">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f4f6f8" />
     <title>{pageTitle(title)}</title>
   </head>
-  <body class="mx-auto max-w-2xl px-4 py-6 leading-relaxed text-neutral-900">
-    <nav class="mb-6 flex gap-4 text-sm">
-      <a class="font-bold" href="/">{SITE_NAME}</a>
-      <a class="underline" href="/dates">歷史日期</a>
-    </nav>
-    <main><slot /></main>
+  <body>
+    <a class="skip" href="#content">跳到本文</a>
+    <div class="page">
+      <header class="masthead">
+        <a class="brand" href="/">
+          <b>{SITE_NAME}</b>
+          <small>賽博半仙・算命不如算力</small>
+        </a>
+        <p class="meta">
+          開盤前重點講義
+          {issueDate && <strong>{issueDate}（{weekdayLabel(issueDate)}）</strong>}
+        </p>
+      </header>
+      <nav class="nav" aria-label="網站">
+        <a href="/" aria-current={current === 'today' ? 'page' : undefined}>今日講義</a>
+        <a href="/dates" aria-current={current === 'archive' ? 'page' : undefined}>歷史講義</a>
+      </nav>
+      <main id="content"><slot /></main>
+      <footer class="foot">
+        <p class="sign">今天就畫到這裡。掐指算不準的，交給算力；算力算不準的，回頭看出處。</p>
+        <p>本站內容由程式依公開資料整理，僅供參考、非投資建議。</p>
+      </footer>
+    </div>
   </body>
 </html>
+
+<style>
+  .skip {
+    position: absolute;
+    left: 16px;
+    top: -48px;
+    background: var(--blue);
+    color: #fff;
+    padding: 6px 12px;
+    z-index: 1;
+  }
+  .skip:focus {
+    top: 8px;
+  }
+  .page {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 0 16px 32px;
+  }
+  .masthead {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 12px;
+    padding: 14px 0 8px;
+    border-bottom: 3px solid var(--ink);
+  }
+  .brand {
+    color: var(--ink);
+    text-decoration: none;
+    line-height: 1.35;
+  }
+  .brand b {
+    display: block;
+    font-size: 20px;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+  }
+  .brand small {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-2);
+    letter-spacing: 0.12em;
+  }
+  .meta {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    text-align: right;
+  }
+  .meta strong {
+    display: block;
+    color: var(--blue);
+    font-size: 14px;
+  }
+  .nav {
+    display: flex;
+    gap: 18px;
+    padding: 6px 0 14px;
+    font-size: 14px;
+  }
+  .nav a {
+    color: var(--ink-2);
+    text-decoration: none;
+    padding: 4px 0;
+  }
+  .nav a:hover {
+    color: var(--blue);
+  }
+  .nav a[aria-current='page'] {
+    color: var(--ink);
+    font-weight: 700;
+    box-shadow: inset 0 -2px 0 var(--blue);
+  }
+  .foot {
+    margin-top: 56px;
+    padding-top: 10px;
+    border-top: 3px solid var(--ink);
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .foot p {
+    margin: 4px 0;
+  }
+  .sign {
+    color: var(--ink);
+    font-weight: 500;
+  }
+</style>
