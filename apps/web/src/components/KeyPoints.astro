@@ -3,13 +3,14 @@ import type { IndustryView } from '../lib/present-brief'
 import { confidenceLabel } from '../lib/handout'
 import DirectionMark from './DirectionMark.astro'
 
-interface Props { thesis: string, industries: IndustryView[] }
-const { thesis, industries } = Astro.props
+// thesisHtml 與各產業的 reasoning 已跳脫並標好術語（BriefArticle 依整頁閱讀順序標）。
+interface Props { thesisHtml: string, industries: IndustryView[] }
+const { thesisHtml, industries } = Astro.props
 ---
 
 <section class="box" id="key" aria-labelledby="key-title">
   <h2 id="key-title">本日必考重點</h2>
-  {thesis && <p class="thesis"><mark class="hl">{thesis}</mark></p>}
+  {thesisHtml && <p class="thesis"><mark class="hl" set:html={thesisHtml} /></p>}
   {industries.length > 0 && (
     <>
       <p class="hint">牽動產業（點開看理由）</p>
@@ -24,7 +25,7 @@ const { thesis, industries } = Astro.props
                 <svg class="toggle" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
               </summary>
               <p class="why">
-                {industry.reasoning || '這筆沒有附理由。'}
+                <Fragment set:html={industry.reasoning || '這筆沒有附理由。'} />
                 <span class="conf">（{confidenceLabel(industry.confidence)}）</span>
               </p>
             </details>

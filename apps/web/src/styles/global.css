@@ -121,3 +121,74 @@ li {
 .prose-handout strong {
   font-weight: 700;
 }
+
+/* 術語：句子裡點開看解釋（lib/glossary.ts）。標記由 set:html 插入，元件的 scoped style 管不到，所以放這裡。
+   虛線底線和連結的實線區分；display: inline 讓按鈕跟著句子換行、不撐高行距，也讓它算行內目標。 */
+.term {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
+  cursor: pointer;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-color: var(--blue);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.28em;
+}
+
+.term:hover,
+.term[aria-expanded='true'] {
+  text-decoration-style: solid;
+}
+
+/* 解釋卡：Popover API 放進 top layer，不佔版面，首屏高度不變。手機預設是貼底的一張紙條，拇指好讀、不會被切邊。 */
+.gloss {
+  position: fixed;
+  inset: auto 0 0;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 12px 16px max(16px, env(safe-area-inset-bottom));
+  border: 0;
+  border-top: 2px solid var(--blue);
+  background: var(--sheet);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.75;
+  letter-spacing: normal;
+  text-align: start;
+  text-wrap: pretty;
+}
+
+.gloss strong {
+  display: block;
+  margin-bottom: 2px;
+  font-weight: 900;
+}
+
+/* 寬螢幕且支援 anchor positioning 時改成貼在術語下方的藍框小卡；不支援就維持貼底，不會被丟到左上角。 */
+@media (min-width: 640px) {
+  @supports (position-area: block-end) {
+    .gloss {
+      inset: auto;
+      width: max-content;
+      max-width: 22rem;
+      margin: 6px 0;
+      padding: 10px 12px;
+      border: 2px solid var(--blue);
+      font-size: 14px;
+      position-area: block-end span-inline-end;
+      position-try-fallbacks:
+        flip-block,
+        flip-inline,
+        flip-block flip-inline;
+    }
+  }
+}
