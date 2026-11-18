@@ -1,4 +1,5 @@
 import type { FixtureManifest } from './manifest.js'
+import { corpusSourceFixtures } from '../../corpus/sources/__fixtures__/manifest.js'
 import { scraperFixtures } from '../external/__fixtures__/manifest.js'
 import { marketDataFixtures } from '../market-data/__fixtures__/manifest.js'
 
@@ -7,4 +8,5 @@ import { marketDataFixtures } from '../market-data/__fixtures__/manifest.js'
 export const FIXTURE_MANIFESTS: readonly FixtureManifest[] = [
   marketDataFixtures,
   scraperFixtures,
+  corpusSourceFixtures,
 ]
