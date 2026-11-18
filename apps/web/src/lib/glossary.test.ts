@@ -66,6 +66,39 @@ describe('findTerms', () => {
   })
 })
 
+describe('findTerms 排除寫法', () => {
+  const withExcludes: GlossaryEntry[] = [
+    { id: 'fi', term: '外資', aliases: [], excludes: ['海外資'], definition: 'a' },
+    { id: 'spread', term: '利差', aliases: [], excludes: ['信用利差', '獲利差'], definition: 'b' },
+  ]
+
+  it('術語落在排除寫法裡時不標，也不佔掉整頁唯一的一次', () => {
+    const segments = findTerms('海外資金回流，外資賣超', withExcludes, new Set())
+    expect(segments).toEqual([{ text: '海外資金回流，' }, { text: '外資', entry: withExcludes[0] }, { text: '賣超' }])
+  })
+
+  it('排除寫法可以從術語前面開始', () => {
+    expect(findTerms('信用利差擴大、獲利差距', withExcludes, new Set()).some(s => s.entry)).toBe(false)
+    expect(findTerms('10Y-2Y 利差', withExcludes, new Set()).some(s => s.entry)).toBe(true)
+  })
+})
+
+describe('findTerms 前後文', () => {
+  it('英文邊界看片段外的前後字元：行內標籤切開的 CPIX 不標', () => {
+    expect(findTerms('CPI', entries, new Set(), { before: '', after: 'X' }).some(s => s.entry)).toBe(false)
+    expect(findTerms('CPI', entries, new Set(), { before: 'A', after: '' }).some(s => s.entry)).toBe(false)
+  })
+
+  it('術語延伸到片段外時不標，輸出只含片段本身', () => {
+    expect(findTerms('實質', entries, new Set(), { before: '', after: '利率' })).toEqual([{ text: '實質' }])
+  })
+
+  it('排除寫法也看片段外的前後文', () => {
+    const fi: GlossaryEntry[] = [{ id: 'fi', term: '外資', aliases: [], excludes: ['海外資'], definition: 'a' }]
+    expect(findTerms('外資金', fi, new Set(), { before: '海', after: '' }).some(s => s.entry)).toBe(false)
+  })
+})
+
 describe('escapeHtml', () => {
   it('跳脫 HTML 特殊字元', () => {
     expect(escapeHtml(`<a href="x">&'</a>`)).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;&lt;/a&gt;')
@@ -75,8 +108,8 @@ describe('escapeHtml', () => {
 describe('annotateHtml', () => {
   it('把術語換成點開按鈕與解釋 popover', () => {
     expect(annotateHtml('<p>實質利率上行</p>', entries, new Set())).toBe(
-      '<p><button type="button" class="term" popovertarget="term-real-rate">實質利率</button>'
-      + '<span class="gloss" id="term-real-rate" popover><strong>實質利率</strong>扣掉通膨後的利率。</span>上行</p>',
+      '<p><button type="button" class="term" popovertarget="term-real-rate" style="anchor-name: --term-real-rate">實質利率</button>'
+      + '<span class="gloss" id="term-real-rate" popover style="position-anchor: --term-real-rate"><strong>實質利率</strong>扣掉通膨後的利率。</span>上行</p>',
     )
   })
 
@@ -89,6 +122,16 @@ describe('annotateHtml', () => {
     const out = annotateHtml('<p>CPI</p><p><em>CPI</em></p>', entries, new Set())
     expect(out.match(/<button/g)).toHaveLength(1)
     expect(out.endsWith('<p><em>CPI</em></p>')).toBe(true)
+  })
+
+  it('英文邊界跨過行內標籤：<strong>CPI</strong>X 不標', () => {
+    expect(annotateHtml('<p><strong>CPI</strong>X</p>', entries, new Set())).toBe('<p><strong>CPI</strong>X</p>')
+  })
+
+  it('按鈕與解釋卡以明確的 anchor 名稱配對，不依賴瀏覽器的隱含錨點', () => {
+    const out = annotateHtml('CPI', entries, new Set())
+    expect(out).toContain('<button type="button" class="term" popovertarget="term-cpi" style="anchor-name: --term-cpi">')
+    expect(out).toContain('<span class="gloss" id="term-cpi" popover style="position-anchor: --term-cpi">')
   })
 
   it('解釋文字做 HTML 跳脫', () => {

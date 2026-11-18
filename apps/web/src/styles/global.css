@@ -143,11 +143,18 @@ li {
 }
 
 .term:hover,
-.term[aria-expanded='true'] {
+.term:has(+ .gloss:popover-open) {
   text-decoration-style: solid;
 }
 
-/* 解釋卡：Popover API 放進 top layer，不佔版面，首屏高度不變。手機預設是貼底的一張紙條，拇指好讀、不會被切邊。 */
+/* 解釋卡：Popover API 放進 top layer，不佔版面，首屏高度不變。手機預設是貼底的一張紙條，拇指好讀、不會被切邊。
+   不支援 Popover API 的瀏覽器會把每張卡都直接顯示出來，所以只在支援時套用、否則藏起來。 */
+@supports not selector(:popover-open) {
+  .gloss {
+    display: none;
+  }
+}
+
 .gloss {
   position: fixed;
   inset: auto 0 0;
