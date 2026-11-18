@@ -1,11 +1,11 @@
 ---
-import type { BriefView } from '../lib/present-brief'
-
-interface Props { viewpoints: NonNullable<BriefView['viewpoints']> }
+// 各欄是已跳脫並標好術語的 HTML（BriefArticle 依整頁閱讀順序標），會用 set:html 輸出；
+// 欄位名和 BriefView 的純文字欄位不同，未跳脫的文字傳不進來。
+interface Props { viewpoints: { supportHtml: string[], riskHtml: string[], netReadHtml: string } }
 const { viewpoints } = Astro.props
 const columns = [
-  { title: '支持這個看法', points: viewpoints.supportPoints },
-  { title: '要小心的地方', points: viewpoints.riskPoints },
+  { title: '支持這個看法', points: viewpoints.supportHtml },
+  { title: '要小心的地方', points: viewpoints.riskHtml },
 ].filter(c => c.points.length > 0)
 ---
 
@@ -16,15 +16,15 @@ const columns = [
       {columns.map(c => (
         <div>
           <h3>{c.title}</h3>
-          <ul>{c.points.map(p => <li>{p}</li>)}</ul>
+          <ul>{c.points.map(p => <li set:html={p} />)}</ul>
         </div>
       ))}
     </div>
   )}
-  {viewpoints.netRead && (
+  {viewpoints.netReadHtml && (
     <div class="net">
       <h3>總結</h3>
-      <p>{viewpoints.netRead}</p>
+      <p set:html={viewpoints.netReadHtml} />
     </div>
   )}
 </section>

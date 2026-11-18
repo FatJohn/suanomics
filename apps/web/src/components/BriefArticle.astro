@@ -1,5 +1,7 @@
 ---
 import type { BriefView } from '../lib/present-brief'
+import { annotateHtml, escapeHtml } from '../lib/glossary'
+import { GLOSSARY } from '../lib/glossary-terms'
 import { readingMinutes } from '../lib/handout'
 import { renderMarkdown } from '../lib/markdown'
 import KeyPoints from './KeyPoints.astro'
@@ -14,6 +16,24 @@ const minutes = readingMinutes([
   brief.dailyThesis,
   narrative ? [narrative.intro, ...sections.flatMap(s => [s.takeaway, s.body]), narrative.outro].join('') : brief.summary,
 ])
+
+// 每個術語整頁只標第一次出現，所以依閱讀順序一次算完，不交給子元件各自標。
+// 小標與結論句不標，它們已有自己的樣式。產業理由收在點開的列裡，排到最後才標，
+// 本文標過的術語就不會只藏在收合的列裡。
+const seen = new Set<string>()
+const glossMarkdown = (text: string) => annotateHtml(renderMarkdown(text), GLOSSARY, seen)
+const glossText = (text: string) => annotateHtml(escapeHtml(text), GLOSSARY, seen)
+const thesisHtml = glossText(brief.dailyThesis || brief.summary)
+const introHtml = narrative ? glossMarkdown(narrative.intro) : ''
+const bodyHtml = sections.map(s => glossMarkdown(s.body))
+const outroHtml = narrative?.outro ? glossMarkdown(narrative.outro) : ''
+const summaryHtml = !narrative && brief.summary && brief.dailyThesis ? glossText(brief.summary) : ''
+const viewpoints = brief.viewpoints && {
+  supportHtml: brief.viewpoints.supportPoints.map(glossText),
+  riskHtml: brief.viewpoints.riskPoints.map(glossText),
+  netReadHtml: brief.viewpoints.netRead ? glossText(brief.viewpoints.netRead) : '',
+}
+const industries = brief.industries.map(({ reasoning, ...rest }) => ({ ...rest, reasoningHtml: reasoning ? glossText(reasoning) : '' }))
 
 const toc = [
   { id: 'key', label: '本日必考重點' },
@@ -32,29 +52,29 @@ const toc = [
     </p>
     <h1>{brief.headline}</h1>
 
-    <KeyPoints thesis={brief.dailyThesis || brief.summary} industries={brief.industries} />
+    <KeyPoints thesisHtml={thesisHtml} industries={industries} />
 
     {narrative
       ? (
           <>
             <section id="intro" aria-labelledby="intro-title">
               <h2 id="intro-title">導讀</h2>
-              <div class="prose-handout" set:html={renderMarkdown(narrative.intro)} />
+              <div class="prose-handout" set:html={introHtml} />
             </section>
             {sections.map((s, i) => (
               <section id={`sec-${i + 1}`} aria-labelledby={`sec-${i + 1}-title`}>
                 <h2 id={`sec-${i + 1}-title`}><span class="no">詳解 {i + 1}／{sections.length}</span>{s.heading}</h2>
                 {s.takeaway && <p class="take">{s.takeaway}</p>}
-                <div class="prose-handout" set:html={renderMarkdown(s.body)} />
+                <div class="prose-handout" set:html={bodyHtml[i]} />
                 <SourceLinks label="出處" links={s.citations} />
               </section>
             ))}
-            {narrative.outro && <div class="prose-handout outro" set:html={renderMarkdown(narrative.outro)} />}
+            {outroHtml && <div class="prose-handout outro" set:html={outroHtml} />}
           </>
         )
-      : brief.summary && brief.dailyThesis && <p>{brief.summary}</p>}
+      : summaryHtml && <p set:html={summaryHtml} />}
 
-    {brief.viewpoints && <Viewpoints viewpoints={brief.viewpoints} />}
+    {viewpoints && <Viewpoints viewpoints={viewpoints} />}
 
     {brief.selectedNews.length > 0 && (
       <section id="news" aria-labelledby="news-title">
