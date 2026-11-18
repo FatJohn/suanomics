@@ -84,7 +84,7 @@ const TWSE_ORIGIN = 'https://www.twse.com.tw'
 /**
  * PDF 大小上限。**沒有上限的 `res.arrayBuffer()` 會殺掉整個行程**：驗收時實測
  * 餵一份 300MB 的回應，V8 直接 `FATAL ERROR: Ineffective mark-compacts near heap limit`
- * 並 exit 134——那是 catch 不到的，而 corpus handler 與其他七個 kind、以及 HTTP server 全跑在同一個行程裡。
+ * 並 exit 134——那是 catch 不到的，一輪 refresh 的所有來源都跑在同一個行程裡，一個來源炸掉整輪就沒了。
  * 實測 TWSE 公告 PDF 平均約 300KB，20MB 有兩個數量級的餘裕。
  */
 const MAX_PDF_BYTES = 20 * 1024 * 1024

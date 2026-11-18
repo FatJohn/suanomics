@@ -36,7 +36,7 @@ const USER_AGENT = 'suanomics/0.1 (cascade corpus)'
 /**
  * 單頁 HTML 的大小上限。沒有上限的 `res.text()` 會讓整個行程被 V8 的
  * heap limit 殺掉（`FATAL ERROR: Ineffective mark-compacts`、exit 134，catch 不到），
- * 而 corpus handler 與其他七個 kind、以及 HTTP server 全跑在同一個行程裡。
+ * 一輪 refresh 的所有來源都跑在同一個行程裡，一個來源炸掉整輪就沒了。
  * 實測 fsc.gov.tw 列表頁 243KB、文章頁 125KB，5MB 有一個數量級以上的餘裕。
  */
 const MAX_HTML_BYTES = 5 * 1024 * 1024

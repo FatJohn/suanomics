@@ -101,7 +101,7 @@ export async function enrichEntitySummary(
     const contentSummary = clampContentSummary(data.contentSummary)
     // 語言的修法在 prompt（原本整份沒有任何語言指示）。這裡不重試——模型跟著原文語言是
     // 系統性行為、重試同一份 prompt 不會變，只會在大量英文來源上白燒 API。留一行 warn
-    // 讓殘留偏差在 worker log 上看得見。
+    // 讓殘留偏差在 refresh 的 log 上看得見。
     if (!isMostlyChinese(contentSummary))
       console.warn(`[entity-summary] 摘要不是中文（prompt 要求繁中）：${contentSummary.slice(0, 40)}`)
     return {

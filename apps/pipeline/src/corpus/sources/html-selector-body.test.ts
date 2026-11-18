@@ -137,7 +137,7 @@ describe('html-selector 的 fetchBody', () => {
   })
 
   // 沒有上限的 res.text() 會讓整個行程被 V8 的 heap limit 殺掉（exit 134、
-  // catch 不到），而 corpus handler 與其他七個 kind、以及 HTTP server 全跑在同一個行程裡。
+  // catch 不到），而一輪 refresh 的所有來源都跑在同一個行程裡。
   it('文章頁超過大小上限時中斷、回 null', async () => {
     const huge = `<div class="body">${'x'.repeat(6 * 1024 * 1024)}</div>`
     routeFetch([
@@ -154,7 +154,7 @@ describe('html-selector 的 fetchBody', () => {
   })
 
   // 整批失敗（對方節流、站台改版）時要短路，否則 N 篇 × timeout 會把
-  // corpus-refresh 推出 90 分鐘的 staleness 窗、被當成孤兒 job。
+  // corpus-refresh 推出 workflow 步驟的 timeout。
   it('正文連續失敗達門檻後短路，不再打文章頁', async () => {
     routeFetch([
       ['/list', () => html(listingOf(8))],
