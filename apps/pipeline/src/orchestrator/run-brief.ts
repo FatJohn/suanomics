@@ -28,6 +28,8 @@ export interface GenerateBriefParams {
   editor: EditorStageResult
   stage: RunStage
   progress: DailyProgress
+  // A/B 的對照組（影子報告）關掉 corpus 檢索；預設開。
+  retrieveCorpus?: boolean
 }
 
 interface Decomposed { news: NewsItem, decomposed: DecomposerOutput }
@@ -121,6 +123,8 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
 
   const survived = await stage('decompose', () => decomposeNews(news, progress))
   const retrieved = await stage('retrieve', async () => {
+    if (p.retrieveCorpus === false)
+      return survived.map(() => [])
     const settled = await fanoutSettled(survived, FANOUT.retrieve, s => retrieveForDecomposed(s.decomposed, date))
     return settled.map(r => (r.status === 'fulfilled' ? r.value : []))
   })

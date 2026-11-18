@@ -75,6 +75,22 @@ describe('generateBrief', () => {
     expect(chains.map(c => c.parentChainId)).toEqual([undefined, 't1-0', undefined, 't1-1', undefined, 't1-2'])
   })
 
+  it('retrieveCorpus 為 false 時不查 corpus，analyst 拿到空的檢索結果', async () => {
+    vi.mocked(retrieveForDecomposed).mockResolvedValue([{ url: 'u' }] as never)
+    vi.mocked(callSynthesizer).mockRejectedValue(new Error('stop-here'))
+    const { p, stages } = params()
+    await expect(generateBrief({ ...p, retrieveCorpus: false })).rejects.toThrow('stop-here')
+    expect(retrieveForDecomposed).not.toHaveBeenCalled()
+    expect(vi.mocked(callAnalystTier1).mock.calls.map(c => c[0].retrieved)).toEqual([[], [], []])
+    expect(stages).toContain('retrieve')
+  })
+
+  it('預設照常查 corpus', async () => {
+    vi.mocked(callSynthesizer).mockRejectedValue(new Error('stop-here'))
+    await expect(generateBrief(params().p)).rejects.toThrow('stop-here')
+    expect(retrieveForDecomposed).toHaveBeenCalledTimes(3)
+  })
+
   it('存活新聞不足 2 則時中止', async () => {
     vi.mocked(callDecomposer).mockRejectedValue(new Error('bad'))
     await expect(generateBrief(params().p)).rejects.toThrow('存活新聞不足')
