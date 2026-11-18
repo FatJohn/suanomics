@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Sample Feed</title>
+    <link>https://example.com</link>
+    <description>Fixture for tests</description>
+    <item>
+      <title>新聞標題一</title>
+      <link>https://example.com/news/1</link>
+      <guid>news-1</guid>
+      <pubDate>Tue, 22 Apr 2026 10:00:00 GMT</pubDate>
+      <description>摘要內容一</description>
+    </item>
+    <item>
+      <title>新聞標題二</title>
+      <link>https://example.com/news/2</link>
+      <guid>news-2</guid>
+      <pubDate>Tue, 22 Apr 2026 11:00:00 GMT</pubDate>
+      <description>摘要內容二</description>
+    </item>
+    <item>
+      <title>新聞標題三</title>
+      <link>https://example.com/news/3</link>
+      <guid>news-3</guid>
+      <pubDate>Tue, 22 Apr 2026 12:00:00 GMT</pubDate>
+      <description>摘要內容三</description>
+    </item>
+  </channel>
+</rss>
