@@ -53,6 +53,18 @@ jobs:
       - name: Build
         run: pnpm -r build
 
+      # corpus 背景庫：新文章 enrich 後寫進 external_articles，供連動鏈的 cascade 檢索讀回（#34）。
+      # 放在報告之前，當天抓到的文章趕得上當天的檢索。獨立 process，花費閘與報告的 US$3 分開算；
+      # 失敗不擋報告，沒寫進去的文章下一輪會再抓到。
+      - name: Refresh corpus
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DAILY_COST_LIMIT_USD: '0.50'
+        run: pnpm --filter @suanomics/pipeline run corpus:refresh
+
       - name: Run pipeline
         env:
           INPUT_DATE: ${{ inputs.date }}
