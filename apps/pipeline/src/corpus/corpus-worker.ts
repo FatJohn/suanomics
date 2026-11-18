@@ -164,6 +164,12 @@ async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Pro
     //   insertArticle 是 onConflictDoNothing，既有列一個欄位都不會更新。也就是
     //   `corpus:refresh --force` 對已存在的文章是純浪費：538 筆的來源要多打 1076 次
     //   外部請求。排程跑的是 force:false，不受影響。
+    // ★ enrich 名額用完時，要另外抓正文的文章直接延後：延後的文章沒寫進 DB、下一輪不會被
+    //   去重擋下，這時還抓正文等於每輪對整批積壓重打一次外部服務。
+    if (e.excerpt === null && e.fetchBody && enrichBudget.remaining <= 0) {
+      totals.deferred++
+      continue
+    }
     const excerpt = e.excerpt ?? (e.fetchBody ? await e.fetchBody() : null)
     const bodyForHash = excerpt ?? e.title
     const contentHash = hashArticleContent(bodyForHash)

@@ -1,6 +1,7 @@
 import type { FetchedEntry } from './sources/rss.js'
 import { describe, expect, it, vi } from 'vitest'
 import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
+import { hashArticleContent } from './content-hash.js'
 import { runCorpusRefresh } from './corpus-worker.js'
 
 interface EnrichmentSnapshot { contentSummary: string | null, entities: Array<{ kind: string, name: string, confidence: number }>, topicTags: string[] }
@@ -260,7 +261,7 @@ describe('runCorpusRefresh', () => {
       expect(r.perSource[0]).toMatchObject({ deferred: 1 })
     })
 
-    it('快取命中與 title-only 的文章不吃上限（不花 LLM）', async () => {
+    it('title-only 的文章不吃上限（不花 LLM）', async () => {
       const d = baseDeps()
       d.dispatcher = vi.fn(async () => [
         { externalId: 'e1', url: 'https://x.com/a', title: 'A', publishedAt: null, excerpt: 'A' },
@@ -268,6 +269,30 @@ describe('runCorpusRefresh', () => {
       ])
       const r = await runCorpusRefresh({ payload: { maxEnrich: 1 }, ...d, listSources: async () => d.sources })
       expect(r).toMatchObject({ insertedCount: 2, deferredCount: 0, notEnrichableCount: 1 })
+    })
+
+    it('快取命中的文章不吃上限（不花 LLM）', async () => {
+      const d = baseDeps()
+      d.repo.findEnrichmentByContentHash = vi.fn(async (hash: string) => (hash === hashArticleContent('ex')
+        ? { contentSummary: 'cached', entities: [], topicTags: [] }
+        : null))
+      const r = await runCorpusRefresh({ payload: { maxEnrich: 1 }, ...d, listSources: async () => d.sources })
+      expect(r).toMatchObject({ insertedCount: 2, deferredCount: 0, reusedEnrichmentCount: 1 })
+      expect(d.enricher).toHaveBeenCalledTimes(1)
+    })
+
+    // 延後的文章沒寫進 DB，下一輪不會被去重擋下；名額用完後還去抓正文，等於每輪都對
+    // 整批積壓重打外部服務（twse-announcements 一篇一份 PDF）。
+    it('名額用完後，要另外抓正文的文章直接延後、不抓正文', async () => {
+      const d = baseDeps()
+      const fetchBody = vi.fn(async () => '一段超出標題的正文')
+      d.dispatcher = vi.fn(async () => [
+        { externalId: 'e1', url: 'https://x.com/a', title: 'A', publishedAt: null, excerpt: null, fetchBody },
+        { externalId: 'e2', url: 'https://x.com/b', title: 'B', publishedAt: null, excerpt: null, fetchBody },
+      ])
+      const r = await runCorpusRefresh({ payload: { maxEnrich: 1 }, ...d, listSources: async () => d.sources })
+      expect(fetchBody).toHaveBeenCalledTimes(1)
+      expect(r).toMatchObject({ insertedCount: 1, deferredCount: 1 })
     })
 
     it('上限跨來源共用', async () => {
