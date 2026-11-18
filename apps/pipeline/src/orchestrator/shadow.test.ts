@@ -1,10 +1,10 @@
 import type { BriefRunInputs } from './daily.js'
 import type { ShadowDeps } from './shadow.js'
 import { describe, expect, it, vi } from 'vitest'
-import { DailyCostGate } from '../agents/cost-gate.js'
+import { CostGateError, DailyCostGate } from '../agents/cost-gate.js'
 import { runInputsHash } from '../db/repos/shadow-briefs-repo.js'
 import { EMPTY_MARKET_CONTEXT } from '../ingest/market-data/context.js'
-import { NO_CORPUS_VARIANT, runShadow } from './shadow.js'
+import { NO_CORPUS_VARIANT, runShadow, shadowCostLimit } from './shadow.js'
 
 const DATE = '2026-11-19'
 const NEWS = [1, 2].map(id => ({ id, title: `t${id}`, url: `u${id}`, text: 'x', publishedAt: null }))
@@ -81,5 +81,17 @@ describe('runShadow', () => {
     const deps = fakeDeps({ generateBrief: vi.fn(async () => Promise.reject(new Error('boom'))) })
     await expect(runShadow({ date: DATE, force: false }, deps)).rejects.toThrow('boom')
     expect(deps.saveShadow).not.toHaveBeenCalled()
+  })
+})
+
+describe('shadowCostLimit', () => {
+  it('上限扣掉今天帳本已花的金額，影子報告與正式報告合計不超過每日上限', () => {
+    expect(shadowCostLimit(3, 1.25)).toBeCloseTo(1.75)
+    expect(shadowCostLimit(3, 0)).toBe(3)
+  })
+
+  it('今天已花到上限時在呼叫 LLM 前就失敗', () => {
+    expect(() => shadowCostLimit(3, 3)).toThrow(CostGateError)
+    expect(() => shadowCostLimit(3, 3.4)).toThrow(/已花/)
   })
 })

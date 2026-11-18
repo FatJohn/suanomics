@@ -23,6 +23,7 @@ describe('parseJudgeArgs', () => {
 
   it('--shadow 不與排程旗標並用：已評判斷看的是正式報告的帳', () => {
     expect(() => parseJudgeArgs(['--dates', '2026-11-19', '--shadow', '--skip-judged'])).toThrow(/--shadow/)
+    expect(() => parseJudgeArgs(['--dates', '2026-11-19', '--shadow', '--skip-missing'])).toThrow(/--shadow/)
   })
 
   it('可只跑一個 judge、改上限、dry-run 與輸出目錄；pnpm 傳進來的 -- 略過', () => {

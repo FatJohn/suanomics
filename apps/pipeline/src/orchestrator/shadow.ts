@@ -2,6 +2,7 @@ import type { MarketBrief } from '@suanomics/shared'
 import type { ShadowSource } from '../db/repos/shadow-briefs-repo.js'
 import type { BriefRunInputs, DailyDeps, DailyProgress } from './daily.js'
 import type { GenerateBriefParams } from './run-brief.js'
+import { CostGateError } from '../agents/cost-gate.js'
 import { runInputsHash } from '../db/repos/shadow-briefs-repo.js'
 import { createStageRunner } from './daily.js'
 
@@ -18,6 +19,17 @@ export interface ShadowDeps extends Pick<DailyDeps, 'gate' | 'log'> {
 export type ShadowResult
   = | { status: 'skipped', reason: 'already-exists', date: string }
     | { status: 'complete', date: string, shadowId: number }
+
+/**
+ * 影子報告的花費閘上限：每日上限扣掉今天帳本已花的金額。每個 process 的閘只算自己，
+ * 不扣的話正式報告花完之後再跑影子，當日合計可到上限的兩倍。
+ */
+export function shadowCostLimit(dailyLimitUsd: number, spentTodayUsd: number): number {
+  const headroom = dailyLimitUsd - spentTodayUsd
+  if (headroom <= 0)
+    throw new CostGateError(`今天已花 $${spentTodayUsd.toFixed(4)}，達每日上限 $${dailyLimitUsd.toFixed(4)}，不跑影子報告`)
+  return headroom
+}
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null

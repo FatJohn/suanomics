@@ -118,7 +118,7 @@ async function main(): Promise<void> {
   if (args.dryRun)
     return
   const text = summary(args, runner, rows)
-  writeFileSync(join(args.out, 'summary.md'), text)
+  writeFileSync(join(args.out, args.shadow ? `summary-${NO_CORPUS_VARIANT}.md` : 'summary.md'), text)
   console.warn(text)
   console.warn(`totalUsd=${runner.gate.totalUsd.toFixed(4)} calls=${runner.gate.callCount}`)
 }
