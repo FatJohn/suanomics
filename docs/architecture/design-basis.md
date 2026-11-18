@@ -42,7 +42,7 @@ flowchart LR
 | Pipeline | TypeScript CLI：判斷交易日、抓資料、跑 agent、寫 brief 到 Postgres；非交易日（週末與 TWSE 休市日）只抓新聞、不產報告 | GitHub Actions（public repo 免費） | 同 0002 |
 | 持久狀態 | storylines（跨日敘事線與週回顧）、近日 brief 摘要、market data 歷史、news 候選池；drizzle schema 與 repos | Neon Postgres 免費層 | [持久狀態放 Neon Postgres、沿用 drizzle](../adr/0003-neon-postgres.md) |
 | 網站 | Astro 在同一個 Actions job 內 build，直接讀 Postgres 產成純 HTML，`wrangler pages deploy` 上線 | Cloudflare Pages，自訂網域 `suanomics.everbegin.net` | [網站用 Astro 靜態產生](../adr/0005-astro-static-site.md) |
-| Corpus 背景庫 | `corpus:refresh` CLI 抓 `external_sources` 中啟用的來源，正文超出標題的文章由 `corpus-entity-summary` 產摘要、entities 與 topic tags 後寫進 `external_articles`；analyst 的 cascade 檢索以 jsonb containment 讀回報告日（含）以前抓進來的文章，窗長由 decomposer 指定、預設 7 天。單輪 enrich 有篇數上限，超過的文章不寫入、留給下一輪 | pipeline 內 | — |
+| Corpus 背景庫 | `corpus:refresh` CLI 抓 `external_sources` 中啟用的來源，正文超出標題的文章由 `corpus-entity-summary` 產摘要、entities 與 topic tags 後寫進 `external_articles`；analyst 的 cascade 檢索以 jsonb containment 讀回報告日（含）以前抓進來的文章，窗長由 decomposer 指定、預設 7 天。單輪 enrich 有篇數上限，超過的文章不寫入、留給下一輪。Daily Brief workflow 在產報告前以獨立步驟執行，花費上限與報告分開（`DAILY_COST_LIMIT_USD` 0.50），失敗不擋報告 | pipeline 內 | — |
 | 每日花費閘 | pipeline 累計每次 LLM 呼叫的 `totalCostUsd`，超過設定上限即停止並標記該日報告未完成 | pipeline 內 | — |
 | LLM 用量帳本 | 每次 LLM 呼叫寫一列 `llm_calls`（不含 provider 專屬欄位），Actions job summary 與 `llm:usage` CLI 由此取數；寫入失敗不擋 run，但留 annotation 與整列 log。花費閘不讀帳本，每次 run 獨立計算。本機單篇分析 CLI（`analyze`）不寫資料庫，也不寫帳本，花費只印在輸出結尾 | pipeline 內 | — |
 | LLM 帳務錯誤 | 額度、帳務、認證錯誤穿透所有降級 catch 讓 run 失敗，不發佈殘缺報告；辨識不了的錯誤照一般錯誤重試與降級 | pipeline 內 | — |
