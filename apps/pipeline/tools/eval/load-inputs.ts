@@ -11,6 +11,7 @@ import { buildCalendarBlock } from '../../src/ingest/market-data/calendar.js'
 import { loadMarketContext } from '../../src/ingest/market-data/context.js'
 import { buildSeriesAsOf } from '../../src/ingest/market-data/historical-asof.js'
 import { JUDGE_AGENT } from './judge-plan.js'
+import { mergeQualitySources } from './quality-facts.js'
 
 export interface StoredBrief { date: string, selectedNewsIds: number[], brief: MarketBrief }
 
@@ -47,12 +48,11 @@ export async function loadQualityFacts(stored: StoredBrief): Promise<QualityFact
       fetchInvestorConference: async () => [],
     }),
   ])
-  const news = new Map([...byId, ...byUrl].map(n => [n.id, { title: n.title, url: n.url, text: n.contentText ?? n.title }]))
   return {
     marketSnapshot: market.snapshotBlock,
     calendar: buildCalendarBlock(brief.calendarEvents ?? [], new Date(`${date}T00:00:00Z`), undefined, brief.calendarCoverage),
     official: market.officialBlock,
-    news: [...news.values()],
+    news: mergeQualitySources([...byId, ...byUrl]),
   }
 }
 
