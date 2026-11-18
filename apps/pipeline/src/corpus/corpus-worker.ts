@@ -31,11 +31,18 @@ interface SourceRow {
 interface CorpusRefreshPayload {
   sourceSlugs?: string[]
   force?: boolean
+  /**
+   * 一輪最多 enrich 幾篇（跨來源共用）。超過的文章不寫進 DB、留給下一輪：寫進去就會被
+   * url 去重擋住、永遠拿不到 enrichment。首輪積壓上千篇時靠這個分批。未給＝不限。
+   */
+  maxEnrich?: number
 }
 
 export interface CorpusRefreshResult {
   insertedCount: number
   skippedCount: number
+  /** 因 maxEnrich 用完而延後到下一輪的篇數（沒寫進 DB）。 */
+  deferredCount: number
   reusedEnrichmentCount: number
   enrichmentFailedCount: number
   /**
@@ -100,6 +107,7 @@ async function defaultListSources(slugs?: string[]): Promise<SourceRow[]> {
 interface PerSourceTotals {
   inserted: number
   skipped: number
+  deferred: number
   reused: number
   enrichmentFailed: number
   notEnrichable: number
@@ -112,11 +120,13 @@ interface ProcessOneSourceDeps {
   enricher: NonNullable<CorpusWorkerDeps['enricher']>
   repo: ArticlesRepo
   force: boolean
+  /** 剩餘的 enrich 名額，各來源共用同一個物件。 */
+  enrichBudget: { remaining: number }
 }
 
 async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Promise<PerSourceTotals> {
-  const { dispatcher, enricher, repo, force } = deps
-  const totals: PerSourceTotals = { inserted: 0, skipped: 0, reused: 0, enrichmentFailed: 0, notEnrichable: 0, fetchFailed: false }
+  const { dispatcher, enricher, repo, force, enrichBudget } = deps
+  const totals: PerSourceTotals = { inserted: 0, skipped: 0, deferred: 0, reused: 0, enrichmentFailed: 0, notEnrichable: 0, fetchFailed: false }
   let entries: FetchedEntry[]
   try {
     entries = await dispatcher({ id: src.id, kind: src.kind, config: src.config })
@@ -175,6 +185,11 @@ async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Pro
     }
 
     if (enrichable && !reused) {
+      if (enrichBudget.remaining <= 0) {
+        totals.deferred++
+        continue
+      }
+      enrichBudget.remaining--
       const r = await enricher({ title: e.title, body: excerpt ?? e.title })
       if (r.failed || !r.data) {
         failed = true
@@ -226,7 +241,13 @@ export async function runCorpusRefresh(deps: CorpusWorkerDeps): Promise<CorpusRe
   const repo = deps.repo ?? createArticlesRepo()
   const reportProgress = deps.progress ?? (() => { /* noop */ })
   const concurrency = deps.concurrency ?? SOURCE_FETCH_CONCURRENCY
-  const processDeps: ProcessOneSourceDeps = { dispatcher, enricher, repo, force: deps.payload.force ?? false }
+  const processDeps: ProcessOneSourceDeps = {
+    dispatcher,
+    enricher,
+    repo,
+    force: deps.payload.force ?? false,
+    enrichBudget: { remaining: deps.payload.maxEnrich ?? Number.POSITIVE_INFINITY },
+  }
 
   const sources = await listSources(deps.payload.sourceSlugs)
   const failedSources: string[] = []
@@ -248,10 +269,11 @@ export async function runCorpusRefresh(deps: CorpusWorkerDeps): Promise<CorpusRe
   return perSourceTotals.reduce<CorpusRefreshResult>((acc, t) => {
     acc.insertedCount += t.inserted
     acc.skippedCount += t.skipped
+    acc.deferredCount += t.deferred
     acc.reusedEnrichmentCount += t.reused
     acc.enrichmentFailedCount += t.enrichmentFailed
     acc.notEnrichableCount += t.notEnrichable
     acc.perSource.push(t)
     return acc
-  }, { insertedCount: 0, skippedCount: 0, reusedEnrichmentCount: 0, enrichmentFailedCount: 0, notEnrichableCount: 0, failedSources, perSource: [] })
+  }, { insertedCount: 0, skippedCount: 0, deferredCount: 0, reusedEnrichmentCount: 0, enrichmentFailedCount: 0, notEnrichableCount: 0, failedSources, perSource: [] })
 }

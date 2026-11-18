@@ -246,4 +246,46 @@ describe('runCorpusRefresh', () => {
     await expect(runCorpusRefresh({ payload: {}, ...d, listSources: async () => d.sources })).rejects.toBe(error)
     expect(d.repo.insertArticle).not.toHaveBeenCalled()
   })
+
+  // 首輪會積壓上千篇（twse-announcements 752、cbc-press 500）。每輪 enrich 篇數有上限，
+  // 超過的文章**不寫進 DB**：寫進去就會被 url 去重擋住、永遠拿不到 enrichment；
+  // 不寫的話下一輪會再抓到它們，積壓自然分批消化。
+  describe('maxEnrich 上限', () => {
+    it('超過上限的文章延後、不寫入，也不呼叫 enricher', async () => {
+      const d = baseDeps()
+      const r = await runCorpusRefresh({ payload: { maxEnrich: 1 }, ...d, listSources: async () => d.sources })
+      expect(d.enricher).toHaveBeenCalledTimes(1)
+      expect(d.repo.insertArticle).toHaveBeenCalledTimes(1)
+      expect(r).toMatchObject({ insertedCount: 1, deferredCount: 1 })
+      expect(r.perSource[0]).toMatchObject({ deferred: 1 })
+    })
+
+    it('快取命中與 title-only 的文章不吃上限（不花 LLM）', async () => {
+      const d = baseDeps()
+      d.dispatcher = vi.fn(async () => [
+        { externalId: 'e1', url: 'https://x.com/a', title: 'A', publishedAt: null, excerpt: 'A' },
+        { externalId: 'e2', url: 'https://x.com/b', title: 'B', publishedAt: null, excerpt: '一段超出標題的正文' },
+      ])
+      const r = await runCorpusRefresh({ payload: { maxEnrich: 1 }, ...d, listSources: async () => d.sources })
+      expect(r).toMatchObject({ insertedCount: 2, deferredCount: 0, notEnrichableCount: 1 })
+    })
+
+    it('上限跨來源共用', async () => {
+      const d = baseDeps()
+      const sources = [
+        { id: 's1', slug: 'a', kind: 'rss' as const, config: {} },
+        { id: 's2', slug: 'b', kind: 'rss' as const, config: {} },
+      ]
+      const r = await runCorpusRefresh({ payload: { maxEnrich: 3 }, ...d, listSources: async () => sources, concurrency: 1 })
+      expect(d.enricher).toHaveBeenCalledTimes(3)
+      expect(r.deferredCount).toBe(1)
+    })
+
+    it('沒給上限 → 不限制', async () => {
+      const d = baseDeps()
+      const r = await runCorpusRefresh({ payload: {}, ...d, listSources: async () => d.sources })
+      expect(r.deferredCount).toBe(0)
+      expect(d.enricher).toHaveBeenCalledTimes(2)
+    })
+  })
 })

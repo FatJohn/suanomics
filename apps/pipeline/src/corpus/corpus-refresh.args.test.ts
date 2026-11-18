@@ -1,15 +1,27 @@
 import type { CorpusRefreshResult } from './corpus-worker.js'
 import { describe, expect, it } from 'vitest'
-import { exitCodeFor, parseCorpusRefreshArgs } from './corpus-refresh.args.js'
+import { DEFAULT_MAX_ENRICH, exitCodeFor, parseCorpusRefreshArgs } from './corpus-refresh.args.js'
 
 describe('parseCorpusRefreshArgs', () => {
-  it('沒有參數 → 全部來源、不 force', () => {
-    expect(parseCorpusRefreshArgs([])).toEqual({ force: false })
+  it('沒有參數 → 全部來源、不 force、預設 enrich 上限', () => {
+    expect(parseCorpusRefreshArgs([])).toEqual({ force: false, maxEnrich: DEFAULT_MAX_ENRICH })
+  })
+
+  // 每篇最多 3 次呼叫；上限要讓單輪呼叫數落在 500 次以內（AGENTS.md 的分批門檻）。
+  it('預設上限乘上每篇最多 3 次呼叫不超過 500', () => {
+    expect(DEFAULT_MAX_ENRICH * 3).toBeLessThanOrEqual(500)
+  })
+
+  it('--max-enrich 要是正整數', () => {
+    expect(parseCorpusRefreshArgs(['--max-enrich', '20'])).toMatchObject({ maxEnrich: 20 })
+    expect(() => parseCorpusRefreshArgs(['--max-enrich', '0'])).toThrow(/--max-enrich/)
+    expect(() => parseCorpusRefreshArgs(['--max-enrich', '1.5'])).toThrow(/--max-enrich/)
+    expect(() => parseCorpusRefreshArgs(['--max-enrich'])).toThrow(/--max-enrich/)
   })
 
   it('--source 可重複、--force 開啟', () => {
     expect(parseCorpusRefreshArgs(['--', '--source', 'fsc-news', '--source', 'cbc-press', '--force']))
-      .toEqual({ sourceSlugs: ['fsc-news', 'cbc-press'], force: true })
+      .toEqual({ sourceSlugs: ['fsc-news', 'cbc-press'], force: true, maxEnrich: DEFAULT_MAX_ENRICH })
   })
 
   it('未知參數直接報錯，不默默忽略', () => {
@@ -25,11 +37,12 @@ function result(perSource: Array<{ slug: string, fetchFailed: boolean }>): Corpu
   return {
     insertedCount: 0,
     skippedCount: 0,
+    deferredCount: 0,
     reusedEnrichmentCount: 0,
     enrichmentFailedCount: 0,
     notEnrichableCount: 0,
     failedSources: perSource.filter(s => s.fetchFailed).map(s => s.slug),
-    perSource: perSource.map(s => ({ ...s, inserted: 0, skipped: 0, reused: 0, enrichmentFailed: 0, notEnrichable: 0 })),
+    perSource: perSource.map(s => ({ ...s, inserted: 0, skipped: 0, reused: 0, enrichmentFailed: 0, notEnrichable: 0, deferred: 0 })),
   }
 }
 
