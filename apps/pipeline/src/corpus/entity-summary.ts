@@ -1,20 +1,22 @@
-import type { CallAgentLLMParams, LlmCallRecord } from '../agents/llm-wrapper.js'
+import type { AgentInput, CallAgentOptions, LlmCallRecord } from '../agents/call-agent.js'
 import { z } from 'zod'
-import { callAgentLLM } from '../agents/llm-wrapper.js'
-import { resolveAgentModel } from '../agents/providers/resolve.js'
+import { callAgent } from '../agents/call-agent.js'
+import { CostGateError } from '../agents/cost-gate.js'
+import { resolveAgentModel } from '../agents/models.js'
+import { CorpusEntitySummaryResponse } from '../agents/response-schemas.js'
 import { clampContentSummary, isMostlyChinese } from './entity-summary-normalize.js'
 import { buildEntitySummaryPrompt } from './entity-summary-prompt.js'
-import { entitySummaryResponseSchema } from './entity-summary-response-schema.js'
 
 const AGENT_NAME = 'corpus-entity-summary' as const
 
 // 重試分工（改動前請先讀）：
 // - 本檔的迴圈掌握「總共可以問幾次模型」的預算，涵蓋 provider 拋錯（API / timeout /
-//   provider 端 JSON.parse）與本檔 zod 驗證失敗兩種。
-// - callAgentLLM 一律以單次模式呼叫（maxRetries: 1），否則兩層 retry 會相乘成 3x3=9 次 API。
-// zod 失敗必須重試的原因：本檔的 ResponseSchema 嚴於 entity-summary-response-schema.ts
-// （confidence 限 0-1、topicTags ≤10、Gemini 端兩者都沒約束），這類偏差只有這裡擋得住，
-// 擋到就放棄等於整篇文章無聲失去 entities / topicTags。
+//   structured output 不符）與本檔 zod 驗證失敗兩種。
+// - callAgent 一律以單次模式呼叫（maxAttempts: 1），否則兩層 retry 會相乘成 3x3=9 次 API。
+// - 花費閘與帳號錯誤（CostGateError）不在預算內，直接往上拋、中止整輪 refresh。
+// zod 失敗必須重試的原因：本檔的 ResponseSchema 嚴於傳給 structured output 的
+// CorpusEntitySummaryResponse（confidence 限 0-1、topicTags ≤10，那份刻意不設限），
+// 這類偏差只有這裡擋得住，擋到就放棄等於整篇文章無聲失去 entities / topicTags。
 const DEFAULT_MAX_ATTEMPTS = 3
 
 const ENTITY_KINDS = ['company', 'ticker', 'sector', 'macro', 'other'] as const
@@ -45,8 +47,11 @@ export interface EntitySummaryResult {
   costUsd?: number
 }
 
-/** 測試注入點：回傳 callAgentLLM 已 parse 過的 JSON（unknown、由本檔的 zod 收斂） */
-export type EntitySummaryLlmCaller = (params: CallAgentLLMParams) => Promise<unknown>
+/** 測試注入點：回傳 callAgent 已 parse 過的物件（unknown、由本檔的 zod 收斂） */
+export type EntitySummaryLlmCaller = (input: AgentInput, options: CallAgentOptions) => Promise<unknown>
+
+const defaultCaller: EntitySummaryLlmCaller = (input, options) =>
+  callAgent(AGENT_NAME, input, CorpusEntitySummaryResponse, options)
 
 export interface EnrichDeps {
   callLLM: EntitySummaryLlmCaller
@@ -58,7 +63,7 @@ export async function enrichEntitySummary(
   input: { title: string, body: string },
   deps?: Partial<EnrichDeps>,
 ): Promise<EntitySummaryResult> {
-  const callLLM: EntitySummaryLlmCaller = deps?.callLLM ?? (p => callAgentLLM<unknown>(p))
+  const callLLM = deps?.callLLM ?? defaultCaller
   const maxAttempts = deps?.maxAttempts ?? DEFAULT_MAX_ATTEMPTS
   const systemPrompt = buildEntitySummaryPrompt()
   const userContent = `標題：${input.title}\n\n正文：${input.body.slice(0, 8000)}`
@@ -68,18 +73,16 @@ export async function enrichEntitySummary(
     let record: LlmCallRecord | undefined
     let parsed: unknown
     try {
-      parsed = await callLLM({
-        agentName: AGENT_NAME,
-        systemPrompt,
-        userContent,
-        responseSchema: entitySummaryResponseSchema,
-        maxRetries: 1, // 單次模式：重試預算由本迴圈掌握，見檔頭「重試分工」
+      parsed = await callLLM({ systemPrompt, userContent }, {
+        maxAttempts: 1, // 單次模式：重試預算由本迴圈掌握，見檔頭「重試分工」
         onCallRecord: (r) => {
           record = r
         },
       })
     }
     catch (err) {
+      if (err instanceof CostGateError)
+        throw err
       const msg = err instanceof Error ? err.message : String(err)
       console.warn(`[entity-summary] llm call failed ${suffix}: ${msg}`)
       continue
@@ -112,8 +115,7 @@ export async function enrichEntitySummary(
         })),
         topicTags: data.topicTags.slice(0, 5),
       },
-      // LlmCallRecord 不帶 model 名稱、故在此重解析一次（純函式、與 wrapper 內部同一份設定來源）
-      model: resolveAgentModel(AGENT_NAME).model,
+      model: record?.model ?? resolveAgentModel(AGENT_NAME).model,
       ...(record ? { tokensIn: record.tokensIn, tokensOut: record.tokensOut, costUsd: record.costUsd } : {}),
     }
   }

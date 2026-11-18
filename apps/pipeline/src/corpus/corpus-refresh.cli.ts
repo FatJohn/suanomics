@@ -1,34 +1,26 @@
-#!/usr/bin/env tsx
+// corpus 背景庫的 refresh 進入點：抓 external_sources 的來源、enrich 後寫進 external_articles。
+// 本機驗證：`pnpm --filter @suanomics/pipeline run corpus:refresh -- --source fsc-news`。
 import process from 'node:process'
-import { parseArgs } from 'node:util'
-import { parseTimeoutMs, runJobCli } from './lib/run-job-cli.js'
+import { getDailyCostGate } from '../agents/cost-gate.js'
+import { closeDb } from '../db/client.js'
+import { exitCodeFor, parseCorpusRefreshArgs } from './corpus-refresh.args.js'
+import { runCorpusRefresh } from './corpus-worker.js'
 
-async function main() {
-  const { values } = parseArgs({
-    options: {
-      source: { type: 'string', multiple: true },
-      force: { type: 'boolean', default: false },
-      timeout: { type: 'string' },
-    },
-    strict: false,
-  })
-
-  const payload = {
-    ...(values.source && Array.isArray(values.source) && values.source.length > 0
-      ? { sourceSlugs: values.source as string[] }
-      : {}),
-    force: values.force === true,
-  }
-
-  await runJobCli({
-    kind: 'corpus-refresh',
-    payload,
-    timeoutMs: parseTimeoutMs(process.argv.slice(2)),
-    label: 'running corpus-refresh...',
-  })
+async function main(): Promise<void> {
+  const payload = parseCorpusRefreshArgs(process.argv.slice(2))
+  const result = await runCorpusRefresh({ payload })
+  for (const slug of result.failedSources)
+    console.warn(`::warning title=corpus 來源抓取失敗::${slug}`)
+  console.warn(JSON.stringify({
+    ...result,
+    llmCostUsd: Number(getDailyCostGate().totalUsd.toFixed(4)),
+  }, null, 2))
+  process.exitCode = exitCodeFor(result)
 }
 
-main().catch((e) => {
-  console.error(e)
-  process.exit(1)
-})
+main()
+  .catch((err: unknown) => {
+    console.error('[corpus-refresh] failed:', err)
+    process.exitCode = 1
+  })
+  .finally(() => closeDb())

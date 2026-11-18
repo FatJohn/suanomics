@@ -1,4 +1,6 @@
+import type { FetchedEntry } from './sources/rss.js'
 import { describe, expect, it, vi } from 'vitest'
+import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
 import { runCorpusRefresh } from './corpus-worker.js'
 
 interface EnrichmentSnapshot { contentSummary: string | null, entities: Array<{ kind: string, name: string, confidence: number }>, topicTags: string[] }
@@ -10,7 +12,7 @@ describe('runCorpusRefresh', () => {
     const sources = [
       { id: 's1', slug: 'anue', kind: 'rss' as const, config: { feedUrl: 'https://x.com/feed' } },
     ]
-    const dispatcher = vi.fn(async () => [
+    const dispatcher = vi.fn<(input: { id: string }) => Promise<FetchedEntry[]>>(async () => [
       { externalId: 'e1', url: 'https://x.com/a', title: 'A', publishedAt: null, excerpt: 'ex' },
       { externalId: 'e2', url: 'https://x.com/b', title: 'B', publishedAt: null, excerpt: 'ex2' },
     ])
@@ -18,7 +20,7 @@ describe('runCorpusRefresh', () => {
     const repo = {
       findEnrichmentByContentHash: vi.fn<(hash: string) => Promise<EnrichmentSnapshot | null>>(async () => null),
       isDuplicateUrl: vi.fn(async () => false),
-      insertArticle: vi.fn(async () => 'aid'),
+      insertArticle: vi.fn<(a: InsertArticleArg) => Promise<string>>(async () => 'aid'),
     }
     const progressReports: number[] = []
     return { sources, dispatcher, enricher, repo, progress: (p: number) => {
@@ -231,5 +233,17 @@ describe('runCorpusRefresh', () => {
 
     expect(r.failedSources).toEqual(['anue'])
     expect(r.perSource.find(x => x.slug === 'anue')).toMatchObject({ fetchFailed: true, inserted: 0 })
+  })
+
+  // 花費閘超限時要整輪停下：繼續跑的話後面每一篇都會以「enrich 失敗」寫進 DB，
+  // url 去重讓它們之後永遠不會再被 enrich。
+  it('enricher 拋花費閘例外 → 整輪中止、該篇不寫進 DB', async () => {
+    const d = baseDeps()
+    const error = new DailyCostLimitExceededError(1, 1.2)
+    d.enricher = vi.fn(async () => {
+      throw error
+    })
+    await expect(runCorpusRefresh({ payload: {}, ...d, listSources: async () => d.sources })).rejects.toBe(error)
+    expect(d.repo.insertArticle).not.toHaveBeenCalled()
   })
 })

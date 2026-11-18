@@ -1,4 +1,4 @@
-import type { FixtureManifest } from '../../../fixtures/manifest.js'
+import type { FixtureManifest } from '../../../ingest/fixtures/manifest.js'
 
 // ★ 這一批原本的三個**全部是手寫的**（2026-08-22 逐檔讀過內容確認），不是抓下來的：
 //   - rss-sample.xml：`<title>Sample Feed</title>`、`example.com`、`Fixture for tests`

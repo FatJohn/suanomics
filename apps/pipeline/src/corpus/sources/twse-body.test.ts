@@ -21,7 +21,7 @@ const DETAIL_WITH_PDF = JSON.stringify({
 // `%PDF-1.5` 的前八個 byte。實作會檢查 magic bytes——TWSE 的路徑組錯時回的是 HTTP 200
 // 的 HTML 錯誤頁（soft-404），只靠 res.ok 擋不住，錯誤頁會被送進 unpdf 當 PDF 解。
 const FAKE_PDF = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x35])
-function pdfResponse(body: Uint8Array = FAKE_PDF): Response {
+function pdfResponse(body: Uint8Array<ArrayBuffer> = FAKE_PDF): Response {
   return new Response(body, { status: 200, headers: { 'content-type': 'application/pdf' } })
 }
 
@@ -97,7 +97,7 @@ describe('twse-news-json 的 fetchBody', () => {
     expect(body).toBeNull()
   })
 
-  // 沒有上限的 arrayBuffer() 會讓整個 server 行程被 V8 的 heap limit 殺掉（exit 134、
+  // 沒有上限的 arrayBuffer() 會讓整個行程被 V8 的 heap limit 殺掉（exit 134、
   // catch 不到）。這條釘住那道上限；20MB 的門檻寫在 rss.ts 的 MAX_PDF_BYTES。
   it('正文 PDF 超過大小上限時中斷、回 null', async () => {
     const huge = new Uint8Array(21 * 1024 * 1024)

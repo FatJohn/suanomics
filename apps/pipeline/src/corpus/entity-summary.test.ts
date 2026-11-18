@@ -1,25 +1,26 @@
-import type { CallAgentLLMParams } from '../agents/llm-wrapper.js'
+import type { AgentInput, CallAgentOptions } from '../agents/call-agent.js'
 import { describe, expect, it, vi } from 'vitest'
+import { DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { enrichEntitySummary } from './entity-summary.js'
 
-// 注入點從「假 GoogleGenAI client」換成「假 callAgentLLM」：provider 呼叫與 JSON.parse 已由
-// llm-wrapper 負責，本檔只剩 zod 驗證 / kind 正規化 / tags 切 5 / 失敗不 throw / 重試預算。
+// 注入點是「假 callAgent」：provider 呼叫、structured output 與帳本已由 callAgent 負責，
+// 本檔只剩 zod 驗證 / kind 正規化 / tags 切 5 / 失敗不 throw / 重試預算。
 // 陣列元素是 Error 時代表該次呼叫拋錯（模擬 provider 失敗）。
 function makeFakeCaller(...responses: unknown[]) {
   let i = 0
-  return vi.fn(async (p: CallAgentLLMParams) => {
+  return vi.fn(async (_input: AgentInput, options: CallAgentOptions) => {
     const r = responses[Math.min(i, responses.length - 1)]
     i++
     if (r instanceof Error)
       throw r
-    p.onCallRecord?.({
+    options.onCallRecord?.({
       agentName: 'corpus-entity-summary',
       tokensIn: 2000,
       tokensOut: 300,
       costUsd: 0.0042,
       latencyMs: 1200,
       attempts: 1,
-      provider: 'gemini',
+      provider: 'anthropic',
     })
     return r
   })
@@ -47,24 +48,23 @@ describe('enrichEntitySummary', () => {
     expect(r.data?.topicTags).toHaveLength(5)
   })
 
-  it('走 per-agent routing：agentName 正確、wrapper 以單次模式呼叫（避免兩層 retry 相乘）', async () => {
+  it('callAgent 以單次模式呼叫（避免兩層 retry 相乘）', async () => {
     const callLLM = makeFakeCaller({ contentSummary: 's', entities: [], topicTags: [] })
     await enrichEntitySummary({ title: '標題', body: 'b' }, { callLLM })
-    const params = callLLM.mock.calls[0]?.[0]
-    expect(params?.agentName).toBe('corpus-entity-summary')
-    expect(params?.maxRetries).toBe(1)
-    expect(params?.userContent).toContain('標題')
+    const [input, options] = callLLM.mock.calls[0] ?? []
+    expect(options?.maxAttempts).toBe(1)
+    expect(input?.userContent).toContain('標題')
   })
 
   it('成功時回傳實際 model 與 wrapper 實算成本（供 corpus 記帳）', async () => {
     const callLLM = makeFakeCaller({ contentSummary: 's', entities: [], topicTags: [] })
     const r = await enrichEntitySummary({ title: 't', body: 'b' }, { callLLM })
-    expect(r.model).toMatch(/^gemini-/)
+    expect(r.model).toMatch(/^claude-/)
     expect(r.costUsd).toBe(0.0042)
     expect(r.tokensIn).toBe(2000)
   })
 
-  // 這一段是重試預算：zod 比 Gemini structured output 嚴（confidence 限 0-1、topicTags ≤10），
+  // 這一段是重試預算：zod 比 structured output 的 schema 嚴（confidence 限 0-1、topicTags ≤10），
   // 只有本檔擋得住的偏差、擋到就該再問一次而不是直接放棄整篇 enrichment。
   describe('retry budget', () => {
     it('zod 驗證失敗 → 重試 → 第二次成功', async () => {
@@ -80,7 +80,7 @@ describe('enrichEntitySummary', () => {
       vi.restoreAllMocks()
     })
 
-    it('topicTags 超過 10 個（Gemini schema 擋不住）也會重試', async () => {
+    it('topicTags 超過 10 個（structured output schema 擋不住）也會重試', async () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {})
       const callLLM = makeFakeCaller(
         { contentSummary: 's', entities: [], topicTags: Array.from({ length: 12 }, (_, i) => `t${i}`) },
@@ -104,7 +104,7 @@ describe('enrichEntitySummary', () => {
     it('provider 拋錯吃同一份預算（不是各算各的）', async () => {
       vi.spyOn(console, 'warn').mockImplementation(() => {})
       const callLLM = makeFakeCaller(
-        new Error('Gemini 500'),
+        new Error('Anthropic 500'),
         { contentSummary: 'ok', entities: [], topicTags: [] },
       )
       const r = await enrichEntitySummary({ title: 't', body: 'b' }, { callLLM })
@@ -124,10 +124,21 @@ describe('enrichEntitySummary', () => {
 
   // 失敗路徑不 silent swallow、且回 failed 而非 throw
   describe('failure semantics', () => {
+    // 花費閘與帳號錯誤不是「這篇文章壞了」：吞掉的話後面每一篇都會被標成 enrich 失敗寫進 DB，
+    // 而 url 去重讓它們永遠不會再被 enrich。要中止整輪 refresh。
+    it.each([
+      ['花費閘超限', new DailyCostLimitExceededError(3, 3.1)],
+      ['帳號錯誤', new LlmAccountError('credit balance too low')],
+    ])('%s → 原樣拋出、不重試', async (_label, error) => {
+      const callLLM = makeFakeCaller(error)
+      await expect(enrichEntitySummary({ title: 't', body: 'b' }, { callLLM })).rejects.toBe(error)
+      expect(callLLM).toHaveBeenCalledTimes(1)
+    })
+
     it('wrapper 拋錯（重試耗盡）→ 回 failed 不 throw + warn', async () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       const callLLM = vi.fn(async () => {
-        throw new Error('Gemini timeout')
+        throw new Error('Anthropic timeout')
       })
       const r = await enrichEntitySummary({ title: 't', body: 'b' }, { callLLM })
       expect(r.failed).toBe(true)
@@ -135,7 +146,7 @@ describe('enrichEntitySummary', () => {
       const msg = warnSpy.mock.calls[0]?.[0] as string
       expect(msg).toMatch(/entity-summary/)
       expect(msg).toMatch(/llm/i)
-      expect(msg).toMatch(/Gemini timeout/)
+      expect(msg).toMatch(/Anthropic timeout/)
       warnSpy.mockRestore()
     })
 

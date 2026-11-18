@@ -136,7 +136,7 @@ describe('html-selector 的 fetchBody', () => {
     expect(await entries[0]?.fetchBody?.()).toBeNull()
   })
 
-  // 沒有上限的 res.text() 會讓整個 server 行程被 V8 的 heap limit 殺掉（exit 134、
+  // 沒有上限的 res.text() 會讓整個行程被 V8 的 heap limit 殺掉（exit 134、
   // catch 不到），而 corpus handler 與其他七個 kind、以及 HTTP server 全跑在同一個行程裡。
   it('文章頁超過大小上限時中斷、回 null', async () => {
     const huge = `<div class="body">${'x'.repeat(6 * 1024 * 1024)}</div>`

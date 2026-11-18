@@ -1,21 +1,20 @@
-import type { ArticlesRepo } from '@suanomics/db/repos/articles-repo'
-import type { DispatchInput } from '../../corpus/dispatcher.js'
-import type { FetchedEntry } from '../../corpus/sources/rss.js'
-import { getDb } from '@suanomics/db/client'
-import { createArticlesRepo } from '@suanomics/db/repos/articles-repo'
-import { externalSources } from '@suanomics/db/schema'
-import { ExternalSourceSeedSchema } from '@suanomics/db/seed-external-sources'
+import type { ArticlesRepo } from '../db/repos/articles-repo.js'
+import type { DispatchInput } from './dispatcher.js'
+import type { FetchedEntry } from './sources/rss.js'
 import { hasBodyBeyondTitle } from '@suanomics/shared'
 import { eq } from 'drizzle-orm'
-import { pMap } from '../../_p-map.js'
-import { hashArticleContent } from '../../corpus/content-hash.js'
-import { dispatchFetch } from '../../corpus/dispatcher.js'
-import { enrichEntitySummary } from '../../corpus/entity-summary.js'
-import { canonicalizeUrl, hashCanonicalUrl } from '../../corpus/url-canonical.js'
+import pMap from 'p-map'
+import { getDb } from '../db/client.js'
+import { createArticlesRepo } from '../db/repos/articles-repo.js'
+import { externalSources } from '../db/schema.js'
+import { ExternalSourceSeedSchema } from '../db/seed-external-sources.js'
+import { hashArticleContent } from './content-hash.js'
+import { dispatchFetch } from './dispatcher.js'
+import { enrichEntitySummary } from './entity-summary.js'
+import { canonicalizeUrl, hashCanonicalUrl } from './url-canonical.js'
 
-// 並行處理 source 的上限。corpus-refresh concurrency=2 是 job 層的，這裡是
-// **單一 job 內部** source 拉取的並行度。Source 多為 I/O bound（外部 RSS / scrape）、
-// 並行能顯著縮短 daily ingest 時間（15 sources 序列 ~3 min → 並行 ~1 min）。
+// 一輪 refresh 內 source 拉取的並行度。Source 多為 I/O bound（外部 RSS / scrape）、
+// 並行能顯著縮短一輪的時間（v0 實測 15 sources 序列 ~3 min → 並行 ~1 min）。
 const SOURCE_FETCH_CONCURRENCY = 2
 
 // I3 fix: config 不再是 opaque Record — 改成 zod-validated typed shape。
@@ -52,8 +51,7 @@ export interface CorpusRefreshResult {
    * 幾百篇的總數裡它只是一個小數字，`failedSources` 也不會列它（list 端點是成功的）。
    *
    * 這不是新增量測：`processOneSource` 本來就逐來源在數，只是聚合時把 slug 維度丟掉了。
-   * 這個陣列會原樣進 `background_jobs.metadata`（index.ts 的 makeMetadata），
-   * 事後查得到「那一輪每個來源各自發生什麼」。
+   * 這個陣列會原樣印進 CLI 的 JSON 摘要（Actions log），事後查得到「那一輪每個來源各自發生什麼」。
    */
   perSource: CorpusSourceTotals[]
 }
@@ -149,7 +147,7 @@ async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Pro
     // ★ 但 force 路徑會跳過去重（上面的 `!force &&`），那時每一筆都會重抓正文——而
     //   insertArticle 是 onConflictDoNothing，既有列一個欄位都不會更新。也就是
     //   `corpus:refresh --force` 對已存在的文章是純浪費：538 筆的來源要多打 1076 次
-    //   外部請求。兩日一次的排程是 force:false（部署者自備的外部排程），不受影響。
+    //   外部請求。排程跑的是 force:false，不受影響。
     const excerpt = e.excerpt ?? (e.fetchBody ? await e.fetchBody() : null)
     const bodyForHash = excerpt ?? e.title
     const contentHash = hashArticleContent(bodyForHash)
@@ -183,7 +181,7 @@ async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Pro
       }
       else {
         enrichment = r.data
-        // 實際跑的 model 與 llm-wrapper 依 token usage 實算的成本（不再是固定估值）；
+        // 實際跑的 model 與 callAgent 依 token usage 實算的成本（不再是固定估值）；
         // 注入假 enricher 的測試不帶這兩欄、記 null。
         llmModel = r.model ?? null
         llmCost = r.costUsd ?? null
@@ -237,14 +235,14 @@ export async function runCorpusRefresh(deps: CorpusWorkerDeps): Promise<CorpusRe
   await reportProgress(0)
 
   // pMap 並行跑、每 source 完成獨立 progress tick（順序非 1→n、但比例正確）。
-  const perSourceTotals = await pMap(sources, concurrency, async (src): Promise<CorpusSourceTotals> => {
+  const perSourceTotals = await pMap(sources, async (src): Promise<CorpusSourceTotals> => {
     const t = await processOneSource(src, processDeps)
     if (t.fetchFailed)
       failedSources.push(src.slug)
     completedSources++
     await reportProgress(Math.round((completedSources / sources.length) * 100))
     return { slug: src.slug, ...t }
-  })
+  }, { concurrency })
 
   // 聚合（JS event loop 確保 += 安全、但 pMap 後再 reduce 更乾淨、無共享 mut state）
   return perSourceTotals.reduce<CorpusRefreshResult>((acc, t) => {

@@ -1,14 +1,9 @@
 import { readFileSync } from 'node:fs'
-import { EXTERNAL_SOURCES_SEED } from '@suanomics/db/seed-external-sources'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { EXTERNAL_SOURCES_SEED } from '../../db/seed-external-sources.js'
 import { fetchHtmlSelector } from './html-selector.js'
 
 // 真實擷取的 fsc.gov.tw 新聞稿列表區塊（出處與裁切範圍見 __fixtures__/manifest.ts）。
-//
-// ★ 這支測試是經 @suanomics/db 的 **dist** 讀 seed 的（package.json 的 exports 指 ./dist/...）。
-//   只改 packages/db/src 而沒 build 時，它驗的是上一次 build 的舊值。CI 會先跑 build 所以
-//   安全，本機要自己記得 `pnpm --filter @suanomics/db run build`——而且 tsc 是 incremental，
-//   只動 dist 沒動 src 的話 build 不會重新產生檔案，還原時特別容易被騙。
 const fixture = readFileSync(new URL('./__fixtures__/fsc-newslist-sample.html', import.meta.url), 'utf-8')
 const viewFixture = readFileSync(new URL('./__fixtures__/fsc-newsview-sample.html', import.meta.url), 'utf-8')
 
