@@ -68,9 +68,26 @@ export const dailyBriefs = pgTable('daily_briefs', {
   // 'incomplete' = 花費閘中止；此時 brief_json 為 null，已完成階段的產出在 progress。
   status: text('status').notNull().default('complete'),
   progress: jsonb('progress').$type<unknown>(),
+  // complete 時 generateBrief 吃到的 editor 結果與市場資料。事後重建不回來（storyline 已寫回、市場資料已更新），
+  // 影子報告要拿同一份輸入重跑才比得出差異。
+  runInputs: jsonb('run_inputs').$type<unknown>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, t => ({
   statusCheck: check('daily_briefs_status_check', sql`${t.status} IN ('complete', 'incomplete')`),
+}))
+
+// A/B 用的對照報告：同一份 run_inputs 換一個 variant 重跑，不發佈、不寫回 storyline。
+export const shadowBriefs = pgTable('shadow_briefs', {
+  id: serial('id').primaryKey(),
+  briefDate: date('brief_date').notNull(),
+  variant: text('variant').notNull(),
+  selectedNewsIds: integer('selected_news_ids').array().notNull(),
+  briefJson: jsonb('brief_json').$type<unknown>().notNull(),
+  // 產出時 run_inputs 的 hash：正式報告 --force 重跑換了輸入，舊影子就對不上、不能拿來比。
+  inputsHash: text('inputs_hash').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, t => ({
+  dateVariant: unique('shadow_briefs_date_variant').on(t.briefDate, t.variant),
 }))
 
 export const externalSources = pgTable('external_sources', {

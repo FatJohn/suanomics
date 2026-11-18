@@ -260,10 +260,12 @@ export async function saveDailyBrief(
   selectedIds: readonly number[],
   summary: string,
   briefJson?: unknown,
+  runInputs?: unknown,
 ): Promise<number> {
   const db = getDb()
-  const insertValues = { briefDate, selectedNewsIds: [...selectedIds], summary, status: 'complete', progress: null, ...(briefJson !== undefined ? { briefJson } : {}) }
-  const updateSet = { selectedNewsIds: [...selectedIds], summary, status: 'complete', progress: null, ...(briefJson !== undefined ? { briefJson } : {}) }
+  // 重跑一律覆寫 run_inputs（沒給就清成 null），避免留著上一次的輸入對不上新的 brief。
+  const updateSet = { selectedNewsIds: [...selectedIds], summary, status: 'complete', progress: null, runInputs: runInputs ?? null, ...(briefJson !== undefined ? { briefJson } : {}) }
+  const insertValues = { briefDate, ...updateSet }
   const [row] = await db.insert(dailyBriefs).values(insertValues).onConflictDoUpdate({ target: dailyBriefs.briefDate, set: updateSet }).returning({ id: dailyBriefs.id })
   if (!row)
     throw new Error('saveDailyBrief: upsert returned no row')

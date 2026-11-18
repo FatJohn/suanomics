@@ -11,7 +11,19 @@ describe('parseJudgeArgs', () => {
       out: '.eval-out/judge',
       skipMissing: false,
       skipJudged: false,
+      shadow: false,
     })
+  })
+
+  it('--shadow 只評 quality：continuity 比的是前幾日正式報告，影子報告不適用', () => {
+    expect(parseJudgeArgs(['--dates', '2026-11-19', '--shadow'])).toMatchObject({ shadow: true, judges: ['quality'] })
+    expect(parseJudgeArgs(['--dates', '2026-11-19', '--shadow', '--judge', 'quality'])).toMatchObject({ shadow: true, judges: ['quality'] })
+    expect(() => parseJudgeArgs(['--dates', '2026-11-19', '--shadow', '--judge', 'continuity'])).toThrow(/--shadow/)
+  })
+
+  it('--shadow 不與排程旗標並用：已評判斷看的是正式報告的帳', () => {
+    expect(() => parseJudgeArgs(['--dates', '2026-11-19', '--shadow', '--skip-judged'])).toThrow(/--shadow/)
+    expect(() => parseJudgeArgs(['--dates', '2026-11-19', '--shadow', '--skip-missing'])).toThrow(/--shadow/)
   })
 
   it('可只跑一個 judge、改上限、dry-run 與輸出目錄；pnpm 傳進來的 -- 略過', () => {

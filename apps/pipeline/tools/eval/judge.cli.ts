@@ -7,6 +7,7 @@
 //     op run --account johnnyhtw.1password.com -- pnpm --filter @suanomics/pipeline run eval:judge \
 //     --dates 2026-11-11,2026-11-12 [--judge quality|continuity|all] [--max-usd 3] [--dry-run] [--out .eval-out/judge]
 // 每日自動跑另帶 --skip-missing --skip-judged，見 judge-args.ts。
+// --shadow 改評 daily:shadow 產的 no-corpus 影子報告（#34 A/B），只評 quality，結果檔名帶 -no-corpus。
 // 換 model 用 AGENT_MODELS，例如 AGENT_MODELS=brief-quality-judge:anthropic/claude-opus-5-5。
 
 import type { AgentInput } from '../../src/agents/call-agent.js'
@@ -16,6 +17,7 @@ import type { JudgeArgs } from './judge-args.js'
 import type { JudgeCall } from './judge-call.js'
 import type { JudgeRow } from './judge-report.js'
 import type { QualityScore } from './quality-judge.js'
+import { randomUUID } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
@@ -24,12 +26,14 @@ import { DailyCostGate } from '../../src/agents/cost-gate.js'
 import { resolveAgentModel } from '../../src/agents/models.js'
 import { closeDb } from '../../src/db/client.js'
 import { dbLedger } from '../../src/db/repos/llm-calls-repo.js'
+import { SHADOW_RUN_ID_PREFIX } from '../../src/db/repos/shadow-briefs-repo.js'
+import { NO_CORPUS_VARIANT } from '../../src/orchestrator/shadow.js'
 import { runContinuityJudge } from './continuity-judge.js'
 import { buildContinuityUserContent, CONTINUITY_JUDGE_SYSTEM_PROMPT } from './continuity-judge.prompt.js'
 import { parseJudgeArgs } from './judge-args.js'
 import { pendingJudges } from './judge-plan.js'
 import { renderContinuityTable, renderQualityTable } from './judge-report.js'
-import { loadContinuityInput, loadJudgedAgents, loadQualityFacts, loadStoredBrief } from './load-inputs.js'
+import { loadContinuityInput, loadJudgedAgents, loadQualityFacts, loadShadowBrief, loadStoredBrief } from './load-inputs.js'
 import { runQualityJudge } from './quality-judge.js'
 import { buildQualityUserContent, QUALITY_JUDGE_SYSTEM_PROMPT } from './quality-judge.prompt.js'
 
@@ -50,10 +54,10 @@ function logDryRun(date: string, judge: string, systemPrompt: string, userConten
 }
 
 async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { quality: JudgeRow<QualityScore>[], continuity: JudgeRow<ContinuityScore>[] }): Promise<void> {
-  const stored = await loadStoredBrief(date)
+  const stored = args.shadow ? await loadShadowBrief(date, NO_CORPUS_VARIANT) : await loadStoredBrief(date)
   if (stored === null) {
     if (!args.skipMissing)
-      throw new Error(`${date} 沒有 complete 的 daily_briefs`)
+      throw new Error(args.shadow ? `${date} 沒有 ${NO_CORPUS_VARIANT} 影子報告` : `${date} 沒有 complete 的 daily_briefs`)
     runner.skipped.push(`${date} 沒有 complete 的 brief（非交易日或報告未完成），略過`)
     return
   }
@@ -69,7 +73,7 @@ async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { 
     }
     else {
       const result = await runQualityJudge(input, call)
-      writeFileSync(join(args.out, `${date}-quality.json`), JSON.stringify(result, null, 2))
+      writeFileSync(join(args.out, `${date}-quality${args.shadow ? `-${NO_CORPUS_VARIANT}` : ''}.json`), JSON.stringify(result, null, 2))
       rows.quality.push({ date, score: result.score, costUsd: runner.lastCostUsd })
     }
   }
@@ -91,7 +95,7 @@ async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { 
 
 function summary(args: JudgeArgs, runner: Runner, rows: { quality: JudgeRow<QualityScore>[], continuity: JudgeRow<ContinuityScore>[] }): string {
   const model = (name: AgentName) => resolveAgentModel(name).model
-  const parts = [`# Judge 結果（${args.dates.join('、')}）`, '']
+  const parts = [`# Judge 結果${args.shadow ? `（${NO_CORPUS_VARIANT} 影子報告）` : ''}（${args.dates.join('、')}）`, '']
   if (rows.quality.length > 0)
     parts.push(`## quality（${model('brief-quality-judge')}）`, '', renderQualityTable(rows.quality), '')
   if (rows.continuity.length > 0)
@@ -104,7 +108,8 @@ function summary(args: JudgeArgs, runner: Runner, rows: { quality: JudgeRow<Qual
 async function main(): Promise<void> {
   const args = parseJudgeArgs(process.argv.slice(2))
   mkdirSync(args.out, { recursive: true })
-  const runner: Runner = { gate: new DailyCostGate(args.maxUsd, { ledger: dbLedger }), lastCostUsd: 0, skipped: [] }
+  const gate = new DailyCostGate(args.maxUsd, { ledger: dbLedger, ...(args.shadow ? { runId: `${SHADOW_RUN_ID_PREFIX}judge-${randomUUID()}` } : {}) })
+  const runner: Runner = { gate, lastCostUsd: 0, skipped: [] }
   const rows = { quality: [] as JudgeRow<QualityScore>[], continuity: [] as JudgeRow<ContinuityScore>[] }
   for (const date of args.dates)
     await judgeDate(date, args, runner, rows)
@@ -113,7 +118,7 @@ async function main(): Promise<void> {
   if (args.dryRun)
     return
   const text = summary(args, runner, rows)
-  writeFileSync(join(args.out, 'summary.md'), text)
+  writeFileSync(join(args.out, args.shadow ? `summary-${NO_CORPUS_VARIANT}.md` : 'summary.md'), text)
   console.warn(text)
   console.warn(`totalUsd=${runner.gate.totalUsd.toFixed(4)} calls=${runner.gate.callCount}`)
 }

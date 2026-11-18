@@ -110,7 +110,18 @@ describe('runDaily', () => {
     })
     expect(await runDaily({ date: DATE, force: false }, deps)).toMatchObject({ status: 'complete', briefId: 7 })
     expect(order).toEqual(['save', 'storylines'])
-    expect(deps.saveBrief).toHaveBeenCalledWith(DATE, [1], 'H\n\nS', brief)
+    expect(deps.saveBrief).toHaveBeenCalledWith(DATE, [1], 'H\n\nS', brief, expect.anything())
+  })
+
+  it('complete 時一併存下 generateBrief 的輸入，不含 storyline 寫回內容', async () => {
+    const market = { snapshotBlock: 'm' }
+    const deps = fakeDeps({ loadMarket: vi.fn(async () => market as never) })
+    await runDaily({ date: DATE, force: false }, deps)
+    expect(deps.saveBrief).toHaveBeenCalledWith(DATE, [1], 'H\n\nS', brief, {
+      version: 1,
+      editor: { news: [{ id: 1, title: 't', url: 'u', text: 'x', publishedAt: null }], selection: null, storylineBlock: null, continuityHint: null },
+      market,
+    })
   })
 
   it('首次產出當日報告時照常新建 storyline', async () => {

@@ -17,6 +17,7 @@
 - monorepo 縮成三個 workspace：`packages/shared`、`apps/pipeline`、`apps/web`。
 - 新聞來源只收官方機構與發行商自己的 feed，正文在 pipeline 內抽取。
 - corpus 背景庫（`external_articles`）由每日 Daily Brief 在產報告前以 `corpus:refresh` 更新，取代 v0 兩日一次的背景 job；cascade 檢索照舊讀回。
+- 每日報告完成時把 editor 結果與市場資料存進 `daily_briefs.run_inputs`；維護者可用 `daily:shadow` 拿同一份輸入關掉 corpus 檢索重跑一份影子報告（存 `shadow_briefs`、不發佈），再以 `eval:judge --shadow` 評分，作為 corpus 效益的 A/B 對照。
 - v0 上游 repo `macroeconomics-report` 的變更紀錄、研究報告與產品事實搬進 `docs/history/`。
 
 ### 移除

@@ -11,6 +11,8 @@ export interface JudgeArgs {
   // 已評過的 judge 不重跑（備援 run 以 already-exists 成功時也會觸發 judge）。
   skipMissing: boolean
   skipJudged: boolean
+  // 評 shadow_briefs 的 no-corpus 影子報告（#34 A/B），不評正式報告。
+  shadow: boolean
 }
 
 function isCalendarDate(value: string): boolean {
@@ -58,20 +60,27 @@ export function parseJudgeArgs(argv: readonly string[]): JudgeArgs {
     const arg = argv[i]
     if (arg === '--')
       continue
-    if (arg === '--dry-run' || arg === '--skip-missing' || arg === '--skip-judged')
+    if (arg === '--dry-run' || arg === '--skip-missing' || arg === '--skip-judged' || arg === '--shadow')
       flags.add(arg)
     else if (arg === '--dates' || arg === '--judge' || arg === '--max-usd' || arg === '--out')
       values[arg] = argv[++i]
     else
       throw new Error(`未知參數：${arg}`)
   }
+  const shadow = flags.has('--shadow')
+  if (shadow && (flags.has('--skip-missing') || flags.has('--skip-judged')))
+    throw new Error('--shadow 不與 --skip-missing、--skip-judged 並用：已評判斷看的是正式報告的帳')
+  // continuity 比的是前幾日的正式報告，拿來評影子報告比不出 corpus 的差異。
+  if (shadow && values['--judge'] === 'continuity')
+    throw new Error('--shadow 只評 quality')
   return {
     dates: parseDates(values['--dates']),
-    judges: parseJudges(values['--judge']),
+    judges: shadow ? ['quality'] : parseJudges(values['--judge']),
     maxUsd: parseMaxUsd(values['--max-usd']),
     dryRun: flags.has('--dry-run'),
     out: values['--out'] ?? '.eval-out/judge',
     skipMissing: flags.has('--skip-missing'),
     skipJudged: flags.has('--skip-judged'),
+    shadow,
   }
 }
