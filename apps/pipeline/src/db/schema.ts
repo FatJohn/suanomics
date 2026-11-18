@@ -83,6 +83,8 @@ export const shadowBriefs = pgTable('shadow_briefs', {
   variant: text('variant').notNull(),
   selectedNewsIds: integer('selected_news_ids').array().notNull(),
   briefJson: jsonb('brief_json').$type<unknown>().notNull(),
+  // 產出時 run_inputs 的 hash：正式報告 --force 重跑換了輸入，舊影子就對不上、不能拿來比。
+  inputsHash: text('inputs_hash').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 }, t => ({
   dateVariant: unique('shadow_briefs_date_variant').on(t.briefDate, t.variant),

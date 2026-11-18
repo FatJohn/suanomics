@@ -2,6 +2,7 @@ import type { BriefRunInputs } from './daily.js'
 import type { ShadowDeps } from './shadow.js'
 import { describe, expect, it, vi } from 'vitest'
 import { DailyCostGate } from '../agents/cost-gate.js'
+import { runInputsHash } from '../db/repos/shadow-briefs-repo.js'
 import { EMPTY_MARKET_CONTEXT } from '../ingest/market-data/context.js'
 import { NO_CORPUS_VARIANT, runShadow } from './shadow.js'
 
@@ -33,7 +34,7 @@ describe('runShadow', () => {
     const p = vi.mocked(deps.generateBrief).mock.calls[0]?.[0]
     expect(p).toMatchObject({ date: DATE, news: NEWS, market: INPUTS.market, retrieveCorpus: false })
     expect(p?.editor).toEqual({ ...INPUTS.editor, storyline: null })
-    expect(deps.saveShadow).toHaveBeenCalledWith(DATE, NO_CORPUS_VARIANT, [1, 2], brief)
+    expect(deps.saveShadow).toHaveBeenCalledWith(DATE, NO_CORPUS_VARIANT, [1, 2], brief, runInputsHash(INPUTS))
   })
 
   it('帳本的報告日設成該報告日', async () => {
@@ -43,14 +44,19 @@ describe('runShadow', () => {
     expect(setReportDate).toHaveBeenCalledWith(DATE)
   })
 
-  it('已有影子報告時略過，不呼叫 LLM', async () => {
-    const deps = fakeDeps({ getExisting: vi.fn(async () => ({ id: 3 })) })
+  it('已有同一份輸入產的影子報告時略過，不呼叫 LLM', async () => {
+    const deps = fakeDeps({ getExisting: vi.fn(async () => ({ id: 3, inputsHash: runInputsHash(INPUTS) })) })
     expect(await runShadow({ date: DATE, force: false }, deps)).toEqual({ status: 'skipped', reason: 'already-exists', date: DATE })
     expect(deps.generateBrief).not.toHaveBeenCalled()
   })
 
+  it('正式報告重跑換了輸入時，舊影子報告不算數、照常重跑', async () => {
+    const deps = fakeDeps({ getExisting: vi.fn(async () => ({ id: 3, inputsHash: 'stale' })) })
+    expect((await runShadow({ date: DATE, force: false }, deps)).status).toBe('complete')
+  })
+
   it('--force 時已有影子報告也重跑', async () => {
-    const deps = fakeDeps({ getExisting: vi.fn(async () => ({ id: 3 })) })
+    const deps = fakeDeps({ getExisting: vi.fn(async () => ({ id: 3, inputsHash: runInputsHash(INPUTS) })) })
     expect((await runShadow({ date: DATE, force: true }, deps)).status).toBe('complete')
   })
 

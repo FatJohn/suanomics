@@ -2,6 +2,7 @@ import type { MarketBrief } from '@suanomics/shared'
 import type { ShadowSource } from '../db/repos/shadow-briefs-repo.js'
 import type { BriefRunInputs, DailyDeps, DailyProgress } from './daily.js'
 import type { GenerateBriefParams } from './run-brief.js'
+import { runInputsHash } from '../db/repos/shadow-briefs-repo.js'
 import { createStageRunner } from './daily.js'
 
 // A/B 對照組：同一份輸入關掉 corpus 檢索。
@@ -9,9 +10,9 @@ export const NO_CORPUS_VARIANT = 'no-corpus'
 
 export interface ShadowDeps extends Pick<DailyDeps, 'gate' | 'log'> {
   getSource: (date: string) => Promise<ShadowSource | null>
-  getExisting: (date: string, variant: string) => Promise<{ id: number } | null>
+  getExisting: (date: string, variant: string) => Promise<{ id: number, inputsHash: string } | null>
   generateBrief: (p: GenerateBriefParams) => Promise<MarketBrief>
-  saveShadow: (date: string, variant: string, newsIds: number[], brief: MarketBrief) => Promise<number>
+  saveShadow: (date: string, variant: string, newsIds: number[], brief: MarketBrief, inputsHash: string) => Promise<number>
 }
 
 export type ShadowResult
@@ -31,12 +32,14 @@ function parseRunInputs(date: string, raw: unknown): BriefRunInputs {
 
 export async function runShadow(options: { date: string, force: boolean }, deps: ShadowDeps): Promise<ShadowResult> {
   const { date, force } = options
-  if (!force && await deps.getExisting(date, NO_CORPUS_VARIANT))
-    return { status: 'skipped', reason: 'already-exists', date }
   const source = await deps.getSource(date)
   if (source === null)
     throw new Error(`${date} 沒有 complete 的正式報告`)
   const inputs = parseRunInputs(date, source.runInputs)
+  const inputsHash = runInputsHash(source.runInputs)
+  // 舊影子是另一份輸入產的（正式報告後來 --force 重跑過）就不算已存在。
+  if (!force && (await deps.getExisting(date, NO_CORPUS_VARIANT))?.inputsHash === inputsHash)
+    return { status: 'skipped', reason: 'already-exists', date }
 
   deps.gate.setReportDate(date)
   // 花費閘觸發就整份放棄：影子報告不發佈，沒有保留半成品的理由。
@@ -50,6 +53,6 @@ export async function runShadow(options: { date: string, force: boolean }, deps:
     progress,
     retrieveCorpus: false,
   })
-  const shadowId = await deps.saveShadow(date, NO_CORPUS_VARIANT, inputs.editor.news.map(n => n.id), brief)
+  const shadowId = await deps.saveShadow(date, NO_CORPUS_VARIANT, inputs.editor.news.map(n => n.id), brief, inputsHash)
   return { status: 'complete', date, shadowId }
 }

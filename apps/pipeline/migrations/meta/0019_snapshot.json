@@ -1,5 +1,5 @@
 {
-  "id": "88deacec-3f8b-40ab-a12e-23e9e9c68f20",
+  "id": "8e078df7-d6b4-4e5f-a3a3-f6501b248728",
   "prevId": "9eeeeaff-be2e-4508-ae60-be2f126d5ce3",
   "version": "7",
   "dialect": "postgresql",
@@ -1164,6 +1164,12 @@
         "brief_json": {
           "name": "brief_json",
           "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inputs_hash": {
+          "name": "inputs_hash",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { and, eq } from 'drizzle-orm'
 import { getDb } from '../client.js'
 import { dailyBriefs, shadowBriefs } from '../schema.js'
@@ -14,17 +15,19 @@ export async function getShadowSource(date: string): Promise<ShadowSource | null
   return rows[0] ?? null
 }
 
-export async function getShadowBrief(date: string, variant: string): Promise<{ id: number, selectedNewsIds: number[], briefJson: unknown } | null> {
+export interface StoredShadowBrief { id: number, selectedNewsIds: number[], briefJson: unknown, inputsHash: string }
+
+export async function getShadowBrief(date: string, variant: string): Promise<StoredShadowBrief | null> {
   const rows = await getDb()
-    .select({ id: shadowBriefs.id, selectedNewsIds: shadowBriefs.selectedNewsIds, briefJson: shadowBriefs.briefJson })
+    .select({ id: shadowBriefs.id, selectedNewsIds: shadowBriefs.selectedNewsIds, briefJson: shadowBriefs.briefJson, inputsHash: shadowBriefs.inputsHash })
     .from(shadowBriefs)
     .where(and(eq(shadowBriefs.briefDate, date), eq(shadowBriefs.variant, variant)))
     .limit(1)
   return rows[0] ?? null
 }
 
-export async function saveShadowBrief(date: string, variant: string, selectedIds: readonly number[], briefJson: unknown): Promise<number> {
-  const set = { selectedNewsIds: [...selectedIds], briefJson, createdAt: new Date() }
+export async function saveShadowBrief(date: string, variant: string, selectedIds: readonly number[], briefJson: unknown, inputsHash: string): Promise<number> {
+  const set = { selectedNewsIds: [...selectedIds], briefJson, inputsHash, createdAt: new Date() }
   const [row] = await getDb()
     .insert(shadowBriefs)
     .values({ briefDate: date, variant, ...set })
@@ -37,3 +40,16 @@ export async function saveShadowBrief(date: string, variant: string, selectedIds
 
 /** 影子報告與它的 judge 寫帳時的 run_id 前綴，正式報告的「已評過」判斷靠它排除。 */
 export const SHADOW_RUN_ID_PREFIX = 'shadow-'
+
+function canonicalJson(value: unknown): string {
+  if (Array.isArray(value))
+    return `[${value.map(canonicalJson).join(',')}]`
+  if (typeof value === 'object' && value !== null)
+    return `{${Object.keys(value).sort().map(k => `${JSON.stringify(k)}:${canonicalJson((value as Record<string, unknown>)[k])}`).join(',')}}`
+  return JSON.stringify(value) ?? 'null'
+}
+
+/** run_inputs 的 hash。鍵排序後再算：jsonb 存回來的鍵順序與寫入時不同。 */
+export function runInputsHash(runInputs: unknown): string {
+  return createHash('sha256').update(canonicalJson(runInputs)).digest('hex')
+}
