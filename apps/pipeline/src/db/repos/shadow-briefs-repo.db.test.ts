@@ -48,10 +48,12 @@ describe('shadow briefs repo', () => {
   })
 
   it('run_inputs 經過 jsonb 來回後 hash 不變，內容不同則不同', async () => {
-    const inputs = { version: 1, market: { b: 1, a: [2] }, editor: { news: [] } }
+    // jsonb 依鍵長度重排：寫入時 version 在 editor 前、bb 在 a 前，讀回來順序不同。
+    const inputs = { version: 1, market: { bb: 1, a: [2] }, editor: { news: [] } }
     await saveDailyBrief(DATE_A, [3], 'ok', { headline: 'H' }, inputs)
     const stored = (await getShadowSource(DATE_A))?.runInputs
-    expect(runInputsHash(stored)).toBe(runInputsHash((await getShadowSource(DATE_A))?.runInputs))
+    expect(JSON.stringify(stored)).not.toBe(JSON.stringify(inputs))
+    expect(runInputsHash(stored)).toBe(runInputsHash(inputs))
     expect(runInputsHash(stored)).not.toBe(runInputsHash({ ...inputs, version: 2 }))
   })
 })
