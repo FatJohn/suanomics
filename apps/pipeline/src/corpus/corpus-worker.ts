@@ -124,15 +124,21 @@ interface ProcessOneSourceDeps {
   enrichBudget: { remaining: number }
 }
 
-async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Promise<PerSourceTotals> {
-  const { dispatcher, enricher, repo, force, enrichBudget } = deps
-  const totals: PerSourceTotals = { inserted: 0, skipped: 0, deferred: 0, reused: 0, enrichmentFailed: 0, notEnrichable: 0, fetchFailed: false }
-  let entries: FetchedEntry[]
+async function fetchEntries(src: SourceRow, dispatcher: ProcessOneSourceDeps['dispatcher']): Promise<FetchedEntry[] | null> {
   try {
-    entries = await dispatcher({ id: src.id, kind: src.kind, config: src.config })
+    return await dispatcher({ id: src.id, kind: src.kind, config: src.config })
   }
   catch (err) {
     console.error(`[corpus] source=${src.slug} fetch failed:`, err)
+    return null
+  }
+}
+
+async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Promise<PerSourceTotals> {
+  const { dispatcher, enricher, repo, force, enrichBudget } = deps
+  const totals: PerSourceTotals = { inserted: 0, skipped: 0, deferred: 0, reused: 0, enrichmentFailed: 0, notEnrichable: 0, fetchFailed: false }
+  const entries = await fetchEntries(src, dispatcher)
+  if (entries === null) {
     totals.fetchFailed = true
     return totals
   }
