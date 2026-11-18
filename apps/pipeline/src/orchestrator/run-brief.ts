@@ -69,6 +69,7 @@ async function analyzeNews(
   market: MarketContext,
   marketCloseFraming: string | null,
   progress: DailyProgress,
+  retrieveCorpus: boolean,
 ): Promise<AnalystOutput[]> {
   const settled = await fanoutSettled(items, FANOUT.tier1, async ({ news, decomposed }, i) => {
     const tier1 = await callAnalystTier1({
@@ -87,7 +88,8 @@ async function analyzeNews(
     })
     const tier1Chains = stampTier1(tier1.cascadeChains)
     recordAnalyst(progress, { ...tier1, cascadeChains: tier1Chains, newsId: news.id })
-    const tier2Chains = await runTier2Fanout({ news: { title: news.title, text: news.text, id: news.id }, tier1Chains, reportDate: date, marketSnapshot: market.snapshotBlock })
+    // tier2 的素材全靠 corpus 檢索，關掉 corpus 時整段不跑，否則對照組仍帶 corpus 產的鏈。
+    const tier2Chains = !retrieveCorpus ? [] : await runTier2Fanout({ news: { title: news.title, text: news.text, id: news.id }, tier1Chains, reportDate: date, marketSnapshot: market.snapshotBlock })
     const output = { ...tier1, cascadeChains: [...tier1Chains, ...tier2Chains] }
     recordAnalyst(progress, { ...output, newsId: news.id })
     return output
@@ -128,7 +130,7 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
     const settled = await fanoutSettled(survived, FANOUT.retrieve, s => retrieveForDecomposed(s.decomposed, date))
     return settled.map(r => (r.status === 'fulfilled' ? r.value : []))
   })
-  const analystOutputs = await stage('analyst', () => analyzeNews(survived, retrieved, date, market, marketCloseFraming, progress))
+  const analystOutputs = await stage('analyst', () => analyzeNews(survived, retrieved, date, market, marketCloseFraming, progress, p.retrieveCorpus !== false))
   progress.analystOutputs = analystOutputs
 
   const synth = await stage('synthesize', () => callSynthesizer({

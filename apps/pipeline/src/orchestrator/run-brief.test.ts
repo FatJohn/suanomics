@@ -83,6 +83,8 @@ describe('generateBrief', () => {
     expect(retrieveForDecomposed).not.toHaveBeenCalled()
     expect(vi.mocked(callAnalystTier1).mock.calls.map(c => c[0].retrieved)).toEqual([[], [], []])
     expect(stages).toContain('retrieve')
+    // tier2 只靠 corpus 檢索產鏈，關掉 corpus 時整段不跑。
+    expect(runTier2Fanout).not.toHaveBeenCalled()
   })
 
   it('預設照常查 corpus', async () => {
