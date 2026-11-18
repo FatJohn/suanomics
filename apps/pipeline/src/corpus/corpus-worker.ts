@@ -134,6 +134,21 @@ async function fetchEntries(src: SourceRow, dispatcher: ProcessOneSourceDeps['di
   }
 }
 
+/** 網址無法正規化或（非 force 時）已收過，回 null。 */
+async function newArticleKey(url: string, sourceId: string, repo: ArticlesRepo, force: boolean): Promise<{ canonical: string, urlHash: string } | null> {
+  let canonical: string
+  try {
+    canonical = canonicalizeUrl(url)
+  }
+  catch {
+    return null
+  }
+  const urlHash = hashCanonicalUrl(canonical)
+  if (!force && await repo.isDuplicateUrl(sourceId, urlHash))
+    return null
+  return { canonical, urlHash }
+}
+
 async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Promise<PerSourceTotals> {
   const { dispatcher, enricher, repo, force, enrichBudget } = deps
   const totals: PerSourceTotals = { inserted: 0, skipped: 0, deferred: 0, reused: 0, enrichmentFailed: 0, notEnrichable: 0, fetchFailed: false }
@@ -144,19 +159,12 @@ async function processOneSource(src: SourceRow, deps: ProcessOneSourceDeps): Pro
   }
 
   for (const e of entries) {
-    let canonical: string
-    try {
-      canonical = canonicalizeUrl(e.url)
-    }
-    catch {
+    const key = await newArticleKey(e.url, src.id, repo, force)
+    if (key === null) {
       totals.skipped++
       continue
     }
-    const urlHash = hashCanonicalUrl(canonical)
-    if (!force && await repo.isDuplicateUrl(src.id, urlHash)) {
-      totals.skipped++
-      continue
-    }
+    const { canonical, urlHash } = key
 
     // 有些來源的正文要另外一次請求才拿得到（見 FetchedEntry.fetchBody）。位置刻意放在
     // url 去重之後：已經抓過的文章不必為了正文再打一次外部服務。
