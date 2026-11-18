@@ -34,3 +34,6 @@ export async function saveShadowBrief(date: string, variant: string, selectedIds
     throw new Error('saveShadowBrief: upsert returned no row')
   return row.id
 }
+
+/** 影子報告與它的 judge 寫帳時的 run_id 前綴，正式報告的「已評過」判斷靠它排除。 */
+export const SHADOW_RUN_ID_PREFIX = 'shadow-'

@@ -2,10 +2,11 @@ import type { MarketBrief } from '@suanomics/shared'
 import type { ContinuityJudgeInput, StorylineView } from './continuity-judge.prompt.js'
 import type { QualityFacts } from './quality-judge.prompt.js'
 import { MarketBriefSchema } from '@suanomics/shared'
-import { and, desc, eq, inArray, lt } from 'drizzle-orm'
+import { and, desc, eq, inArray, lt, notLike } from 'drizzle-orm'
 import { getDb } from '../../src/db/client.js'
 import { getExternalArticlesByUrls } from '../../src/db/repos/articles-repo.js'
 import { getNewsItemsByIds, getNewsItemsByUrls } from '../../src/db/repos/news-repo.js'
+import { getShadowBrief, SHADOW_RUN_ID_PREFIX } from '../../src/db/repos/shadow-briefs-repo.js'
 import { getStorylinesUpdatedInRange } from '../../src/db/repos/storylines-repo.js'
 import { dailyBriefs, llmCalls } from '../../src/db/schema.js'
 import { buildCalendarBlock } from '../../src/ingest/market-data/calendar.js'
@@ -30,6 +31,14 @@ export async function loadStoredBrief(date: string): Promise<StoredBrief | null>
   const rows = await getDb().select().from(dailyBriefs).where(and(eq(dailyBriefs.briefDate, date), eq(dailyBriefs.status, 'complete'))).limit(1)
   const row = rows[0]
   if (!row)
+    return null
+  return { date, selectedNewsIds: row.selectedNewsIds, brief: parseBrief(date, row.briefJson) }
+}
+
+/** 該日指定 variant 的影子報告；沒有時回 null。 */
+export async function loadShadowBrief(date: string, variant: string): Promise<StoredBrief | null> {
+  const row = await getShadowBrief(date, variant)
+  if (row === null)
     return null
   return { date, selectedNewsIds: row.selectedNewsIds, brief: parseBrief(date, row.briefJson) }
 }
@@ -79,6 +88,8 @@ export async function loadJudgedAgents(date: string): Promise<string[]> {
     eq(llmCalls.reportDate, date),
     eq(llmCalls.status, 'ok'),
     inArray(llmCalls.agent, Object.values(JUDGE_AGENT)),
+    // 評影子報告的帳不代表正式報告評過，否則排程 judge 會被略過。
+    notLike(llmCalls.runId, `${SHADOW_RUN_ID_PREFIX}%`),
   ))
   return rows.map(r => r.agent)
 }
