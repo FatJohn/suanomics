@@ -35,11 +35,9 @@ function insideExclude(text: string, start: number, form: string, excludes: read
   })
 }
 
-function longestMatchAt(text: string, start: number, entries: readonly GlossaryEntry[], seen: ReadonlySet<string>) {
+function longestMatchAt(text: string, start: number, entries: readonly GlossaryEntry[]) {
   let best: { entry: GlossaryEntry, form: string } | undefined
   for (const entry of entries) {
-    if (seen.has(entry.id))
-      continue
     for (const form of [entry.term, ...entry.aliases]) {
       if (form.length > (best?.form.length ?? 0) && text.startsWith(form, start)
         && atWordBoundary(text, start, form) && !insideExclude(text, start, form, entry.excludes ?? [])) {
@@ -62,11 +60,17 @@ export function findTerms(text: string, entries: readonly GlossaryEntry[], seen:
   let plain = ''
   let i = context.before.length
   while (i < end) {
-    const found = longestMatchAt(full, i, entries, seen)
+    const found = longestMatchAt(full, i, entries)
     const match = found && i + found.form.length <= end ? found : undefined
     if (!match) {
       plain += full[i]
       i += 1
+      continue
+    }
+    // 標過的術語再出現時整個跳過：第二個「淨部位」不能退回去標裡面的「部位」。
+    if (seen.has(match.entry.id)) {
+      plain += match.form
+      i += match.form.length
       continue
     }
     if (plain)

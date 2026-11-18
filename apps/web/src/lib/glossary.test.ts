@@ -59,6 +59,16 @@ describe('findTerms', () => {
     expect(findTerms('美國CPI年增', entries, new Set()).some(s => s.entry)).toBe(true)
   })
 
+  it('已標過的長詞再出現時整個跳過，不退回去標它裡面的短詞', () => {
+    const nested: GlossaryEntry[] = [
+      { id: 'net', term: '淨部位', aliases: [], definition: 'a' },
+      { id: 'pos', term: '部位', aliases: [], definition: 'b' },
+    ]
+    const segments = findTerms('淨部位擴大，淨部位再增，AI 部位', nested, new Set())
+    expect(segments.filter(s => s.entry).map(s => s.text)).toEqual(['淨部位', '部位'])
+    expect(segments.at(-1)).toEqual({ text: '部位', entry: nested[1] })
+  })
+
   it('中英混合的術語只檢查英文那一端的邊界', () => {
     const mixed: GlossaryEntry[] = [{ id: 'ffr', term: 'Fed funds 利率', aliases: [], definition: 'a' }]
     expect(findTerms('Fed funds 利率3.88%', mixed, new Set())[0]?.text).toBe('Fed funds 利率')
