@@ -29,11 +29,11 @@ const bodyHtml = sections.map(s => glossMarkdown(s.body))
 const outroHtml = narrative?.outro ? glossMarkdown(narrative.outro) : ''
 const summaryHtml = !narrative && brief.summary && brief.dailyThesis ? glossText(brief.summary) : ''
 const viewpoints = brief.viewpoints && {
-  supportPoints: brief.viewpoints.supportPoints.map(glossText),
-  riskPoints: brief.viewpoints.riskPoints.map(glossText),
-  netRead: brief.viewpoints.netRead ? glossText(brief.viewpoints.netRead) : '',
+  supportHtml: brief.viewpoints.supportPoints.map(glossText),
+  riskHtml: brief.viewpoints.riskPoints.map(glossText),
+  netReadHtml: brief.viewpoints.netRead ? glossText(brief.viewpoints.netRead) : '',
 }
-const industries = brief.industries.map(i => ({ ...i, reasoning: i.reasoning ? glossText(i.reasoning) : '' }))
+const industries = brief.industries.map(({ reasoning, ...rest }) => ({ ...rest, reasoningHtml: reasoning ? glossText(reasoning) : '' }))
 
 const toc = [
   { id: 'key', label: '本日必考重點' },
