@@ -4,6 +4,7 @@ import type { QualityFacts } from './quality-judge.prompt.js'
 import { MarketBriefSchema } from '@suanomics/shared'
 import { and, desc, eq, inArray, lt } from 'drizzle-orm'
 import { getDb } from '../../src/db/client.js'
+import { getExternalArticlesByUrls } from '../../src/db/repos/articles-repo.js'
 import { getNewsItemsByIds, getNewsItemsByUrls } from '../../src/db/repos/news-repo.js'
 import { getStorylinesUpdatedInRange } from '../../src/db/repos/storylines-repo.js'
 import { dailyBriefs, llmCalls } from '../../src/db/schema.js'
@@ -37,9 +38,11 @@ export async function loadStoredBrief(date: string): Promise<StoredBrief | null>
 // 行事曆直接用 brief 落地的 calendarEvents（除權息、法說會來源沒有歷史，事後重抓會不一樣）。
 export async function loadQualityFacts(stored: StoredBrief): Promise<QualityFacts> {
   const { brief, date } = stored
-  const [byId, byUrl, market] = await Promise.all([
+  const citedUrls = brief.citations.map(c => c.url)
+  const [byId, byUrl, corpus, market] = await Promise.all([
     getNewsItemsByIds(stored.selectedNewsIds),
-    getNewsItemsByUrls(brief.citations.map(c => c.url)),
+    getNewsItemsByUrls(citedUrls),
+    getExternalArticlesByUrls(citedUrls),
     loadMarketContext({
       reportDate: date,
       now: new Date(`${date}T05:00:00+08:00`),
@@ -52,7 +55,7 @@ export async function loadQualityFacts(stored: StoredBrief): Promise<QualityFact
     marketSnapshot: market.snapshotBlock,
     calendar: buildCalendarBlock(brief.calendarEvents ?? [], new Date(`${date}T00:00:00Z`), undefined, brief.calendarCoverage),
     official: market.officialBlock,
-    news: mergeQualitySources([...byId, ...byUrl]),
+    news: mergeQualitySources([...byId, ...byUrl], corpus),
   }
 }
 
