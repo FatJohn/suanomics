@@ -19,6 +19,13 @@ export type DailyLogEvent
     | { event: 'run_end', date: string, status: DailyResult['status'], calls: number, usd: number }
     | { event: 'non_trading_refresh', date: string, inserted: number, calls: number, usd: number }
 
+/** complete 時與 brief 一起存下的 generateBrief 輸入，影子報告拿它重跑。storyline 是寫回用的，重跑不需要。 */
+export interface BriefRunInputs {
+  version: 1
+  editor: Omit<EditorStageResult, 'storyline'>
+  market: MarketContext
+}
+
 /** 花費閘觸發時寫進 `daily_briefs.progress` 的內容，讓已花錢的產出不會遺失。 */
 export interface DailyProgress {
   completedStages: StageName[]
@@ -51,7 +58,7 @@ export interface DailyDeps {
   loadMarket: (date: string) => Promise<MarketContext>
   selectNews: (date: string, selected: RelevanceCandidate[], market: MarketContext) => Promise<EditorStageResult>
   generateBrief: (p: GenerateBriefParams) => Promise<MarketBrief>
-  saveBrief: (date: string, newsIds: number[], summary: string, brief: MarketBrief) => Promise<number>
+  saveBrief: (date: string, newsIds: number[], summary: string, brief: MarketBrief, runInputs: BriefRunInputs) => Promise<number>
   saveIncompleteBrief: (date: string, newsIds: number[], progress: DailyProgress) => Promise<void>
   applyStorylines: (date: string, storyline: NonNullable<EditorStageResult['storyline']>) => Promise<void>
 }
@@ -98,7 +105,9 @@ async function runStages(date: string, isRerun: boolean, deps: DailyDeps, progre
 
   const brief = await deps.generateBrief({ date, news: editor.news, market, editor, stage, progress })
   const newsIds = editor.news.map(n => n.id)
-  const briefId = await stage('persist', () => deps.saveBrief(date, newsIds, `${brief.headline}\n\n${brief.summary}`, brief))
+  const { storyline: _storyline, ...editorInputs } = editor
+  const runInputs: BriefRunInputs = { version: 1, editor: editorInputs, market }
+  const briefId = await stage('persist', () => deps.saveBrief(date, newsIds, `${brief.headline}\n\n${brief.summary}`, brief, runInputs))
 
   // 要在 brief 寫入之後：updates 的 briefDate 要對應已存在的 brief。寫回失敗下次 editor 會看到舊狀態自癒。
   if (editor.storyline) {

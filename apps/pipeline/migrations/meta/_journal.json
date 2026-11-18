@@ -134,6 +134,13 @@
       "when": 1794208178311,
       "tag": "0018_heavy_deathbird",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794986213997,
+      "tag": "0019_shadow_briefs",
+      "breakpoints": true
     }
   ]
 }
