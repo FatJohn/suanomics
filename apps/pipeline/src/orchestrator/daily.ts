@@ -67,7 +67,7 @@ function roundUsd(usd: number): number {
   return Number(usd.toFixed(6))
 }
 
-function createStageRunner(deps: DailyDeps, progress: DailyProgress): RunStage {
+export function createStageRunner(deps: Pick<DailyDeps, 'gate' | 'log'>, progress: DailyProgress): RunStage {
   return async (stage, run) => {
     const startedAt = Date.now()
     const callsBefore = deps.gate.callCount
