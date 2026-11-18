@@ -16,6 +16,7 @@
 - 網站由 Vue SPA 改成 Astro 靜態產生。
 - monorepo 縮成三個 workspace：`packages/shared`、`apps/pipeline`、`apps/web`。
 - 新聞來源只收官方機構與發行商自己的 feed，正文在 pipeline 內抽取。
+- corpus 背景庫（`external_articles`）由每日 Daily Brief 在產報告前以 `corpus:refresh` 更新，取代 v0 兩日一次的背景 job；cascade 檢索照舊讀回。
 - v0 上游 repo `macroeconomics-report` 的變更紀錄、研究報告與產品事實搬進 `docs/history/`。
 
 ### 移除
