@@ -99,13 +99,16 @@ describe('shadowCostLimit', () => {
 describe('requireDailyFeatureFlags', () => {
   const ON = { ANALYST_CLAIMS_ENABLED: 'true', NARRATIVE_LEDGER_ENABLED: 'true' }
 
-  it('兩個開關都是 true 時通過', () => {
+  it('兩個開關都是 true、AGENT_MODELS 未設或空時通過', () => {
     expect(() => requireDailyFeatureFlags(ON)).not.toThrow()
+    expect(() => requireDailyFeatureFlags({ ...ON, AGENT_MODELS: '' })).not.toThrow()
   })
 
   it.each([
     ['ANALYST_CLAIMS_ENABLED 缺', { NARRATIVE_LEDGER_ENABLED: 'true' }, /ANALYST_CLAIMS_ENABLED/],
     ['NARRATIVE_LEDGER_ENABLED 不是 true', { ...ON, NARRATIVE_LEDGER_ENABLED: '1' }, /NARRATIVE_LEDGER_ENABLED/],
+    ['兩個都缺', {}, /ANALYST_CLAIMS_ENABLED、NARRATIVE_LEDGER_ENABLED/],
+    ['AGENT_MODELS 有值（daily.yml 沒設，正式報告用預設 model）', { ...ON, AGENT_MODELS: 'analyst-tier1:anthropic/x' }, /AGENT_MODELS/],
   ])('%s 時在呼叫 LLM 前就失敗', (_label, env, message) => {
     expect(() => requireDailyFeatureFlags(env)).toThrow(message)
   })

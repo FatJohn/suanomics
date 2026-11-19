@@ -1,7 +1,7 @@
 // A/B 影子報告（#34）：拿某日正式報告存下的 run_inputs，關掉 corpus 檢索重跑一份，寫進 shadow_briefs，不發佈。
 // `pnpm --filter @suanomics/pipeline run daily:shadow --date YYYY-MM-DD [--force]`
 // 跑真 LLM（約 70 次呼叫、尖峰並行 9），先跟維護者確認花費。花費閘上限是 DAILY_COST_LIMIT_USD 扣掉今天帳本已花的金額。帳本 run_id 以 shadow- 開頭，與正式報告分得開。
-// 要帶 ANALYST_CLAIMS_ENABLED=true、NARRATIVE_LEDGER_ENABLED=true（與 daily.yml 相同），沒帶就不跑。
+// 要帶 ANALYST_CLAIMS_ENABLED=true、NARRATIVE_LEDGER_ENABLED=true、不設 AGENT_MODELS（與 daily.yml 相同），否則不跑。
 import { randomUUID } from 'node:crypto'
 import process from 'node:process'
 import { taipeiDateOf } from '@suanomics/shared'

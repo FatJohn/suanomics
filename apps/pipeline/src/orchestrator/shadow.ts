@@ -32,7 +32,7 @@ export function shadowCostLimit(dailyLimitUsd: number, spentTodayUsd: number): n
 }
 
 /**
- * 影子報告要和正式報告同一套功能開關，A/B 才只差 corpus。daily.yml 的 Run pipeline 設了這兩個，
+ * 影子報告要和正式報告同一套功能開關與 model，A/B 才只差 corpus。daily.yml 的 Run pipeline 設了這兩個，
  * 本機跑影子漏帶時 analyst 不產 claim、claim ledger 為空，整份影子不能比（2026-11-19 實際發生）。
  */
 const DAILY_FEATURE_FLAGS = ['ANALYST_CLAIMS_ENABLED', 'NARRATIVE_LEDGER_ENABLED'] as const
@@ -41,6 +41,9 @@ export function requireDailyFeatureFlags(env: Record<string, string | undefined>
   const missing = DAILY_FEATURE_FLAGS.filter(name => env[name] !== 'true')
   if (missing.length > 0)
     throw new Error(`影子報告要與 daily.yml 同設定，${missing.join('、')} 須為 true`)
+  // daily.yml 沒設 AGENT_MODELS，正式報告用預設 model；本機 .env 留著舊實驗的覆寫會讓兩臂差在 model。
+  if (env.AGENT_MODELS)
+    throw new Error('影子報告要與 daily.yml 同設定，AGENT_MODELS 須未設定')
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
