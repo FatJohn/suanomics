@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { CostGateError, DailyCostGate } from '../agents/cost-gate.js'
 import { runInputsHash } from '../db/repos/shadow-briefs-repo.js'
 import { EMPTY_MARKET_CONTEXT } from '../ingest/market-data/context.js'
-import { NO_CORPUS_VARIANT, runShadow, shadowCostLimit } from './shadow.js'
+import { NO_CORPUS_VARIANT, requireDailyFeatureFlags, runShadow, shadowCostLimit } from './shadow.js'
 
 const DATE = '2026-11-19'
 const NEWS = [1, 2].map(id => ({ id, title: `t${id}`, url: `u${id}`, text: 'x', publishedAt: null }))
@@ -93,5 +93,20 @@ describe('shadowCostLimit', () => {
   it('今天已花到上限時在呼叫 LLM 前就失敗', () => {
     expect(() => shadowCostLimit(3, 3)).toThrow(CostGateError)
     expect(() => shadowCostLimit(3, 3.4)).toThrow(/已花/)
+  })
+})
+
+describe('requireDailyFeatureFlags', () => {
+  const ON = { ANALYST_CLAIMS_ENABLED: 'true', NARRATIVE_LEDGER_ENABLED: 'true' }
+
+  it('兩個開關都是 true 時通過', () => {
+    expect(() => requireDailyFeatureFlags(ON)).not.toThrow()
+  })
+
+  it.each([
+    ['ANALYST_CLAIMS_ENABLED 缺', { NARRATIVE_LEDGER_ENABLED: 'true' }, /ANALYST_CLAIMS_ENABLED/],
+    ['NARRATIVE_LEDGER_ENABLED 不是 true', { ...ON, NARRATIVE_LEDGER_ENABLED: '1' }, /NARRATIVE_LEDGER_ENABLED/],
+  ])('%s 時在呼叫 LLM 前就失敗', (_label, env, message) => {
+    expect(() => requireDailyFeatureFlags(env)).toThrow(message)
   })
 })
