@@ -1,6 +1,7 @@
 ---
 import { SITE_NAME } from '@suanomics/shared'
 import { weekdayLabel } from '../lib/handout'
+import { absoluteUrl, metaDescription } from '../lib/seo'
 import { pageTitle } from '../lib/title'
 import '../styles/global.css'
 
@@ -9,8 +10,18 @@ interface Props {
   // 講義抬頭右側的日期；歷史與新聞頁沒有單一日期就不帶。
   issueDate?: string | undefined
   current?: 'today' | 'archive'
+  // 社群分享卡片的摘要；沒給就用全站說明。
+  description?: string | undefined
+  // 分享卡片的標題預設同 <title>；首頁 <title> 固定是站名，卡片改用當天標題。
+  ogTitle?: string | undefined
+  ogType?: 'website' | 'article'
 }
-const { title, issueDate, current } = Astro.props
+const { title, issueDate, current, description, ogTitle, ogType = 'website' } = Astro.props
+const site = Astro.site?.href ?? Astro.url.origin
+const canonical = absoluteUrl(Astro.url.pathname, site)
+const ogImage = absoluteUrl('/og-image.png', site)
+const desc = metaDescription(description)
+const cardTitle = ogTitle ?? pageTitle(title)
 ---
 
 <html lang="zh-Hant-TW">
@@ -19,6 +30,22 @@ const { title, issueDate, current } = Astro.props
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f4f6f8" />
     <title>{pageTitle(title)}</title>
+    <meta name="description" content={desc} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <meta property="og:site_name" content={SITE_NAME} />
+    <meta property="og:title" content={cardTitle} />
+    <meta property="og:description" content={desc} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={`${SITE_NAME}：賽博半仙・算命不如算力`} />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <a class="skip" href="#content">跳到本文</a>

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://suanomics.everbegin.net/sitemap.xml

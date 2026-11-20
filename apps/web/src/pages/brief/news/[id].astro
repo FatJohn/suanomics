@@ -18,7 +18,10 @@ const title = redactBlockedSentences(item.title) || WITHHELD_NEWS_TITLE
 const href = safeHttpUrl(item.url)
 ---
 
-<Base title={title}>
+<Base
+  title={title}
+  description={`講義引用的新聞出處：${item.sourceName}${item.publishedAt ? `・${formatTaipeiDate(item.publishedAt)}` : ''}。本站只列標題與連結，內容請到原站閱讀。`}
+>
   <article class="card">
     <h1>{title}</h1>
     <p class="meta">

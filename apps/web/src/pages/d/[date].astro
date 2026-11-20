@@ -19,6 +19,11 @@ interface Props { brief: BriefView, lectureNo: number }
 const { brief, lectureNo } = Astro.props
 ---
 
-<Base title={brief.headline} issueDate={brief.date}>
+<Base
+  title={brief.headline}
+  issueDate={brief.date}
+  description={brief.dailyThesis || brief.summary}
+  ogType="article"
+>
   <BriefArticle brief={brief} lectureNo={lectureNo} />
 </Base>

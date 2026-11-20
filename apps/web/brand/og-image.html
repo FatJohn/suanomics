@@ -1,0 +1,157 @@
+<!doctype html>
+<!-- 社群分享縮圖（public/og-image.png）的原稿，1200x630。改這裡後跑 brand/render.sh 重產 PNG。
+     色票與字體照 DESIGN.md：冷白紙、墨黑字、藍筆框、紅筆劃線、黃色螢光筆只劃品牌名。 -->
+<html lang="zh-Hant-TW">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      :root {
+        --paper: #f4f6f8;
+        --sheet: #fbfcfd;
+        --ink: #16202b;
+        --ink-2: #4a5562;
+        --rule: #cfd6de;
+        --blue: #1e4fd8;
+        --red: #d7262e;
+        --hl: #ffe14d;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1200px;
+        height: 630px;
+        overflow: hidden;
+      }
+      body {
+        background: var(--paper);
+        color: var(--ink);
+        font-family: 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', 'Heiti TC', sans-serif;
+        padding: 44px 72px 40px;
+        display: flex;
+        flex-direction: column;
+      }
+      .top,
+      .bottom {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        font-size: 24px;
+        color: var(--ink-2);
+        letter-spacing: 0.12em;
+      }
+      .top {
+        padding-bottom: 14px;
+        border-bottom: 5px solid var(--ink);
+      }
+      .top b {
+        color: var(--ink);
+        font-weight: 700;
+      }
+      .bottom {
+        padding-top: 14px;
+        border-top: 5px solid var(--ink);
+        font-size: 22px;
+        letter-spacing: 0.04em;
+      }
+      .main {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 48px;
+        align-items: center;
+        margin: auto 0;
+      }
+      h1 {
+        margin: 0;
+        font-size: 116px;
+        font-weight: 900;
+        line-height: 1.2;
+        letter-spacing: 0.04em;
+      }
+      h1 span {
+        background-image: linear-gradient(transparent 60%, var(--hl) 60%);
+        padding: 0 6px;
+      }
+      .sub {
+        margin: 18px 0 0 6px;
+        font-size: 38px;
+        font-weight: 500;
+        color: var(--ink-2);
+        letter-spacing: 0.14em;
+      }
+      .frame {
+        position: relative;
+        border: 3px solid var(--blue);
+        background: var(--sheet);
+        padding: 40px 26px 22px;
+      }
+      .tag {
+        position: absolute;
+        top: -20px;
+        left: 18px;
+        background: var(--blue);
+        color: #fff;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 0.2em;
+        padding: 2px 12px 2px 14px;
+      }
+      ol {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+        font-size: 27px;
+        font-weight: 700;
+        line-height: 1.75;
+      }
+      li {
+        display: flex;
+        gap: 12px;
+        align-items: baseline;
+      }
+      li i {
+        font-style: normal;
+        color: var(--blue);
+        font-size: 22px;
+        border: 2px solid var(--blue);
+        width: 32px;
+        height: 32px;
+        line-height: 28px;
+        text-align: center;
+        flex: none;
+      }
+      .red {
+        margin: 12px 0 0;
+        padding-top: 10px;
+        border-top: 1px dashed var(--rule);
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .red span {
+        text-decoration: underline 3px var(--red);
+        text-underline-offset: 0.32em;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="top"><b>開盤前重點講義</b><span>每個台股交易日・開盤前發</span></div>
+    <div class="main">
+      <div>
+        <h1><span>掐指連總經</span></h1>
+        <p class="sub">賽博半仙・算命不如算力</p>
+      </div>
+      <div class="frame">
+        <div class="tag">本講義必考</div>
+        <ol>
+          <li><i>1</i>前一晚世界發生什麼</li>
+          <li><i>2</i>牽動哪些台股</li>
+          <li><i>3</i>方向往哪裡走</li>
+        </ol>
+        <p class="red"><span>每條連動鏈都附出處</span></p>
+      </div>
+    </div>
+    <div class="bottom"><span>suanomics.everbegin.net</span><span>僅供參考・非投資建議</span></div>
+  </body>
+</html>
