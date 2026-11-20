@@ -9,6 +9,8 @@
 
 `rewrite` branch 是從空樹重建的版本；v0 的程式碼與文件在 `main`（tag `v0-legacy`）。
 
+本專案以 Apache-2.0 授權釋出，全文見 [LICENSE](LICENSE)。
+
 ## 從哪裡開始讀
 
 | 想知道 | 讀 |
