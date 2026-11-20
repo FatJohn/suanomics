@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- 社群分享縮圖（public/og-image.png）的原稿，1200x630。改這裡後跑 brand/render.sh 重產 PNG。
-     色票與字體照 DESIGN.md：冷白紙、墨黑字、藍筆框、紅筆結論、黃色螢光筆只劃一處。 -->
+     色票與字體照 DESIGN.md：冷白紙、墨黑字、藍筆框、紅筆劃線、黃色螢光筆只劃品牌名。 -->
 <html lang="zh-Hant-TW">
   <head>
     <meta charset="utf-8" />
@@ -126,9 +126,12 @@
         margin: 12px 0 0;
         padding-top: 10px;
         border-top: 1px dashed var(--rule);
-        color: var(--red);
         font-size: 24px;
         font-weight: 700;
+      }
+      .red span {
+        text-decoration: underline 3px var(--red);
+        text-underline-offset: 0.32em;
       }
     </style>
   </head>
@@ -146,7 +149,7 @@
           <li><i>2</i>牽動哪些台股</li>
           <li><i>3</i>方向往哪裡走</li>
         </ol>
-        <p class="red">每條連動鏈都附出處</p>
+        <p class="red"><span>每條連動鏈都附出處</span></p>
       </div>
     </div>
     <div class="bottom"><span>suanomics.everbegin.net</span><span>僅供參考・非投資建議</span></div>
