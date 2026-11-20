@@ -18,3 +18,7 @@ date: 2026-11-07
 - 版面由 `impeccable` 從零重新設計，舊 DESIGN.md 與 mocks 只作「上一版」輸入；設計排在 v1 pipeline 連續產出真實資料之後。
 - 部署流程是一條：pipeline → Astro build → `wrangler pages deploy`，v1 用不到 R2。
 - 自訂網域 `suanomics.everbegin.net` 由 Cloudflare DNS 接到 Pages。
+
+## 後續
+
+- 2026-11-20（#105）：部署流程多一條。網站程式碼（`apps/web`、`packages/shared`、依賴與 build 設定）merge 進 `rewrite` 時，`deploy-site.yml` 只跑 Astro build → `wrangler pages deploy`，不跑 pipeline，讓版面與 SEO 變更不必等隔天的 Daily Brief。兩條路徑共用 concurrency group，不同時部署。
