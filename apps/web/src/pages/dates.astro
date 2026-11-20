@@ -8,7 +8,11 @@ const numbers = lectureNumbers(briefs.map(b => b.date))
 const months = groupByMonth(briefs)
 ---
 
-<Base title="歷史講義" current="archive">
+<Base
+  title="歷史講義"
+  current="archive"
+  description={`掐指連總經歷來每一回開盤前重點講義，共 ${briefs.length} 回，依月份排列，可逐日翻閱當天的主軸、牽動的台股與引用來源。`}
+>
   <h1>歷史講義</h1>
   <p class="lead">共 {briefs.length} 回，新的在上面。</p>
   {months.length === 0 && <p>還沒有任何一回講義。</p>}

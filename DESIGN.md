@@ -248,6 +248,12 @@ components:
 
 藍色、1px 底線、offset 0.22em；hover 時底線加粗為 2px。
 
+### 分享縮圖與網站圖示
+
+- **分享縮圖（`apps/web/public/og-image.png`）：** 1200x630 的固定品牌圖，每頁共用。上下各一條墨線夾住版面：左邊 116px、900 的品牌名套螢光筆，底下是 `ink-2` 的 slogan；右邊是縮小版的「本日必考重點」藍框，列出講義回答的三件事，框底一句紅字「每條連動鏈都附出處」。
+- **網站圖示（`favicon.ico`、`apple-touch-icon.png`）：** 藍框 `sheet` 底，中間一個墨黑「掐」字，字的下半段劃一道螢光筆。
+- **原稿：** 兩者的原稿是 `apps/web/brand/` 裡的 HTML，改完跑 `apps/web/brand/render.sh`（本機 Chrome headless 截圖，macOS 限定）重產，產出的圖檔進版控，build 不重產。
+
 ### 動態
 
 - **螢光筆劃過：** 主軸句的底色從 30% 寬劃到 100%，900ms、`cubic-bezier(0.16, 1, 0.3, 1)`、延遲 200ms，只在 `prefers-reduced-motion: no-preference` 下執行；關閉動態時直接顯示完整螢光。

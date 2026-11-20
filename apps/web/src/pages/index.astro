@@ -3,13 +3,19 @@ import BriefArticle from '../components/BriefArticle.astro'
 import Base from '../layouts/Base.astro'
 import { lectureNumbers } from '../lib/handout'
 import { getSiteData } from '../lib/site-data'
+import { pageTitle } from '../lib/title'
 
 const { briefs } = await getSiteData()
 const latest = briefs[0]
 const numbers = lectureNumbers(briefs.map(b => b.date))
 ---
 
-<Base issueDate={latest?.date} current="today">
+<Base
+  issueDate={latest?.date}
+  current="today"
+  ogTitle={latest && pageTitle(latest.headline)}
+  description={latest && (latest.dailyThesis || latest.summary)}
+>
   {latest
     ? <BriefArticle brief={latest} lectureNo={numbers.get(latest.date) ?? briefs.length} />
     : (
