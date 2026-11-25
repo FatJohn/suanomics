@@ -15,7 +15,7 @@ export default {
         'User-Agent': 'suanomics-trigger',
         'X-GitHub-Api-Version': '2022-11-28',
       },
-      body: JSON.stringify({ ref: 'rewrite' }),
+      body: JSON.stringify({ ref: 'main' }),
     })
     if (!response.ok)
       throw new Error(`workflow_dispatch 失敗：${response.status} ${await response.text()}`)

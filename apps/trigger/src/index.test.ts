@@ -6,7 +6,7 @@ const env = { GITHUB_DISPATCH_TOKEN: 'test-token' }
 afterEach(() => vi.unstubAllGlobals())
 
 describe('scheduled', () => {
-  it('對 rewrite 分支的 daily.yml 發出 workflow_dispatch', async () => {
+  it('對 main 分支的 daily.yml 發出 workflow_dispatch', async () => {
     const fetchMock = vi.fn(async () => new Response(null, { status: 204 }))
     vi.stubGlobal('fetch', fetchMock)
 
@@ -23,7 +23,7 @@ describe('scheduled', () => {
           'User-Agent': 'suanomics-trigger',
           'X-GitHub-Api-Version': '2022-11-28',
         },
-        body: '{"ref":"rewrite"}',
+        body: '{"ref":"main"}',
       },
     )
   })
