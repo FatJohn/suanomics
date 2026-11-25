@@ -30,7 +30,6 @@ export function createDailyDeps(): DailyDeps {
       const result = await runIngest({ date, force: true })
       if (result.status === 'skipped')
         throw new Error(`ingest 略過了 ${date}`)
-      await appendSourceFailureSummary(process.env.GITHUB_STEP_SUMMARY, result.news.perSource)
       if (result.failures.length > 0)
         console.warn(JSON.stringify({ event: 'ingest_partial_failure', failures: result.failures }))
       return result.selected

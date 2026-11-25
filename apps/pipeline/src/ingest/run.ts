@@ -10,6 +10,7 @@ import { candidateWindowDays, selectAcrossClosure } from './news/candidate-windo
 import { runNewsRefresh } from './news/refresh.js'
 import { DEFAULT_SELECTION_TOTAL, parseCategoryFloors } from './news/selection.js'
 import { CONSECUTIVE_FAILURE_THRESHOLD, findConsecutiveFailures, formatSourceAlert } from './news/source-failure-alert.js'
+import { appendSourceFailureSummary } from './news/source-failure-summary.js'
 import { ingestEconCalendar, ingestMaterialAnnouncements, refreshTwseOpenapi } from './structured.js'
 
 export type IngestResult
@@ -48,6 +49,8 @@ export async function runIngest(options: { now?: Date, date?: string, force?: bo
   }
 
   const news = await runNewsRefresh()
+  // 要在後面任何會 throw 的步驟之前寫，否則花費閘或 DB 錯誤會讓失敗來源整段不見。
+  await appendSourceFailureSummary(process.env.GITHUB_STEP_SUMMARY, news.perSource)
   // 補跑舊日期時，當下的 feed 狀態不代表該報告日。
   if (date === taipeiDateOf(now))
     await attempt('source-failure-alert', () => reportSourceFailures(date, news))

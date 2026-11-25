@@ -16,6 +16,7 @@ import { scrapeArticle } from '../external/scraper.js'
 import { isBodyFetchDenied } from './body-fetch-policy.js'
 import { categorizeAndStore } from './categorize.js'
 import { FEED_WINDOW_HOURS, filterRecentEntries } from './recency.js'
+import { describeSourceError } from './source-failure-summary.js'
 import { tagAndStore } from './tag.js'
 
 // 逐篇失敗只印這麼多筆，其餘靠彙總行。理由見呼叫處。
@@ -234,7 +235,7 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
       sourcesFailed += 1
       // 已經有一筆就只補標記，不要再 push 第二筆。這樣「插入成功但抓正文途中
       // 失敗」那一列同時看得到真實的 inserted／計數與 failed。
-      const error = err instanceof Error ? err.message : String(err)
+      const error = describeSourceError(err)
       if (entry === null) {
         perSource.push({ slug: src.slug, inserted: 0, failed: true, httpStatus: httpStatusOf(err), error, ...newTally() })
       }
