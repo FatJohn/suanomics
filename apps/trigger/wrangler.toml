@@ -5,5 +5,6 @@ main = "src/index.ts"
 compatibility_date = "2026-11-01"
 
 [triggers]
-# 05:00 台北。Actions 的 schedule 排在 05:20，實際延到開盤後才跑，見 ADR 0009 與 #107。
-crons = [ "0 21 * * *" ]
+# 05:00 台北主觸發；05:40 是備援，當日沒有進行中或成功的 run 才 dispatch（src/index.ts 的 BACKUP_CRON）。
+# Actions 的 schedule 排在 05:20，實際延到開盤後才跑，見 ADR 0009 與 #107。
+crons = [ "0 21 * * *", "40 21 * * *" ]
