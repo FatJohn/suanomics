@@ -23,8 +23,8 @@ Suanomics 每個台股交易日開盤前產出一份總經報告，說明前一�
 
 ```mermaid
 flowchart LR
-  Cron["Cloudflare Worker<br/>Cron Trigger 05:00 台北"] -->|workflow_dispatch| GHA["GitHub Actions job"]
-  Sched["Actions schedule<br/>05:20 備援"] --> GHA
+  Cron["Cloudflare Worker<br/>Cron Trigger 05:00 台北<br/>05:40 備援"] -->|workflow_dispatch| GHA["GitHub Actions job"]
+  Sched["Actions schedule<br/>排 05:20，實際延到開盤後補救"] --> GHA
   subgraph GHA
     P["apps/pipeline<br/>ingest → agents → brief"] --> B["apps/web<br/>Astro build"]
     B --> D["wrangler pages deploy"]
@@ -44,7 +44,7 @@ flowchart LR
 
 | 部分 | 職責 | 託管 | 決策紀錄 |
 |---|---|---|---|
-| 觸發器 | Cloudflare Worker 的 Cron Trigger 每日 05:00（台北）呼叫 GitHub API `workflow_dispatch`；Actions 自己的 `schedule` 在 05:20 當備援，pipeline 開頭查當日已有產出就結束 | Cloudflare Workers 免費層 | [觸發器以 Cloudflare Worker 為主、Actions schedule 為備援](../adr/0009-cron-trigger-via-cloudflare-worker.md) |
+| 觸發器 | Cloudflare Worker 的 Cron Trigger 每日 05:00（台北）呼叫 GitHub API `workflow_dispatch`，05:40 再查一次，當日沒有進行中或成功的 run 才 dispatch，這是開盤前的備援。Actions 自己的 `schedule` 排在 05:20，實際都延到台北 09 到 13 點才建立，只補開盤後的缺口（#107）。pipeline 開頭查當日已有產出就結束 | Cloudflare Workers 免費層 | [觸發器以 Cloudflare Worker 為主、Actions schedule 為備援](../adr/0009-cron-trigger-via-cloudflare-worker.md) |
 | Pipeline | TypeScript CLI：判斷交易日、抓資料、跑 agent、寫 brief 到 Postgres；非交易日（週末與 TWSE 休市日）只抓新聞、不產報告 | GitHub Actions（public repo 免費） | 同 0002 |
 | 持久狀態 | storylines（跨日敘事線與週回顧）、近日 brief 摘要、market data 歷史、news 候選池；drizzle schema 與 repos | Neon Postgres 免費層 | [持久狀態放 Neon Postgres、沿用 drizzle](../adr/0003-neon-postgres.md) |
 | 網站 | Astro 在同一個 Actions job 內 build，直接讀 Postgres 產成純 HTML，`wrangler pages deploy` 上線。網站程式碼（`apps/web`、`packages/shared`、依賴與 build 設定）merge 進 `main` 時，Deploy Site workflow 用同樣的 build 與部署步驟立即上線，不跑 pipeline；它與 Daily Brief 共用 concurrency group，兩邊排隊、不同時部署 | Cloudflare Pages，自訂網域 `suanomics.everbegin.net` | [網站用 Astro 靜態產生](../adr/0005-astro-static-site.md) |
