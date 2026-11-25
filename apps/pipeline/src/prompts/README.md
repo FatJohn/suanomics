@@ -27,6 +27,9 @@
 `macro-frames.ts` 也在這個目錄：它是手寫的總經數據解讀框架，由 `analyst-tier1.prompt.ts` 用
 `renderMacroFramesSection()` 接在 system prompt 尾端，換場景時要一起換。
 
+`source-authority.ts` 同樣是手寫的繁中片段：可當論據的發言來源（`SOURCE_AUTHORITY_SECTION`）與帶入 shared 禁用語清單的那一行（`FORBIDDEN_PHRASES_LINE`），
+analyst tier1／tier2、synthesizer、narrative-writer 共用，換場景時也要一起換。
+
 評測用的 judge prompt 不放這裡：judge 屬於量測工具，不是 production pipeline 的一部分。judge 在 `apps/pipeline/tools/eval/`（#33 從 v0 的 `apps/server/tools/eval/` 接回）。
 
 ## 換語言／市場

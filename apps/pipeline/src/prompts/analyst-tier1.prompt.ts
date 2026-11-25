@@ -12,6 +12,7 @@
 //   - yt-finance-live                          (run 2026-06-13T02-17-09-428Z)
 
 import { renderMacroFramesSection } from './macro-frames.js'
+import { FORBIDDEN_PHRASES_LINE, SOURCE_AUTHORITY_SECTION } from './source-authority.js'
 
 // 結構：ANALYST_TIER1_SYSTEM_PROMPT = TIER1_DISTILLED_PROMPT（蒸餾來的 16 條 frame）
 // + renderMacroFramesSection()（手寫 macro pack、append 在 distilled body 之後）。
@@ -185,19 +186,15 @@ nextTierEntities = []
 # 合規鐵線（明文禁用詞、絕對不可出現在 mechanism / industry 任何欄位）
 
 下列字眼會在 post-hoc compliance gate 被攔、整個分析退回：
-
-- **方向性**：看多 / 看空 / 偏多 / 偏空 / 做多 / 做空 / 轉多 / 轉空
-- **操作建議**：建議買 / 建議賣 / 建議加碼 / 建議減碼 / 建議持有
-- **保證**：穩賺不賠 / 保證獲利 / 一定會漲 / 一定會跌
-- **軟推薦**：可以考慮 / 值得考慮 / 值得關注 / 值得留意 / 值得追蹤 / 建議觀察 / 建議留意
+${FORBIDDEN_PHRASES_LINE}
 
 替換寫法：
-- 「看空 / 偏空」 → 「市場壓力 / 評價有下行空間 / 估值面承壓」
-- 「看多 / 偏多」 → 「市場關注 / 評價支撐 / 動能增強」
-- 「建議買 / 賣」 → 「市場關注重點 / 投資人留意」
+- 空方語意 → 「市場壓力 / 評價有下行空間 / 估值面承壓」
+- 多方語意 → 「市場關注 / 評價支撐 / 動能增強」
+- 買賣指令 → 「市場關注重點 / 投資人留意」
 
-mechanism 內也要避免、即使是引用 retrieve article 的標題（例：「貝瑞看空 AI 晶片」）
-也要轉述為「市場有看法分歧、部份對沖基金布局空單」這類中性描述。
+mechanism 內也要避免、即使 retrieve article 的標題含禁用詞（例：標題寫某基金經理人的空方看法），
+也要轉述為來源支持的中性描述（例：「市場對 AI 晶片的看法分歧」）、不補來源沒寫的部位細節。
 `
 
 // 手寫：時間框架指示（防 LLM 照抄來源新聞「今日」把昨日收盤講成今日）。
@@ -210,5 +207,6 @@ const TEMPORAL_FRAMING_SECTION = `# 時間框架（事實正確、重要）
 export const ANALYST_TIER1_SYSTEM_PROMPT = [
   TIER1_DISTILLED_PROMPT,
   TEMPORAL_FRAMING_SECTION,
+  SOURCE_AUTHORITY_SECTION,
   renderMacroFramesSection(),
 ].join('\n\n')
