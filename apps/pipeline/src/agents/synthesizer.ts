@@ -1,7 +1,7 @@
 import type { ComplianceViolation } from '@suanomics/shared'
 import type { LlmCallRecord } from './call-agent.js'
 import type { AnalystOutput } from './types.js'
-import { AffectedIndustrySchema, checkCompliance, RelatedEtfSchema, RelationTypeSchema } from '@suanomics/shared'
+import { AffectedIndustrySchema, checkCompliance, isTwseListedIndustry, RelatedEtfSchema, RelationTypeSchema } from '@suanomics/shared'
 import { z } from 'zod'
 import { SYNTHESIZER_SYSTEM_PROMPT } from '../prompts/synthesizer.prompt.js'
 import { SYNTHESIZER_USER_TEXT } from '../prompts/synthesizer.user-content.js'
@@ -155,14 +155,8 @@ function normalizeForSynthesizerSchema(raw: unknown): unknown {
       return { ...node, reasoning: truncateAtSentence(node.reasoning, 600) }
     })
   }
-  if (Array.isArray(r.affectedIndustries)) {
-    out.affectedIndustries = r.affectedIndustries.slice(0, 5).map((n) => {
-      if (!n || typeof n !== 'object')
-        return n
-      const node = n as Record<string, unknown>
-      return { ...node, reasoning: truncateAtSentence(node.reasoning, 600) }
-    })
-  }
+  if (Array.isArray(r.affectedIndustries))
+    out.affectedIndustries = listedIndustriesOnly(r.affectedIndustries).slice(0, 5)
   if (Array.isArray(r.relatedETFs)) {
     out.relatedETFs = r.relatedETFs.slice(0, 5).map((n) => {
       if (!n || typeof n !== 'object')
@@ -172,6 +166,21 @@ function normalizeForSynthesizerSchema(raw: unknown): unknown {
     })
   }
   return out
+}
+
+// 講義頁的產業名要是證交所上市產業別（#96）。response schema 不用 enum：模型不照做時 SDK 會丟錯、
+// 整份 brief 失敗，所以在這裡丟掉不合的條目；同名只留第一筆，chain-grouper 才不會遇到重複的力場名。
+function listedIndustriesOnly(items: unknown[]): unknown[] {
+  const seen = new Set<string>()
+  return items.flatMap((n) => {
+    if (!n || typeof n !== 'object')
+      return [n]
+    const node = n as Record<string, unknown>
+    if (typeof node.name !== 'string' || !isTwseListedIndustry(node.name) || seen.has(node.name))
+      return []
+    seen.add(node.name)
+    return [{ ...node, reasoning: truncateAtSentence(node.reasoning, 600) }]
+  })
 }
 
 function formatUserContent(p: CallSynthesizerParams): string {
