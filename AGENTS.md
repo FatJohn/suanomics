@@ -9,7 +9,7 @@
 
 每個台股交易日開盤前自動產出一份總經報告：前一晚世界上發生了什麼、透過什麼機制牽動哪些台股標的、方向為何，每條連動鏈附引用來源。系統是一條排程批次 pipeline 加一個 Astro 靜態網站，沒有常駐 server。架構與邊界見 [設計依據](docs/architecture/design-basis.md)，每個取捨的完整理由見 [決策紀錄](docs/adr/)。
 
-`rewrite` branch 是從空樹重寫的版本，PR 一律開進 `rewrite`。v0 在 `main`，只用 `git show main:<path>` 讀，不 checkout、不修改。
+`main` 是從空樹重寫的版本（原 `rewrite` branch，2026-11 依 ADR 0001 接回），PR 一律開進 `main`；`rewrite` 已凍結，不再開 PR 進去。v0 在 tag `v0-legacy`，只用 `git show v0-legacy:<path>` 讀，不 checkout、不修改。
 
 ## 指令
 
@@ -64,7 +64,7 @@ CI（`.github/workflows/ci.yml`）跑上面全部指令，資料庫是 Postgres 
 | `apps/`、`packages/` 不放 emoji | CI `Check emoji` |
 | 長存文件通過 `check_docs.py`，`AGENTS.md` 規則清單與 `docs/rules/coding.md` 同步 | CI `Check docs`、`Check rules index`（`tools/agents-guideline/`） |
 | `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`（shared、pipeline、trigger）與 `apps/web/tsconfig.json`，`pnpm -r type-check` |
-| `rewrite` 要走 PR、`gitleaks` 與 `ci` 兩個 check 通過、commit 要簽章、禁 force push 與刪除 | GitHub ruleset |
+| `main` 要走 PR、`gitleaks` 與 `ci` 兩個 check 通過、commit 要簽章、禁 force push 與刪除 | GitHub ruleset |
 
 ## 規則
 
@@ -78,11 +78,11 @@ CI（`.github/workflows/ci.yml`）跑上面全部指令，資料庫是 Postgres 
 - 新增或修改 Zod schema、prompt builder、citation 驗證、compliance 禁用語、選稿排序與名額、每日花費閘或任何純函式時，先寫會紅的測試再寫實作（HIGH）
 - 改 Astro 頁面與元件、CLI 入口接線、部署或 workflow 設定時可以先做再補測試，但 PR 說明要附手動跑過的指令與輸出（MEDIUM）
 - 同一個 commit 不同時含 structural 變更（改名、搬檔、抽函式等不改行為的整理）與 behavioral 變更（改行為）；兩者都要時先 commit structural、跑測試確認沒壞，再 commit behavioral（HIGH）
-- 從 v0（`main`）或其他 repo 搬檔時，第一個 commit 原樣搬並標 `[STRUCTURAL]`，改寫放在之後的 commit（HIGH）
+- 從 v0（tag `v0-legacy`）或其他 repo 搬檔時，第一個 commit 原樣搬並標 `[STRUCTURAL]`，改寫放在之後的 commit（HIGH）
 - 不用 `--no-verify` 或任何方式跳過 husky 的 pre-commit 與 commit-msg hook；hook 擋下時修正內容再 commit（CRITICAL）
 - 不更換 `AGENTS.md`〈Tech Stack〉表裡的選型，也不引入表外的同類替代品；要換先開 issue（HIGH）
 - 實作碰到設計依據〈不做的事〉列出的項目（線上即時分析、註冊登入、agent 框架、OpenAI 相容端點、向量檢索、換後端語言等）時，停下來開 issue 或問維護者（HIGH）
-- agent 不 merge PR，也不 push 到 `rewrite` 或 `main`；PR 開進 `rewrite`，由維護者以 merge commit 合併（HIGH）
+- agent 不 merge PR，也不 push 到 `main`；PR 開進 `main`，由維護者以 merge commit 合併（HIGH）
 **LLM 與報告內容**
 - 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`（HIGH）
 - `apps/web` 不 import 任何 LLM SDK，網站只讀 pipeline 寫進 Postgres 的結果（HIGH）

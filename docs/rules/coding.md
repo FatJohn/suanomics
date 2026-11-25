@@ -19,7 +19,7 @@
 
 分開 commit，review 時才能把「沒改行為」的部分快速看過、把注意力留給行為變更；出問題時也能單獨 revert。commit message 的 `[STRUCTURAL]`／`[BEHAVIORAL]` tag 由 commitlint 強制，但 tag 與內容是否相符只能靠人判斷。
 
-### 從 v0（`main`）或其他 repo 搬檔時，第一個 commit 原樣搬並標 `[STRUCTURAL]`，改寫放在之後的 commit（HIGH）
+### 從 v0（tag `v0-legacy`）或其他 repo 搬檔時，第一個 commit 原樣搬並標 `[STRUCTURAL]`，改寫放在之後的 commit（HIGH）
 
 原樣搬的 commit 讓 `git log --follow` 追得回原版，也讓 reviewer 能對照搬來的內容與改寫的差異。決策見 [在同一 repo 以 orphan branch 重寫](../adr/0001-orphan-branch-rewrite.md) 的 Consequences。
 
@@ -35,9 +35,9 @@ pre-commit 跑 gitleaks 擋金鑰，commit-msg 跑 commitlint；跳過就等於�
 
 這些項目是刻意排除的範圍，不是漏做。清單見 [設計依據的〈不做的事〉](../architecture/design-basis.md#不做的事)。
 
-### agent 不 merge PR，也不 push 到 `rewrite` 或 `main`；PR 開進 `rewrite`，由維護者以 merge commit 合併（HIGH）
+### agent 不 merge PR，也不 push 到 `main`；PR 開進 `main`，由維護者以 merge commit 合併（HIGH）
 
-合併時機與方式由維護者決定；`rewrite` 與 `main` 的 ruleset 要求走 PR，直接 push 會被擋，但 merge 按鈕擋不住有權限的 agent。
+合併時機與方式由維護者決定；`main` 的 ruleset 要求走 PR，直接 push 會被擋，但 merge 按鈕擋不住有權限的 agent。
 
 ## LLM 與報告內容
 

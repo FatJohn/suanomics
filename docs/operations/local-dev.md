@@ -11,7 +11,7 @@
 - pnpm 12.21.0：版本由根目錄 `package.json` 的 `packageManager` 鎖定，安裝方式見 [pnpm 官方安裝說明](https://pnpm.io/installation)。
 - gitleaks：husky 的 pre-commit hook 會呼叫它，沒裝就 commit 不了；macOS 用 `brew install gitleaks`。
 - Docker：起本機 Postgres 18 用。
-- git commit 簽章：`rewrite` 的 ruleset 要求 commit 有簽章，設定方式見 [GitHub 的 commit 簽章說明](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)。
+- git commit 簽章：`main` 的 ruleset 要求 commit 有簽章，設定方式見 [GitHub 的 commit 簽章說明](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)。
 
 ## 步驟
 

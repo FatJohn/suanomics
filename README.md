@@ -7,7 +7,7 @@
 
 報告在 <https://suanomics.everbegin.net/>。首頁是日期最晚的一份開盤前重點講義，列出牽動的產業與方向，詳解段落各附新聞出處；「歷史講義」頁列出過去每一回。非交易日不出報告，網站停在前一份。
 
-`rewrite` branch 是從空樹重建的版本；v0 的程式碼與文件在 `main`（tag `v0-legacy`）。
+`main` 是從空樹重建的版本；v0 的程式碼與文件在 tag `v0-legacy`。
 
 本專案以 Apache-2.0 授權釋出，全文見 [LICENSE](LICENSE)。
 

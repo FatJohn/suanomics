@@ -34,7 +34,7 @@ flowchart LR
   P -->|AI SDK| LLM["Anthropic"]
   P -->|RSS / OpenAPI / 正文抽取| SRC["資料來源"]
   D --> CF["Cloudflare Pages<br/>suanomics.everbegin.net"]
-  Push["網站程式碼 merge 進 rewrite"] --> DS
+  Push["網站程式碼 merge 進 main"] --> DS
   subgraph DS["Deploy Site job"]
     B2["apps/web<br/>Astro build"] --> D2["wrangler pages deploy"]
   end
@@ -47,7 +47,7 @@ flowchart LR
 | 觸發器 | Cloudflare Worker 的 Cron Trigger 每日 05:00（台北）呼叫 GitHub API `workflow_dispatch`；Actions 自己的 `schedule` 在 05:20 當備援，pipeline 開頭查當日已有產出就結束 | Cloudflare Workers 免費層 | [觸發器以 Cloudflare Worker 為主、Actions schedule 為備援](../adr/0009-cron-trigger-via-cloudflare-worker.md) |
 | Pipeline | TypeScript CLI：判斷交易日、抓資料、跑 agent、寫 brief 到 Postgres；非交易日（週末與 TWSE 休市日）只抓新聞、不產報告 | GitHub Actions（public repo 免費） | 同 0002 |
 | 持久狀態 | storylines（跨日敘事線與週回顧）、近日 brief 摘要、market data 歷史、news 候選池；drizzle schema 與 repos | Neon Postgres 免費層 | [持久狀態放 Neon Postgres、沿用 drizzle](../adr/0003-neon-postgres.md) |
-| 網站 | Astro 在同一個 Actions job 內 build，直接讀 Postgres 產成純 HTML，`wrangler pages deploy` 上線。網站程式碼（`apps/web`、`packages/shared`、依賴與 build 設定）merge 進 `rewrite` 時，Deploy Site workflow 用同樣的 build 與部署步驟立即上線，不跑 pipeline；它與 Daily Brief 共用 concurrency group，兩邊排隊、不同時部署 | Cloudflare Pages，自訂網域 `suanomics.everbegin.net` | [網站用 Astro 靜態產生](../adr/0005-astro-static-site.md) |
+| 網站 | Astro 在同一個 Actions job 內 build，直接讀 Postgres 產成純 HTML，`wrangler pages deploy` 上線。網站程式碼（`apps/web`、`packages/shared`、依賴與 build 設定）merge 進 `main` 時，Deploy Site workflow 用同樣的 build 與部署步驟立即上線，不跑 pipeline；它與 Daily Brief 共用 concurrency group，兩邊排隊、不同時部署 | Cloudflare Pages，自訂網域 `suanomics.everbegin.net` | [網站用 Astro 靜態產生](../adr/0005-astro-static-site.md) |
 | Corpus 背景庫 | `corpus:refresh` CLI 抓 `external_sources` 中啟用的來源，正文超出標題的文章由 `corpus-entity-summary` 產摘要、entities 與 topic tags 後寫進 `external_articles`；analyst 的 cascade 檢索以 jsonb containment 讀回報告日（含）以前抓進來的文章，窗長由 decomposer 指定、預設 7 天。單輪 enrich 有篇數上限，超過的文章不寫入、留給下一輪。Daily Brief workflow 在產報告前以獨立步驟執行，花費上限與報告分開（`DAILY_COST_LIMIT_USD` 0.50），失敗不擋報告 | pipeline 內 | [保留 corpus 背景庫](../adr/0011-keep-corpus.md) |
 | 每日花費閘 | pipeline 累計每次 LLM 呼叫的 `totalCostUsd`，超過設定上限即停止並標記該日報告未完成 | pipeline 內 | — |
 | LLM 用量帳本 | 每次 LLM 呼叫寫一列 `llm_calls`（不含 provider 專屬欄位），Actions job summary 與 `llm:usage` CLI 由此取數；寫入失敗不擋 run，但留 annotation 與整列 log。花費閘不讀帳本，每次 run 獨立計算。本機單篇分析 CLI（`analyze`）不寫資料庫，也不寫帳本，花費只印在輸出結尾 | pipeline 內 | — |
@@ -120,8 +120,8 @@ repo 是 public，金鑰防線分三層：
 | 層 | 措施 |
 |---|---|
 | 進不了 repo | GitHub secret scanning 與 push protection；gitleaks 在 husky pre-commit 與 CI 各跑一次；`.env*` 在 `.gitignore`，`.env.example` 只有 key 名 |
-| 拿不到 secrets | workflow `permissions: contents: read`；第三方 action 釘 commit SHA；不用 `pull_request_target`；secrets 放 GitHub Environment `production`，只有 `main` 可讀（重寫期間 `rewrite` 也可讀，接回 `main` 時收回） |
-| 流出也有上限 | Anthropic Console workspace spend limit；Cloudflare API token 只給 Pages deploy 權限；Neon 用獨立 role；`main` 分支保護：必須走 PR、CI 綠、禁 force push（重寫期間 `rewrite` 套同樣的保護） |
+| 拿不到 secrets | workflow `permissions: contents: read`；第三方 action 釘 commit SHA；不用 `pull_request_target`；secrets 放 GitHub Environment `production`，只有 `main` 可讀 |
+| 流出也有上限 | Anthropic Console workspace spend limit；Cloudflare API token 只給 Pages deploy 權限；Neon 用獨立 role；`main` 分支保護：必須走 PR、CI 綠、禁 force push |
 
 ## 不做的事
 

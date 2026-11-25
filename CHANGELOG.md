@@ -4,7 +4,9 @@
 
 ## [Unreleased]
 
-從空樹重寫（`rewrite` branch），完成驗收後接回 `main`；v0 的程式碼與文件保留在 tag `v0-legacy`。各項取捨見 `docs/adr/`。
+## [1.0.0] - 2026-11-25
+
+從空樹重寫（`rewrite` branch），完成驗收後接回 `main`（ADR 0001）；v0 的程式碼與文件保留在 tag `v0-legacy`。各項取捨見 `docs/adr/`。
 
 ### 變更
 
@@ -15,7 +17,7 @@
 - 品質評審由兩份報告兩兩比較（pairwise）改成單份報告的 checklist，分數只算 judge 引文對得上報告原文的項目；每天 Daily Brief 成功後由 Actions 的 `judge.yml` 評當天報告，也可用 `eval:judge` 手動補評。
 - 網站由 Vue SPA 改成 Astro 靜態產生。
 - 網站頁尾加上連到 GitHub 原始碼的連結；repo 根目錄補回 Apache-2.0 LICENSE。
-- 網站程式碼 merge 進 `rewrite` 後由 Deploy Site workflow 立即 build 與部署，不必等隔天的 Daily Brief；資料仍是已發佈的報告。
+- 網站程式碼 merge 進 `main` 後由 Deploy Site workflow 立即 build 與部署，不必等隔天的 Daily Brief；資料仍是已發佈的報告。
 - monorepo 縮成三個 workspace：`packages/shared`、`apps/pipeline`、`apps/web`。
 - 新聞來源只收官方機構與發行商自己的 feed，正文在 pipeline 內抽取。
 - corpus 背景庫（`external_articles`）由每日 Daily Brief 在產報告前以 `corpus:refresh` 更新，取代 v0 兩日一次的背景 job；cascade 檢索照舊讀回。

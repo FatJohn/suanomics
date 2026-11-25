@@ -28,7 +28,7 @@ v1 兩條都不用：三家媒體裡 RSSHub 只有 udn 一個 route，鉅亨網�
 
 | 媒體 | Feed | 結果 |
 |---|---|---|
-| 鉅亨網 | `https://news.cnyes.com/rss/v1/news/category/tw_stock`（另有 `wd_stock`，舊系統 `main` 的 `packages/db/src/seed.ts` 已在用） | 200 `application/rss+xml`，100 則 |
+| 鉅亨網 | `https://news.cnyes.com/rss/v1/news/category/tw_stock`（另有 `wd_stock`，舊系統（tag `v0-legacy`）的 `packages/db/src/seed.ts` 已在用） | 200 `application/rss+xml`，100 則 |
 | 經濟日報 | `https://money.udn.com/rssfeed/news/1001/5591?ch=money`（另有 `5590`、`5588`，同上 seed） | 200 `text/xml`，20 則 |
 | 工商時報 | 無公開 feed：`https://www.ctee.com.tw/rss` 與 `/feed` 都回 403 Cloudflare WAF 錯誤頁 | 舊系統 seed 註記「ctee 沒有可用的公開 feed」，只走 Google News 搜尋 feed |
 

@@ -3,14 +3,14 @@
 讀者：要提交程式碼或文件的貢獻者（人與 AI coding agent）
 型別：流程
 
-一個改動從開分支到合併走五步：開 issue、開分支、小步 commit、開 PR 進 `rewrite`、CI 綠燈後由維護者合併。本機環境的準備見 [本機開發](docs/operations/local-dev.md)；程式碼規則見 [程式碼規則](docs/rules/coding.md)。
+一個改動從開分支到合併走五步：開 issue、開分支、小步 commit、開 PR 進 `main`、CI 綠燈後由維護者合併。本機環境的準備見 [本機開發](docs/operations/local-dev.md)；程式碼規則見 [程式碼規則](docs/rules/coding.md)。
 
 ## 流程
 
 1. 先有 issue。改動範圍、驗收條件寫在 issue 裡；要換 Tech Stack 或碰設計依據〈不做的事〉的項目，先在 issue 討論。
-2. 先 `git fetch`，再從 `origin/rewrite` 開分支，命名 `<type>/<issue 編號>-<主題>`，`<type>` 用 commit 的 type（例如 `feat/21-skeleton`、`docs/28-rules-and-docs`）。
+2. 先 `git fetch`，再從 `origin/main` 開分支，命名 `<type>/<issue 編號>-<主題>`，`<type>` 用 commit 的 type（例如 `feat/21-skeleton`、`docs/28-rules-and-docs`）。
 3. 小而頻繁地 commit，structural 與 behavioral 分開（見〈Commit〉）。
-4. push 分支、開 PR 進 `rewrite`，說明寫清楚改了什麼、怎麼驗的、關聯的 issue。
+4. push 分支、開 PR 進 `main`，說明寫清楚改了什麼、怎麼驗的、關聯的 issue。
 5. CI 的 `ci` 與 `gitleaks` 兩個 check 都綠，維護者 review 後以 merge commit 合併（不 squash）。agent 不自行 merge。
 
 ## Commit
@@ -22,7 +22,7 @@ commit 分兩種，同一個 commit 只放一種：
 | structural | 不改行為的整理：改名、搬檔、抽函式、調整格式 | `[STRUCTURAL]` |
 | behavioral | 改變程式行為：功能、修 bug、改設定值 | `[BEHAVIORAL]` |
 
-兩者都要改時，先 commit structural、跑測試確認沒壞，再 commit behavioral。從 v0（`main`）或其他 repo 搬檔時，第一個 commit 原樣搬、標 `[STRUCTURAL]`，改寫放在之後的 commit。
+兩者都要改時，先 commit structural、跑測試確認沒壞，再 commit behavioral。從 v0（tag `v0-legacy`）或其他 repo 搬檔時，第一個 commit 原樣搬、標 `[STRUCTURAL]`，改寫放在之後的 commit。
 
 commit message 用英文、Conventional Commits 格式，由 husky 的 commit-msg hook 跑 commitlint 檢查：
 
