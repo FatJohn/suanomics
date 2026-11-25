@@ -15,4 +15,4 @@ GitHub 官方文件明說 `schedule` 事件在整點高負載時會延遲、極�
 
 ## 後續
 
-2026-11-25（#107）：Actions `schedule` 不是開盤前的備援。2026-11-10 到 11-25 的 16 次 schedule run 都在台北 09:04 到 13:20 才建立，延遲 3.7 到 8 小時；同期 Worker 每天 05:00:05 準時 dispatch。開盤前的備援改由同一個 Worker 的第二個 Cron Trigger 負責。05:40 那次查 `daily.yml` 在主觸發之後有沒有進行中或成功的 run，沒有才 dispatch，查詢失敗也 dispatch。05:00 的 dispatch 遇 5xx 或網路錯誤會重試。兩個 Cron 共用 Worker 與 token，Cloudflare Cron 沒觸發或 token 失效時會一起失效；`schedule` 因此保留，在開盤後補上這種情況。
+2026-11-25（#107）：Actions `schedule` 不是開盤前的備援。2026-11-10 到 11-25 的 16 次 schedule run 都在台北 09:04 到 13:20 才建立，延遲 3.7 到 8 小時；同期 Worker 每天 05:00:05 到 05:00:06 準時 dispatch。開盤前的備援改由同一個 Worker 的第二個 Cron Trigger 負責。05:40 那次查 `daily.yml` 在主觸發之後有沒有進行中或成功的 run，沒有才 dispatch，查詢失敗也 dispatch。05:00 的 dispatch 遇 5xx 或網路錯誤會重試。兩個 Cron 共用 Worker 與 token，Cloudflare Cron 沒觸發或 token 失效時會一起失效；`schedule` 因此保留，在開盤後補上這種情況。
