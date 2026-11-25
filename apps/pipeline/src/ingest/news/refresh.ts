@@ -34,6 +34,8 @@ export interface RunNewsRefreshResult {
     failed: boolean
     // feed 回非 2xx 時的狀態碼；連線失敗或逾時是 null。
     httpStatus: number | null
+    // 來源失敗時的錯誤訊息，寫進 Actions job summary；沒失敗是 null。
+    error: string | null
     scrapeFailed: number
     // - `bodyDenied`：目標 host 在拒抓清單上（`body-fetch-policy.ts` 的
     //   `BODY_FETCH_DENIED_HOSTS`），政策上不抓正文。
@@ -184,7 +186,7 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
       // type-check 範圍內），只有 tsc 會叫。
       // `current` 是同一個物件、只是不帶 `| null`——閉包裡（pMap 的 callback）拿 `entry`
       // 會被 TS 放寬回可為 null，用一個 const 綁住就不必到處 assert。
-      const current: PerSourceEntry = { slug: src.slug, inserted: insertedIds.length, failed: false, httpStatus: null, ...newTally() }
+      const current: PerSourceEntry = { slug: src.slug, inserted: insertedIds.length, failed: false, httpStatus: null, error: null, ...newTally() }
       entry = current
       perSource.push(current)
       console.warn(`[runNewsRefresh] ${src.slug}: ${insertedIds.length} new`)
@@ -232,10 +234,14 @@ export async function runNewsRefresh(): Promise<RunNewsRefreshResult> {
       sourcesFailed += 1
       // 已經有一筆就只補標記，不要再 push 第二筆。這樣「插入成功但抓正文途中
       // 失敗」那一列同時看得到真實的 inserted／計數與 failed。
-      if (entry === null)
-        perSource.push({ slug: src.slug, inserted: 0, failed: true, httpStatus: httpStatusOf(err), ...newTally() })
-      else
+      const error = err instanceof Error ? err.message : String(err)
+      if (entry === null) {
+        perSource.push({ slug: src.slug, inserted: 0, failed: true, httpStatus: httpStatusOf(err), error, ...newTally() })
+      }
+      else {
         entry.failed = true
+        entry.error = error
+      }
       console.error(`[runNewsRefresh] ${src.slug} failed, skipping:`, err)
     }
   }

@@ -211,7 +211,7 @@ describe('runNewsRefresh 對 Google News 代理 feed 的整批跳過', () => {
     expect(result.perSource[0]).toMatchObject({ feedSkipped: 1, bodyDenied: 0 })
     // 列出完整鍵集合：perSource 的欄位是寫進 job metadata 的契約，多一個或少一個都要紅。
     expect(Object.keys(result.perSource[0] ?? {}).sort()).toEqual(
-      ['bodyDenied', 'failed', 'feedSkipped', 'httpStatus', 'inserted', 'scrapeEmpty', 'scrapeFailed', 'slug'],
+      ['bodyDenied', 'error', 'failed', 'feedSkipped', 'httpStatus', 'inserted', 'scrapeEmpty', 'scrapeFailed', 'slug'],
     )
     expect(result.totalInserted).toBe(1)
   })
@@ -279,6 +279,29 @@ describe('runNewsRefresh 的 perSource 每個來源只有一列', () => {
 
     expect(result.perSource).toHaveLength(1)
     expect(result.perSource[0]).toMatchObject({ slug: 'demo-source', inserted: 0, failed: true })
+  })
+
+  it('失敗的那一列帶著錯誤訊息', async () => {
+    const repo = await setupOneSource()
+    vi.mocked(repo.insertNewsItems).mockRejectedValue(new Error('insert failed'))
+
+    const result = await runNewsRefresh()
+
+    expect(result.perSource[0]).toMatchObject({ failed: true, error: 'insert failed' })
+  })
+
+  it('插入成功、抓正文途中 throw → 同一列補上錯誤訊息', async () => {
+    const repo = await setupOneSource()
+    const scraper = await import('../external/scraper.js')
+    vi.mocked(repo.insertNewsItems).mockResolvedValue([11])
+    vi.mocked(repo.getNewsItemsByIds).mockResolvedValue([{ id: 11, url: 'https://news.example/1', title: 't1', contentText: null }] as never)
+    vi.mocked(scraper.scrapeArticle).mockResolvedValue({ ok: true, text: '正文'.repeat(20) })
+    vi.mocked(repo.updateScrapedContent).mockRejectedValue(new Error('db write failed'))
+
+    const result = await runNewsRefresh()
+
+    expect(result.perSource).toHaveLength(1)
+    expect(result.perSource[0]).toMatchObject({ inserted: 1, failed: true, error: 'db write failed' })
   })
 })
 
