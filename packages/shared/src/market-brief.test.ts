@@ -363,7 +363,7 @@ describe('viewpointsSchema', () => {
   it('rejects netRead over 360 chars', () => {
     expect(() => ViewpointsSchema.parse({ ...VALID_VP, netRead: 'a'.repeat(361) })).toThrow()
   })
-  // #100：每個論點對應的詳解段落號（1 起算），null＝整體性論點。
+  // 每個論點對應的詳解段落號（1 起算），null＝整體性論點。
   describe('段落參照', () => {
     it('接受與論點等長的參照陣列', () => {
       expect(() => ViewpointsSchema.parse({ ...VALID_VP, supportRefs: [1, null], riskRefs: [2, 3] })).not.toThrow()

@@ -28,9 +28,9 @@ const introHtml = narrative ? glossMarkdown(narrative.intro) : ''
 const bodyHtml = sections.map(s => glossMarkdown(s.body))
 const outroHtml = narrative?.outro ? glossMarkdown(narrative.outro) : ''
 const summaryHtml = !narrative && brief.summary && brief.dailyThesis ? glossText(brief.summary) : ''
-// 主軸在頁首已標過術語，這裡只跳脫。
+// 主軸在頁首已標過術語，這裡只跳脫；文字與頁首相同（主軸被攔下時頁首改顯示摘要）。
 const viewpoints = brief.viewpoints && {
-  thesisHtml: escapeHtml(brief.dailyThesis),
+  thesisHtml: escapeHtml(brief.dailyThesis || brief.summary),
   support: brief.viewpoints.supportPoints.map(({ text, section }) => ({ html: glossText(text), section })),
   risk: brief.viewpoints.riskPoints.map(({ text, section }) => ({ html: glossText(text), section })),
   netReadHtml: brief.viewpoints.netRead ? glossText(brief.viewpoints.netRead) : '',

@@ -119,7 +119,7 @@ async function settleFinalize<A, B, C>(calls: [Promise<A>, Promise<B>, Promise<C
   return Promise.all(calls)
 }
 
-// 論點要標出依據的詳解段落（#100），所以辯論接在 narrative 之後，不再與它平行。
+// 論點要標出依據的詳解段落，所以辯論要等 narrative 產出段落後才能跑。
 function debateAfterNarrative(
   narrativeCall: Promise<Awaited<ReturnType<typeof callNarrativeWriter>>>,
   p: Omit<RunViewpointsDebateParams, 'sections'>,

@@ -54,15 +54,17 @@ export async function runViewpointsDebate(
   p: RunViewpointsDebateParams,
 ): Promise<Viewpoints | null> {
   try {
-    const material = buildDebateMaterial({
+    const base = {
       thesis: p.thesis,
       headline: p.headline,
       summary: p.summary,
       marketSnapshot: p.marketSnapshot,
       cascadeChains: p.cascadeChains,
       ...(p.claimLedger ? { claimLedger: p.claimLedger } : {}),
-      ...(p.sections ? { sections: p.sections } : {}),
-    })
+    }
+    // net-read 不標段落，段落本文只給 support／risk。
+    const material = buildDebateMaterial({ ...base, ...(p.sections ? { sections: p.sections } : {}) })
+    const netReadMaterial = buildDebateMaterial(base)
     const onCall = p.onCallRecord
     const opt = onCall ? { onCallRecord: onCall } : {}
 
@@ -75,7 +77,7 @@ export async function runViewpointsDebate(
       }),
     ])
 
-    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(material, support.points.map(x => x.text), risk.points.map(x => x.text)) }, ViewpointsNetReadResponse, {
+    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(netReadMaterial, support.points.map(x => x.text), risk.points.map(x => x.text)) }, ViewpointsNetReadResponse, {
       ...opt,
     })
 

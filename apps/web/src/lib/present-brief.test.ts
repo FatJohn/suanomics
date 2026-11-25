@@ -48,7 +48,7 @@ describe('presentBrief', () => {
   })
 })
 
-// #100：每個論點旁的「見詳解 N」要指到讀者實際看到的第 N 段
+// 每個論點旁的「見詳解 N」要指到讀者實際看到的第 N 段
 describe('presentBrief 正反觀點的段落參照', () => {
   const section = (heading: string, body: string) => ({ ...NARRATIVE.sections[0] as NonNullable<typeof NARRATIVE.sections[0]>, heading, body })
   const narrative = { ...NARRATIVE, sections: [section('甲', '甲本文。'), section('乙', '建議買進。'), section('丙', '丙本文。')] }
@@ -63,9 +63,10 @@ describe('presentBrief 正反觀點的段落參照', () => {
     ])
   })
 
-  it('指到被攔截段落的參照改標整體性，被攔截的論點連同參照一起拿掉', () => {
+  // 段落被攔下不等於論點是整體性的，標「整體判斷」會說錯，所以不標。
+  it('指到被攔截段落的參照不標，被攔截的論點連同參照一起拿掉', () => {
     const view = presentBrief('2095-01-01', { ...BASE, narrative, viewpoints }, [])
-    expect(view.viewpoints?.riskPoints).toEqual([{ text: '風險一', section: 'overall' }])
+    expect(view.viewpoints?.riskPoints).toEqual([{ text: '風險一', section: null }])
   })
 
   it('舊報告沒有參照時不標任何段落', () => {

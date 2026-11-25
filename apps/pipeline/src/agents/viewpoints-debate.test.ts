@@ -170,7 +170,7 @@ describe('runViewpointsDebate', () => {
     expect(await runViewpointsDebate(PARAMS)).toBeNull()
   })
 
-  // #100：每個論點帶它依據的詳解段落號
+  // 每個論點帶它依據的詳解段落號
   describe('段落參照', () => {
     it('詳解段落進入支持與風險兩邊的素材', async () => {
       mockDebate(['支持一', '支持二'], ['風險一', '風險二'], 'a'.repeat(130))
@@ -203,6 +203,14 @@ describe('runViewpointsDebate', () => {
       const out = await runViewpointsDebate({ ...PARAMS, sections: SECTIONS })
       expect(out?.supportPoints).toEqual(['支持一', '支持三'])
       expect(out?.supportRefs).toEqual([1, 2])
+    })
+
+    // net-read 不標段落，段落本文只是多花的 token
+    it('net-read 的素材不含詳解段落', async () => {
+      mockDebate(['支持一', '支持二'], ['風險一', '風險二'], 'a'.repeat(130))
+      await runViewpointsDebate({ ...PARAMS, sections: SECTIONS })
+      expect(llm.mock.calls[2]?.[1]?.userContent).not.toContain('# 詳解段落')
+      expect(llm.mock.calls[2]?.[1]?.userContent).toContain('# 支持論據')
     })
 
     it('沒有詳解段落時不帶參照欄位', async () => {

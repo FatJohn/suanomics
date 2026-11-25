@@ -6,7 +6,7 @@ import { FORBIDDEN_PHRASES_LINE } from './source-authority.js'
 // 合規鐵律內建：禁買賣 / 進出場 / 目標價 / 明牌、以及方向性部位用語（看多看空 / 佈局等）；呈現兩面非推薦。
 const POSITION_RULE = `鐵律：只做事實與情境分析、不得出現任何買賣 / 進出場 / 目標價 / 明牌建議；${FORBIDDEN_PHRASES_LINE}`
 
-// 讀者面每點旁會顯示「見詳解 N」並跳到該段（#100），所以段落號必須是該點實際依據的那一段。
+// 讀者面每點旁會顯示「見詳解 N」並跳到該段，所以段落號必須是該點實際依據的那一段。
 const SECTION_RULE = `每點同時標出它依據的詳解段落：素材「# 詳解段落」裡的 [詳解 N] 編號填進 section（整數 N）；論據跨越多段、或依據的事實不在任何一段裡時 section 填 null（整體性論點）。不要為了填號硬湊段落，對不上就填 null。素材沒有詳解段落時一律填 null。
 輸出 JSON {points:[{text:"論據句",section:N 或 null}, ...]}。`
 

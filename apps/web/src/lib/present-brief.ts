@@ -94,8 +94,9 @@ function presentViewpoints(brief: MarketBrief): BriefView['viewpoints'] {
   if (!brief.viewpoints)
     return null
   const shown = displayedSectionNumbers(brief)
+  // 段落被攔下不顯示時不標：那個論點不是整體性的，標「整體判斷」會說錯。
   const toSection = (ref: number | null | undefined): ViewpointView['section'] =>
-    ref === undefined ? null : (ref !== null && shown.get(ref)) || 'overall'
+    ref === undefined ? null : ref === null ? 'overall' : shown.get(ref) ?? null
   const points = (list: string[], refs: (number | null)[] | undefined): ViewpointView[] => list.flatMap((p, i) => {
     const text = redactBlockedSentences(p)
     return text ? [{ text, section: refs ? toSection(refs[i]) : null }] : []

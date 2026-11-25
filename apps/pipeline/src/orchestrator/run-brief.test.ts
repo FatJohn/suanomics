@@ -122,7 +122,7 @@ describe('generateBrief', () => {
     expect(p.progress.analystOutputs?.map(a => a.newsId)).toEqual(['1'])
   })
 
-  // #100：論點要標出依據的詳解段落，辯論得在 narrative 之後跑、拿到段落。
+  // 論點要標出依據的詳解段落，辯論得在 narrative 之後跑、拿到段落。
   it('正反觀點拿到 narrative 的詳解段落', async () => {
     const section = { heading: '小標', takeaway: '結論', body: '內文', relatedNewsIds: [], claimIds: [], citationUrls: ['https://e.com/1'] }
     vi.mocked(callSynthesizer).mockResolvedValue({} as never)

@@ -9,7 +9,7 @@ describe('辯論 system prompt', () => {
       expect(prompt).toContain(phrase)
   })
 
-  // #100：讀者要看得出每個論點在講哪一段
+  // 讀者要看得出每個論點在講哪一段
   it.each([['support', SUPPORT_PROMPT], ['risk', RISK_PROMPT]])('%s 要求每點標出依據的詳解段落或整體性', (_, prompt) => {
     expect(prompt).toContain('section')
     expect(prompt).toContain('詳解')
