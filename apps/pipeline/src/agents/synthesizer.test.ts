@@ -108,6 +108,32 @@ describe('callSynthesizer', () => {
     expect(out.affectedIndustries.map(i => i.reasoning)).toEqual(['先寫的'])
   })
 
+  it('trims surrounding spaces from an industry name and keeps the official spelling', async () => {
+    const industry = { direction: 'negative', confidence: 'medium', reasoning: '費半重挫' } as const
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ ...validSynth, affectedIndustries: [{ ...industry, name: ' 半導體業 ' }] })
+    const out = await callSynthesizer({ analystOutputs: [], date: '2026-11-25' })
+    expect(out.affectedIndustries.map(i => i.name)).toEqual(['半導體業'])
+  })
+
+  it('drops non-object industry entries instead of failing the brief', async () => {
+    const industry = { name: '半導體業', direction: 'negative', confidence: 'medium', reasoning: '費半重挫' } as const
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ ...validSynth, affectedIndustries: [null, industry] })
+    const out = await callSynthesizer({ analystOutputs: [], date: '2026-11-25' })
+    expect(out.affectedIndustries.map(i => i.name)).toEqual(['半導體業'])
+  })
+
+  it('warns with the count of dropped industries', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const industry = { direction: 'negative', confidence: 'medium', reasoning: '費半重挫' } as const
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
+      ...validSynth,
+      affectedIndustries: [{ ...industry, name: '半導體與AI供應鏈' }, { ...industry, name: '半導體業' }, { ...industry, name: '半導體業' }],
+    })
+    await callSynthesizer({ analystOutputs: [], date: '2026-11-25' })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('2 筆'))
+    warn.mockRestore()
+  })
+
   it('synthesizer user content includes market snapshot when provided', async () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     await callSynthesizer({ analystOutputs: [], date: '2026-04-25', marketSnapshot: '## 今日市場數據\n- 加權指數：23,150 點' })
