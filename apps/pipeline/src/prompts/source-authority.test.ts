@@ -32,6 +32,11 @@ describe('論據來源紀律段', () => {
     expect(SOURCE_AUTHORITY_SECTION).toContain('名嘴')
   })
 
+  it('議員對個別企業的指控在正式行動前算評論', () => {
+    expect(SOURCE_AUTHORITY_SECTION).toContain('議員對個別企業或其經營者的指控、質疑')
+    expect(SOURCE_AUTHORITY_SECTION).toContain('正式調查')
+  })
+
   it('市場素材不在排除之列', () => {
     for (const source of ['法人', '券商', '分析師'])
       expect(SOURCE_AUTHORITY_SECTION).toContain(source)
