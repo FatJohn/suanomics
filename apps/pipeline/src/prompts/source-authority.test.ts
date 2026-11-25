@@ -21,6 +21,12 @@ describe('論據來源紀律段', () => {
       expect(SOURCE_AUTHORITY_SECTION).toContain(source)
   })
 
+  // 「不誤排除政策發言」有兩處各自撐著：可引用清單裡的政策機關，以及結尾的正向提醒；任一處被刪都要紅。
+  it('可引用清單明列政策機關、結尾提醒政策發言照常引用', () => {
+    expect(SOURCE_AUTHORITY_SECTION).toContain('央行、財金主管機關、主管該政策的政府部會')
+    expect(SOURCE_AUTHORITY_SECTION).toContain('央行、主管機關與政府部會的政策發言照常引用')
+  })
+
   it('排除政治人物與名嘴的評論', () => {
     expect(SOURCE_AUTHORITY_SECTION).toContain('政治人物')
     expect(SOURCE_AUTHORITY_SECTION).toContain('名嘴')
