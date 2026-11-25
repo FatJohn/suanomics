@@ -6,6 +6,7 @@ vi.mock('./structured.js')
 vi.mock('./market-data/refresh.js')
 vi.mock('../db/repos/news-repo.js')
 vi.mock('../db/repos/source-fetch-repo.js')
+vi.mock('./news/source-failure-summary.js')
 
 const SATURDAY = new Date('2026-11-07T00:00:00Z')
 const MONDAY = new Date('2026-11-08T21:00:00Z') // 台北 11-09 週一 05:00
@@ -67,6 +68,18 @@ describe('runIngest', () => {
     expect(sourceFetch.recordSourceFetchResults).toHaveBeenCalledWith('2026-11-09', [{ slug: 'cna', failed: true, httpStatus: 403 }])
     expect(warn).toHaveBeenCalledWith('::warning title=新聞來源連續失敗::cna 連續 3 天失敗（HTTP 403）')
     warn.mockRestore()
+  })
+
+  it('抓完新聞就寫來源失敗 summary，之後的步驟 throw 也不漏', async () => {
+    const { news, repo } = await mocks()
+    const summary = await import('./news/source-failure-summary.js')
+    const perSource = [{ slug: 'fed-press', inserted: 0, failed: true, httpStatus: 404, error: 'HTTP 404' }] as never
+    vi.mocked(news.runNewsRefresh).mockResolvedValue({ sourcesProcessed: 1, sourcesFailed: 1, totalInserted: 0, perSource })
+    vi.mocked(repo.getRelevanceCandidates).mockRejectedValue(new Error('db down'))
+    vi.stubEnv('GITHUB_STEP_SUMMARY', '/tmp/summary.md')
+    await expect(runIngest({ now: MONDAY })).rejects.toThrow('db down')
+    expect(summary.appendSourceFailureSummary).toHaveBeenCalledWith('/tmp/summary.md', perSource)
+    vi.unstubAllEnvs()
   })
 
   it('force 時非交易日也跑（本機驗證用）', async () => {

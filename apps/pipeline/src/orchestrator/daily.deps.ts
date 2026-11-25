@@ -1,4 +1,5 @@
 import type { DailyDeps } from './daily.js'
+import process from 'node:process'
 import { isTwseTradingDay, taipeiDateOf } from '@suanomics/shared'
 import { getDailyCostGate } from '../agents/cost-gate.js'
 import { hasCompleteBriefOnOrAfter } from '../db/repos/brief-rerun.js'
@@ -6,6 +7,7 @@ import { getDailyBriefByDate, saveDailyBrief, saveIncompleteDailyBrief } from '.
 import { applyEditorResult } from '../db/repos/storylines-repo.js'
 import { EMPTY_MARKET_CONTEXT, loadMarketContext } from '../ingest/market-data/context.js'
 import { runNewsRefresh } from '../ingest/news/refresh.js'
+import { appendSourceFailureSummary } from '../ingest/news/source-failure-summary.js'
 import { runIngest } from '../ingest/run.js'
 import { selectNewsViaEditor } from './editor-stage.js'
 import { generateBrief } from './run-brief.js'
@@ -16,7 +18,11 @@ export function createDailyDeps(): DailyDeps {
     log: event => console.warn(JSON.stringify(event)),
     isTradingDay: isTwseTradingDay,
     findExistingBrief: getDailyBriefByDate,
-    refreshNews: async () => (await runNewsRefresh()).totalInserted,
+    refreshNews: async () => {
+      const news = await runNewsRefresh()
+      await appendSourceFailureSummary(process.env.GITHUB_STEP_SUMMARY, news.perSource)
+      return news.totalInserted
+    },
     today: () => taipeiDateOf(new Date()),
     hasCompleteBriefOnOrAfter,
     ingest: async (date) => {
