@@ -1,7 +1,7 @@
 import type { ComplianceViolation } from '@suanomics/shared'
 import type { LlmCallRecord } from './call-agent.js'
 import type { AnalystOutput } from './types.js'
-import { AffectedIndustrySchema, checkCompliance, RelatedEtfSchema, RelationTypeSchema } from '@suanomics/shared'
+import { AffectedIndustrySchema, checkCompliance, isTwseListedIndustry, RelatedEtfSchema, RelationTypeSchema } from '@suanomics/shared'
 import { z } from 'zod'
 import { SYNTHESIZER_SYSTEM_PROMPT } from '../prompts/synthesizer.prompt.js'
 import { SYNTHESIZER_USER_TEXT } from '../prompts/synthesizer.user-content.js'
@@ -155,14 +155,8 @@ function normalizeForSynthesizerSchema(raw: unknown): unknown {
       return { ...node, reasoning: truncateAtSentence(node.reasoning, 600) }
     })
   }
-  if (Array.isArray(r.affectedIndustries)) {
-    out.affectedIndustries = r.affectedIndustries.slice(0, 5).map((n) => {
-      if (!n || typeof n !== 'object')
-        return n
-      const node = n as Record<string, unknown>
-      return { ...node, reasoning: truncateAtSentence(node.reasoning, 600) }
-    })
-  }
+  if (Array.isArray(r.affectedIndustries))
+    out.affectedIndustries = listedIndustriesOnly(r.affectedIndustries).slice(0, 5)
   if (Array.isArray(r.relatedETFs)) {
     out.relatedETFs = r.relatedETFs.slice(0, 5).map((n) => {
       if (!n || typeof n !== 'object')
@@ -172,6 +166,26 @@ function normalizeForSynthesizerSchema(raw: unknown): unknown {
     })
   }
   return out
+}
+
+// 講義頁的產業名要是證交所上市產業別（#96）。response schema 不用 enum：模型不照做時 SDK 會丟錯、
+// 整份 brief 失敗，所以在這裡丟掉不合的條目；同名只留第一筆，chain-grouper 才不會遇到重複的力場名。
+// 全被丟掉時講義頁的產業列會整區消失、run 仍算成功，所以要在 log 留下丟掉幾筆。
+function listedIndustriesOnly(items: unknown[]): unknown[] {
+  const seen = new Set<string>()
+  const kept = items.flatMap((n) => {
+    if (!n || typeof n !== 'object')
+      return []
+    const node = n as Record<string, unknown>
+    const name = typeof node.name === 'string' ? node.name.trim() : ''
+    if (!isTwseListedIndustry(name) || seen.has(name))
+      return []
+    seen.add(name)
+    return [{ ...node, name, reasoning: truncateAtSentence(node.reasoning, 600) }]
+  })
+  if (kept.length < items.length)
+    console.warn(`[synthesizer] ${items.length - kept.length} 筆 affectedIndustries 不是證交所產業別或重複，已丟棄`)
+  return kept
 }
 
 function formatUserContent(p: CallSynthesizerParams): string {

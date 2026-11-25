@@ -83,6 +83,57 @@ describe('callSynthesizer', () => {
     expect(out.summary).not.toContain('…')
   })
 
+  it('drops affected industries whose name is not a TWSE listed industry', async () => {
+    const industry = { direction: 'negative', confidence: 'medium', reasoning: '費半重挫' } as const
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
+      ...validSynth,
+      affectedIndustries: [
+        { ...industry, name: '半導體與AI供應鏈' },
+        { ...industry, name: '半導體業' },
+        { ...industry, name: 'Real Estate' },
+        { ...industry, name: '金融保險業' },
+      ],
+    })
+    const out = await callSynthesizer({ analystOutputs: [], date: '2026-11-25' })
+    expect(out.affectedIndustries.map(i => i.name)).toEqual(['半導體業', '金融保險業'])
+  })
+
+  it('keeps only the first entry when an industry name repeats', async () => {
+    const industry = { direction: 'negative', confidence: 'medium', name: '半導體業' } as const
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
+      ...validSynth,
+      affectedIndustries: [{ ...industry, reasoning: '先寫的' }, { ...industry, reasoning: '後寫的' }],
+    })
+    const out = await callSynthesizer({ analystOutputs: [], date: '2026-11-25' })
+    expect(out.affectedIndustries.map(i => i.reasoning)).toEqual(['先寫的'])
+  })
+
+  it('trims surrounding spaces from an industry name and keeps the official spelling', async () => {
+    const industry = { direction: 'negative', confidence: 'medium', reasoning: '費半重挫' } as const
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ ...validSynth, affectedIndustries: [{ ...industry, name: ' 半導體業 ' }] })
+    const out = await callSynthesizer({ analystOutputs: [], date: '2026-11-25' })
+    expect(out.affectedIndustries.map(i => i.name)).toEqual(['半導體業'])
+  })
+
+  it('drops non-object industry entries instead of failing the brief', async () => {
+    const industry = { name: '半導體業', direction: 'negative', confidence: 'medium', reasoning: '費半重挫' } as const
+    vi.mocked(wrapper.callAgent).mockResolvedValue({ ...validSynth, affectedIndustries: [null, industry] })
+    const out = await callSynthesizer({ analystOutputs: [], date: '2026-11-25' })
+    expect(out.affectedIndustries.map(i => i.name)).toEqual(['半導體業'])
+  })
+
+  it('warns with the count of dropped industries', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const industry = { direction: 'negative', confidence: 'medium', reasoning: '費半重挫' } as const
+    vi.mocked(wrapper.callAgent).mockResolvedValue({
+      ...validSynth,
+      affectedIndustries: [{ ...industry, name: '半導體與AI供應鏈' }, { ...industry, name: '半導體業' }, { ...industry, name: '半導體業' }],
+    })
+    await callSynthesizer({ analystOutputs: [], date: '2026-11-25' })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('2 筆'))
+    warn.mockRestore()
+  })
+
   it('synthesizer user content includes market snapshot when provided', async () => {
     vi.mocked(wrapper.callAgent).mockResolvedValue(validSynth)
     await callSynthesizer({ analystOutputs: [], date: '2026-04-25', marketSnapshot: '## 今日市場數據\n- 加權指數：23,150 點' })
@@ -229,12 +280,11 @@ describe('callSynthesizer compliance gate with real rules (#78)', () => {
 
   it('checks every reader-facing prose field', async () => {
     const bad = '外資\n加碼台積電'
-    const industry = { name: '半導體', direction: 'positive', confidence: 'medium', reasoning: '需求回溫' } as const
+    const industry = { name: '半導體業', direction: 'positive', confidence: 'medium', reasoning: '需求回溫' } as const
     const etf = { ticker: '0050', name: '台灣50', rationale: '權值股' }
     const cases = [
       { ...validSynth, headline: bad },
       { ...validSynth, relatedNews: [{ newsId: 'n1', relationType: 'cause', reasoning: bad }] },
-      { ...validSynth, affectedIndustries: [{ ...industry, name: bad }] },
       { ...validSynth, affectedIndustries: [{ ...industry, reasoning: bad }] },
       { ...validSynth, relatedETFs: [{ ...etf, name: bad }] },
       { ...validSynth, relatedETFs: [{ ...etf, rationale: bad }] },
@@ -243,6 +293,11 @@ describe('callSynthesizer compliance gate with real rules (#78)', () => {
       vi.mocked(wrapper.callAgent).mockReset()
       expect(await attemptsFor(c), JSON.stringify(c)).toBe(2)
     }
+  })
+
+  it('drops a non-listed industry name before the gate instead of retrying', async () => {
+    const industry = { name: '外資\n加碼台積電', direction: 'positive', confidence: 'medium', reasoning: '需求回溫' } as const
+    expect(await attemptsFor({ ...validSynth, affectedIndustries: [industry] })).toBe(1)
   })
 
   it('does not retry clean output', async () => {

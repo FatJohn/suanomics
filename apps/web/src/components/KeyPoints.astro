@@ -2,6 +2,7 @@
 import type { IndustryView } from '../lib/present-brief'
 import { confidenceLabel } from '../lib/handout'
 import DirectionMark from './DirectionMark.astro'
+import SourceLinks from './SourceLinks.astro'
 
 // *Html 欄位已跳脫並標好術語（BriefArticle 依整頁閱讀順序標），會用 set:html 輸出；
 // 型別和 IndustryView 的純文字 reasoning 分開，未跳脫的文字傳不進來。
@@ -26,10 +27,13 @@ const { thesisHtml, industries } = Astro.props
                 <DirectionMark direction={industry.direction} />
                 <svg class="toggle" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
               </summary>
-              <p class="why">
-                <Fragment set:html={industry.reasoningHtml || '這筆沒有附理由。'} />
-                <span class="conf">（{confidenceLabel(industry.confidence)}）</span>
-              </p>
+              <div class="why">
+                <p>
+                  <Fragment set:html={industry.reasoningHtml || '這筆沒有附理由。'} />
+                  <span class="conf">（{confidenceLabel(industry.confidence)}）</span>
+                </p>
+                <SourceLinks label="出處" links={industry.citations} />
+              </div>
             </details>
           </li>
         ))}
@@ -126,7 +130,27 @@ const { thesisHtml, industries } = Astro.props
     line-height: 1.75;
     color: var(--ink-2);
   }
+  .why p {
+    margin: 0;
+  }
   .conf {
     white-space: nowrap;
+  }
+  /* 矮手機首屏要放得下全部產業列（#96）：收緊論點行距與列高。 */
+  @media (max-width: 480px) and (max-height: 740px) {
+    .box {
+      margin-top: 18px;
+      padding: 14px 12px 2px;
+    }
+    .thesis {
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    .hint {
+      margin-top: 8px;
+    }
+    summary {
+      padding: 5px 0;
+    }
   }
 </style>

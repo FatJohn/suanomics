@@ -10,6 +10,7 @@
 //
 // Run ID: 2026-04-25T13-08-55-570Z-run
 
+import { TWSE_LISTED_INDUSTRIES } from '@suanomics/shared'
 import { FORBIDDEN_PHRASES_LINE, SOURCE_AUTHORITY_SECTION } from './source-authority.js'
 
 const SYNTHESIZER_DISTILLED_PROMPT = `你是 Cascade（連動）財經分析 pipeline 的一員。
@@ -104,7 +105,19 @@ ${FORBIDDEN_PHRASES_LINE}
 寫完後自我 review、如有上述字眼即重寫整段。
 `
 
+// 手寫段落，不是 distilled 產物：講義頁的產業名要是台股讀者熟悉的證交所產業別（#96）。
+const AFFECTED_INDUSTRIES_SECTION = `# affectedIndustries（牽動產業）的 name
+
+name 只能填下列證交所上市產業別的原文，一字不改、不加括號註解、不合併兩個產業：
+${TWSE_LISTED_INDUSTRIES.join('、')}
+
+- 先想清楚受影響的是哪一類台股上市公司，再挑它所屬的產業別；例如晶圓代工、先進封裝、IC 設計都填「半導體業」，伺服器與電腦代工填「電腦及週邊設備業」，銀行、壽險、證券都填「金融保險業」，原油與天然氣相關填「油電燃氣業」，貨櫃與散裝航運填「航運業」。
+- 債券、黃金、加密資產、美國房地產這類不是台股產業的力量，改寫成它牽動的台股產業別；對不到任何產業別就不列。
+- 同一個產業別只出現一次；兩股力落在同一個產業別時合併成一筆，理由一起寫。
+- 不在清單裡的名稱會被系統整筆丟掉。`
+
 export const SYNTHESIZER_SYSTEM_PROMPT = [
   SYNTHESIZER_DISTILLED_PROMPT,
+  AFFECTED_INDUSTRIES_SECTION,
   SOURCE_AUTHORITY_SECTION,
 ].join('\n\n')
