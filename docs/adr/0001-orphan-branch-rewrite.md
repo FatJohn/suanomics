@@ -18,3 +18,7 @@ date: 2026-11-07
 - 搬遷的檔案第一個 commit 原樣搬（`[STRUCTURAL]`），改寫在之後的 commit，`git log --follow` 才追得回原版。
 - 完成驗收後的接回方式：在舊 `main` 打 tag `v0-legacy`，在 `rewrite` 上 `git merge --allow-unrelated-histories -s ours main`（結果樹＝`rewrite` 的內容、舊 `main` 成為祖先），再把 `main` fast-forward 過去；不 force push。
 - 原 repo `macroeconomics-report` 設為 archived；其 `docs/changes/`、`docs/research/`、`PRODUCT.md` 搬進本 repo `docs/history/`，`docs/superpowers/` 的 plans 與 specs 不搬。
+
+## 後續
+
+- 2026-11-25（#110）：完成接回。舊 `main`（818c45e）打簽章 tag `v0-legacy`；在 `rewrite` 的延伸 branch 上做 `-s ours` merge，連同 workflow、Worker dispatch ref、文件從 `rewrite` 改 `main` 與 CHANGELOG 1.0.0，以 PR #114 直接開進 `main`、用 merge commit 合併。沒照原計畫先 PR 進 `rewrite` 再 fast-forward `main`：改過的 CI 只對 `main` 觸發，進 `rewrite` 的 PR 會等不到 required checks；而 `main` 的 ruleset 要求走 PR、不能直接 push fast-forward。結果一樣是舊 `main` 成為祖先、樹＝`rewrite` 加上述改名。同時把 `main` ruleset 的 required checks 從 v0 的 `ci`、`docker` 換成 `gitleaks`、`ci`，預設 branch、Cloudflare Pages production branch、Environment `production` 的部署分支都改成只有 `main`，並重新部署 Worker。`rewrite` branch 與其 ruleset 凍結保留，之後另開 issue 決定是否刪除。
