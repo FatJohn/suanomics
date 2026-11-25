@@ -56,11 +56,16 @@ async function dispatch(env: Env): Promise<void> {
 
 async function hasLiveOrSucceededRun(env: Env, since: Date): Promise<boolean> {
   const query = new URLSearchParams({ created: `>=${since.toISOString()}`, per_page: '100' })
-  const response = await fetch(`${WORKFLOW_URL}/runs?${query}`, { method: 'GET', headers: githubHeaders(env) })
-  if (!response.ok)
+  try {
+    const response = await fetch(`${WORKFLOW_URL}/runs?${query}`, { method: 'GET', headers: githubHeaders(env) })
+    if (!response.ok)
+      return false
+    const body = await response.json() as { workflow_runs: WorkflowRun[] }
+    return body.workflow_runs.some(run => run.status !== 'completed' || run.conclusion === 'success')
+  }
+  catch {
     return false
-  const body = await response.json() as { workflow_runs: WorkflowRun[] }
-  return body.workflow_runs.some(run => run.status !== 'completed' || run.conclusion === 'success')
+  }
 }
 
 export default {

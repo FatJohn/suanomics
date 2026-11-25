@@ -133,6 +133,21 @@ describe('scheduled 備援（05:40）', () => {
     expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 
+  it.each([
+    ['網路錯誤', () => Promise.reject(new TypeError('network'))],
+    ['body 不是 JSON', async () => new Response('<html>', { status: 200 })],
+    ['body 缺 workflow_runs', async () => Response.json({})],
+  ])('查詢%s時仍 dispatch', async (_label, query) => {
+    const fetchMock = vi.fn()
+      .mockImplementationOnce(query)
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await worker.scheduled(backup, env)
+
+    expect(fetchMock).toHaveBeenLastCalledWith(DISPATCH_URL, { method: 'POST', headers, body: '{"ref":"main"}' })
+  })
+
   it('查詢失敗時仍 dispatch，寧可多跑一次也不漏報告', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response('Forbidden', { status: 403 }))
