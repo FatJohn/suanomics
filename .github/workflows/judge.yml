@@ -9,12 +9,12 @@ name: Brief Judge
 
 on:
   # workflow_run 的風險是拿 fork PR 的產物或 head 在有權限的 context 執行。這裡不成立：
-  # Daily Brief 只由 schedule 與 workflow_dispatch 觸發、限 rewrite 分支，本 workflow
+  # Daily Brief 只由 schedule 與 workflow_dispatch 觸發、限 main 分支，本 workflow
   # 不 checkout 觸發 run 的 head、不下載它的 artifact，只讀 run_started_at 算日期。
   workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: [Daily Brief]
     types: [completed]
-    branches: [rewrite]
+    branches: [main]
   workflow_dispatch:
     inputs:
       date:
