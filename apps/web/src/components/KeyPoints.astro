@@ -2,6 +2,7 @@
 import type { IndustryView } from '../lib/present-brief'
 import { confidenceLabel } from '../lib/handout'
 import DirectionMark from './DirectionMark.astro'
+import SourceLinks from './SourceLinks.astro'
 
 // *Html 欄位已跳脫並標好術語（BriefArticle 依整頁閱讀順序標），會用 set:html 輸出；
 // 型別和 IndustryView 的純文字 reasoning 分開，未跳脫的文字傳不進來。
@@ -26,10 +27,13 @@ const { thesisHtml, industries } = Astro.props
                 <DirectionMark direction={industry.direction} />
                 <svg class="toggle" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
               </summary>
-              <p class="why">
-                <Fragment set:html={industry.reasoningHtml || '這筆沒有附理由。'} />
-                <span class="conf">（{confidenceLabel(industry.confidence)}）</span>
-              </p>
+              <div class="why">
+                <p>
+                  <Fragment set:html={industry.reasoningHtml || '這筆沒有附理由。'} />
+                  <span class="conf">（{confidenceLabel(industry.confidence)}）</span>
+                </p>
+                <SourceLinks label="出處" links={industry.citations} />
+              </div>
             </details>
           </li>
         ))}
@@ -125,6 +129,9 @@ const { thesisHtml, industries } = Astro.props
     font-size: 14px;
     line-height: 1.75;
     color: var(--ink-2);
+  }
+  .why p {
+    margin: 0;
   }
   .conf {
     white-space: nowrap;

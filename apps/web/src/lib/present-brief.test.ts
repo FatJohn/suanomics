@@ -68,7 +68,7 @@ describe('presentBrief 牽動產業', () => {
 
   it('帶出產業、方向、信心與理由', () => {
     const view = presentBrief('2095-01-01', { ...BASE, affectedIndustries: [INDUSTRY] }, [])
-    expect(view.industries).toEqual([{ name: '半導體', direction: 'negative', confidence: 'medium', reasoning: '費半重挫。' }])
+    expect(view.industries).toEqual([{ name: '半導體', direction: 'negative', confidence: 'medium', reasoning: '費半重挫。', citations: [] }])
   })
 
   it('理由裡被攔截的句子不進 view', () => {
@@ -79,6 +79,47 @@ describe('presentBrief 牽動產業', () => {
   it('產業名被攔截時整筆不輸出', () => {
     const view = presentBrief('2095-01-01', { ...BASE, affectedIndustries: [{ ...INDUSTRY, name: '建議買進' }, INDUSTRY] }, [])
     expect(view.industries.map(i => i.name)).toEqual(['半導體'])
+  })
+})
+
+describe('presentBrief 產業理由的出處', () => {
+  const INDUSTRY = { name: '半導體業', direction: 'negative' as const, confidence: 'medium' as const, reasoning: '費半重挫。' }
+  const CITE_B = { title: '來源 B', url: 'https://b.example/1', quote: 'q' }
+  const CITE_C = { title: '來源 C', url: 'https://c.example/1', quote: 'q' }
+  const CITE_D = { title: '來源 D', url: 'https://d.example/1', quote: 'q' }
+  const chain = (forceGroup: string | null | undefined, urls: string[]) => ({
+    industry: '晶圓代工',
+    mechanism: 'm',
+    affectedTickers: [],
+    direction: 'negative' as const,
+    citations: urls.map(url => ({ url, title: '鏈上的標題', quote: 'q' })),
+    ...(forceGroup === undefined ? {} : { forceGroup }),
+  })
+  const brief = (cascadeChains: ReturnType<typeof chain>[]): MarketBrief => ({
+    ...BASE,
+    citations: [CITE_A, CITE_B, CITE_C, CITE_D],
+    affectedIndustries: [INDUSTRY],
+    cascadeChains,
+  })
+
+  it('取歸到該產業的連動鏈引用，標題用報告引用清單裡的標題，同網址只列一次', () => {
+    const view = presentBrief('2095-01-01', brief([chain('半導體業', [CITE_B.url, CITE_A.url]), chain('半導體業', [CITE_B.url])]), [])
+    expect(view.industries[0]?.citations).toEqual([{ title: '來源 B', url: CITE_B.url }, { title: '來源 A', url: CITE_A.url }])
+  })
+
+  it('歸到別的產業、沒歸組或沒有 forceGroup 的鏈不算', () => {
+    const view = presentBrief('2095-01-01', brief([chain('金融保險業', [CITE_A.url]), chain(null, [CITE_B.url]), chain(undefined, [CITE_C.url])]), [])
+    expect(view.industries[0]?.citations).toEqual([])
+  })
+
+  it('不在報告引用清單裡的網址不列', () => {
+    const view = presentBrief('2095-01-01', brief([chain('半導體業', ['https://unknown.example/x', CITE_C.url])]), [])
+    expect(view.industries[0]?.citations).toEqual([{ title: '來源 C', url: CITE_C.url }])
+  })
+
+  it('最多列 3 個出處', () => {
+    const view = presentBrief('2095-01-01', brief([chain('半導體業', [CITE_A.url, CITE_B.url, CITE_C.url, CITE_D.url])]), [])
+    expect(view.industries[0]?.citations.map(c => c.url)).toEqual([CITE_A.url, CITE_B.url, CITE_C.url])
   })
 })
 

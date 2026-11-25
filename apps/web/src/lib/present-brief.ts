@@ -4,7 +4,7 @@ import { redactBlockedMarkdown, redactBlockedSentences } from './compliance'
 
 export interface CitationLink { title: string, url: string }
 export interface NewsLink { id: number, title: string }
-export type IndustryView = Pick<MarketBrief['affectedIndustries'][number], 'name' | 'direction' | 'confidence' | 'reasoning'>
+export type IndustryView = Pick<MarketBrief['affectedIndustries'][number], 'name' | 'direction' | 'confidence' | 'reasoning'> & { citations: CitationLink[] }
 
 export interface BriefView {
   date: string
@@ -87,11 +87,26 @@ function presentViewpoints(brief: MarketBrief): BriefView['viewpoints'] {
   }
 }
 
+const MAX_INDUSTRY_CITATIONS = 3
+
+// 產業理由由 synthesizer 綜合連動鏈寫成，chain-grouper 再把每條鏈歸到它屬於的產業（forceGroup），
+// 所以歸到同一產業的鏈所引用的來源就是理由的依據。網址要在報告引用清單裡才列，標題與 http 過濾跟引用來源一致。
+function industryCitations(brief: MarketBrief, name: string, byUrl: Map<string, CitationLink>): CitationLink[] {
+  const urls = new Set((brief.cascadeChains ?? []).filter(c => c.forceGroup === name).flatMap(c => c.citations.map(x => x.url)))
+  return [...urls].flatMap((u) => {
+    const c = byUrl.get(u)
+    return c ? [c] : []
+  }).slice(0, MAX_INDUSTRY_CITATIONS)
+}
+
 // 產業名被攔截就整筆不顯示：只剩方向沒有對象，讀者無從判斷。
-function presentIndustries(brief: MarketBrief): IndustryView[] {
+function presentIndustries(brief: MarketBrief, citations: CitationLink[]): IndustryView[] {
+  const byUrl = new Map(citations.map(c => [c.url, c]))
   return brief.affectedIndustries.flatMap((i) => {
     const name = redactBlockedSentences(i.name)
-    return name ? [{ name, direction: i.direction, confidence: i.confidence, reasoning: redactBlockedSentences(i.reasoning) }] : []
+    return name
+      ? [{ name, direction: i.direction, confidence: i.confidence, reasoning: redactBlockedSentences(i.reasoning), citations: industryCitations(brief, i.name, byUrl) }]
+      : []
   })
 }
 
@@ -104,7 +119,7 @@ export function presentBrief(date: string, brief: MarketBrief, selectedNews: rea
     summary: redactBlockedSentences(brief.summary),
     narrative: presentNarrative(brief, citations),
     viewpoints: presentViewpoints(brief),
-    industries: presentIndustries(brief),
+    industries: presentIndustries(brief, citations),
     selectedNews: selectedNews.map(n => ({ id: n.id, title: redactBlockedSentences(n.title) || WITHHELD_NEWS_TITLE })),
     citations,
     disclaimer: brief.disclaimer,
