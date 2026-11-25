@@ -20,11 +20,18 @@ function once(value: unknown) {
   llm.mockResolvedValueOnce(value as never)
 }
 // 3 次呼叫順序：support（Promise.all 陣列序 0）→ risk（序 1）→ net-read（await 後）
-function mockDebate(support: string[], risk: string[], netRead: string) {
-  once({ points: support })
-  once({ points: risk })
+type Point = string | { text: string, section: number | null }
+const asPoint = (p: Point) => (typeof p === 'string' ? { text: p, section: null } : p)
+function mockDebate(support: Point[], risk: Point[], netRead: string) {
+  once({ points: support.map(asPoint) })
+  once({ points: risk.map(asPoint) })
   once({ netRead })
 }
+
+const SECTIONS = [
+  { heading: 'AI 伺服器出貨', takeaway: '雲端資本支出續增', body: '甲段內文' },
+  { heading: '利率路徑分歧', takeaway: null, body: '乙段內文' },
+]
 
 describe('runViewpointsDebate', () => {
   beforeEach(() => vi.resetAllMocks())
@@ -161,6 +168,51 @@ describe('runViewpointsDebate', () => {
   it('degrades to null when an LLM call throws', async () => {
     llm.mockRejectedValue(new Error('llm 500') as never)
     expect(await runViewpointsDebate(PARAMS)).toBeNull()
+  })
+
+  // #100：每個論點帶它依據的詳解段落號
+  describe('段落參照', () => {
+    it('詳解段落進入支持與風險兩邊的素材', async () => {
+      mockDebate(['支持一', '支持二'], ['風險一', '風險二'], 'a'.repeat(130))
+      await runViewpointsDebate({ ...PARAMS, sections: SECTIONS })
+      const [support, risk] = llm.mock.calls
+      for (const call of [support, risk]) {
+        expect(call?.[1]?.userContent).toContain('[詳解 1] AI 伺服器出貨')
+        expect(call?.[1]?.userContent).toContain('甲段內文')
+        expect(call?.[1]?.userContent).toContain('[詳解 2] 利率路徑分歧')
+      }
+    })
+
+    it('回傳與論點逐項對應的參照，對不到段落的改標整體性', async () => {
+      mockDebate(
+        [{ text: '支持一', section: 1 }, { text: '支持二', section: 9 }],
+        [{ text: '風險一', section: 2 }, { text: '風險二', section: null }],
+        'a'.repeat(130),
+      )
+      const out = await runViewpointsDebate({ ...PARAMS, sections: SECTIONS })
+      expect(out?.supportRefs).toEqual([1, null])
+      expect(out?.riskRefs).toEqual([2, null])
+    })
+
+    it('違規論點與它的參照一起移除', async () => {
+      mockDebate(
+        [{ text: '支持一', section: 1 }, { text: '佈局科技股', section: 2 }, { text: '支持三', section: 2 }],
+        [{ text: '風險一', section: 1 }, { text: '風險二', section: 2 }],
+        'a'.repeat(130),
+      )
+      const out = await runViewpointsDebate({ ...PARAMS, sections: SECTIONS })
+      expect(out?.supportPoints).toEqual(['支持一', '支持三'])
+      expect(out?.supportRefs).toEqual([1, 2])
+    })
+
+    it('沒有詳解段落時不帶參照欄位', async () => {
+      mockDebate([{ text: '支持一', section: 1 }, '支持二'], ['風險一', '風險二'], 'a'.repeat(130))
+      const out = await runViewpointsDebate(PARAMS)
+      expect(out).not.toBeNull()
+      expect(out?.supportRefs).toBeUndefined()
+      expect(out?.riskRefs).toBeUndefined()
+      expect(llm.mock.calls[0]?.[1]?.userContent).not.toContain('# 詳解段落')
+    })
   })
 
   it('uses agentName viewpoints-debate for all three calls', async () => {

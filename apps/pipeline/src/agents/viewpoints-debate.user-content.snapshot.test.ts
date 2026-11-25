@@ -23,8 +23,8 @@ function once(value: unknown) {
   llm.mockResolvedValueOnce(value as never)
 }
 function mockDebate(support: string[], risk: string[], netRead: string) {
-  once({ points: support })
-  once({ points: risk })
+  once({ points: support.map(text => ({ text, section: null })) })
+  once({ points: risk.map(text => ({ text, section: null })) })
   once({ netRead })
 }
 function callUserContents(): [string, string, string] {
@@ -57,6 +57,13 @@ describe('viewpoints-debate inline user content snapshot (characterization)', ()
   it('captures support/risk/net-read userContent without claimLedger and multiple points each', async () => {
     mockDebate(['支持論據一', '支持論據二', '支持論據三'], ['風險論據一', '風險論據二'], 'b'.repeat(150))
     await runViewpointsDebate(PARAMS)
+    const [support, risk, netRead] = callUserContents()
+    expect({ support, risk, netRead }).toMatchSnapshot()
+  })
+
+  it('captures userContent with narrative sections', async () => {
+    mockDebate(['支持論據一', '支持論據二'], ['風險論據一', '風險論據二'], 'c'.repeat(150))
+    await runViewpointsDebate({ ...PARAMS, sections: [{ heading: 'AI 伺服器出貨', takeaway: '雲端資本支出續增', body: '甲段內文。' }, { heading: '利率路徑分歧', takeaway: null, body: '乙段內文。' }] })
     const [support, risk, netRead] = callUserContents()
     expect({ support, risk, netRead }).toMatchSnapshot()
   })

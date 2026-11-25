@@ -1,21 +1,30 @@
 import type { CascadeChain, EvidenceClaim } from '@suanomics/shared'
 import { formatClaimLedgerBlock } from '@suanomics/shared'
+import { FORBIDDEN_PHRASES_LINE } from './source-authority.js'
 
 // 三個辯論 agent 的 system prompt（移植 bounded-debate spike、標籤對齊「支持論點/風險與反證/綜合淨讀」）。
 // 合規鐵律內建：禁買賣 / 進出場 / 目標價 / 明牌、以及方向性部位用語（看多看空 / 佈局等）；呈現兩面非推薦。
+const POSITION_RULE = `鐵律：只做事實與情境分析、不得出現任何買賣 / 進出場 / 目標價 / 明牌建議；${FORBIDDEN_PHRASES_LINE}`
+
+// 讀者面每點旁會顯示「見詳解 N」並跳到該段（#100），所以段落號必須是該點實際依據的那一段。
+const SECTION_RULE = `每點同時標出它依據的詳解段落：素材「# 詳解段落」裡的 [詳解 N] 編號填進 section（整數 N）；論據跨越多段、或依據的事實不在任何一段裡時 section 填 null（整體性論點）。不要為了填號硬湊段落，對不上就填 null。素材沒有詳解段落時一律填 null。
+輸出 JSON {points:[{text:"論據句",section:N 或 null}, ...]}。`
+
 export const SUPPORT_PROMPT = `你是台灣總經財經日報的分析師。給你今日核心論點（thesis）與當日素材、請列出「支持這個核心論點成立」的最強論據（2-4 點、每點一句、有據、指到素材裡的實際事實或連動、每點 60 字內）。
 你的任務是強化今日這個論點本身、順著它的判斷方向找佐證——不論這個論點偏樂觀或偏保守、都要給支持它成立的證據；不要一律往正向 / 機會面倒。
-鐵律：只做事實與情境分析、不得出現任何買賣 / 進出場 / 目標價 / 明牌建議；亦不得使用「看多 / 看空 / 偏多 / 偏空 / 做多 / 做空 / 增持 / 減持 / 佈局」等方向性部位用語——改以「此因素支撐該論點成立、因為…」的分析框架陳述。`
+${SECTION_RULE}
+${POSITION_RULE}改以「此因素支撐該論點成立、因為…」的分析框架陳述。`
 
 export const RISK_PROMPT = `你是台灣總經財經日報的分析師。給你今日核心論點（thesis）與當日素材、請列出「這個核心論點的風險、反方、可能證偽」的最強論據（2-4 點、每點一句、有據、指到素材裡的實際事實或連動、每點 60 字內）。找真實的破口與反證、不要為反對而反對、也不要泛泛喊風險。
 你的任務是質疑並證偽今日這個論點、站到它的對立面——不論這個論點偏樂觀或偏保守、都要給挑戰它的反證；方向必須與支持方相反。
-鐵律：只做事實與情境分析、不得出現任何買賣 / 進出場 / 目標價 / 明牌建議；亦不得使用「看多 / 看空 / 偏多 / 偏空 / 做多 / 做空 / 增持 / 減持 / 佈局」等方向性部位用語——改以「此因素削弱該論點、因為…」的分析框架陳述。`
+${SECTION_RULE}
+${POSITION_RULE}改以「此因素削弱該論點、因為…」的分析框架陳述。`
 
 export const NET_READ_PROMPT = `你是台灣總經財經日報的總編審。給你今日核心論點、支持論據、風險論據。請收斂成一段「綜合淨讀」（目標 180-260 字、絕對不可超過 300 字、以完整句收尾、繁體中文台灣用語、連貫文字非條列）：
 - 第一句先寫綜合後的淨讀（傾向哪邊、為什麼、但這是情境判斷、不是投資建議）；
 - 核心論點在什麼條件下成立（吸收支持論據）；
 - 有哪些須留意的風險 / 證偽條件（吸收風險論據）。
-鐵律：必須同時反映兩面、不得偏廢一方變成單向背書、也不得空泛對沖（要具體到今日素材的實際論點）。不得出現任何買賣 / 進出場 / 目標價 / 明牌建議；亦不得使用「看多 / 看空 / 偏多 / 偏空 / 做多 / 做空 / 增持 / 減持 / 佈局」等方向性部位用語、改以情境條件與分析框架陳述。`
+鐵律：必須同時反映兩面、不得偏廢一方變成單向背書、也不得空泛對沖（要具體到今日素材的實際論點）。${POSITION_RULE}改以情境條件與分析框架陳述。`
 
 export interface DebateMaterialArgs {
   thesis: string
@@ -24,6 +33,14 @@ export interface DebateMaterialArgs {
   marketSnapshot: string | null
   cascadeChains: CascadeChain[]
   claimLedger?: readonly EvidenceClaim[]
+  // narrative 的詳解段落，順序即讀者面的「詳解 N」
+  sections?: readonly DebateSection[]
+}
+
+export interface DebateSection {
+  heading: string
+  takeaway: string | null
+  body: string
 }
 
 // 辯論素材（thesis + synthesizer headline/summary + 市場數據 + 連動鏈 + claim ledger）、兩個 side 共用。
@@ -47,6 +64,16 @@ export function buildDebateMaterial(args: DebateMaterialArgs): string {
   lines.push('\n# 連動鏈（analyst）')
   for (const c of args.cascadeChains.slice(0, 20))
     lines.push(`- ${c.industry}｜${c.mechanism}｜${c.direction}`)
+  const sections = args.sections ?? []
+  if (sections.length > 0) {
+    lines.push('\n# 詳解段落（讀者面的「詳解 N」）')
+    sections.forEach((s, i) => {
+      lines.push(`[詳解 ${i + 1}] ${s.heading}`)
+      if (s.takeaway)
+        lines.push(`結論：${s.takeaway}`)
+      lines.push(s.body)
+    })
+  }
   const ledger = args.claimLedger ?? []
   if (ledger.length > 0) {
     lines.push(`\n# 本日已核對的證據（claim ledger、共 ${ledger.length} 條）`)

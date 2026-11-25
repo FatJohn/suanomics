@@ -1,5 +1,6 @@
-import type { MarketBrief } from '@suanomics/shared'
+import type { MarketBrief, Viewpoints } from '@suanomics/shared'
 import type { AnalystOutput, DecomposerOutput, NewsItem } from '../agents/types.js'
+import type { RunViewpointsDebateParams } from '../agents/viewpoints-debate.js'
 import type { MarketContext } from '../ingest/market-data/context.js'
 import type { DailyProgress, RunStage } from './daily.js'
 import type { BriefNews, EditorStageResult } from './editor-stage.js'
@@ -118,6 +119,17 @@ async function settleFinalize<A, B, C>(calls: [Promise<A>, Promise<B>, Promise<C
   return Promise.all(calls)
 }
 
+// 論點要標出依據的詳解段落（#100），所以辯論接在 narrative 之後，不再與它平行。
+function debateAfterNarrative(
+  narrativeCall: Promise<Awaited<ReturnType<typeof callNarrativeWriter>>>,
+  p: Omit<RunViewpointsDebateParams, 'sections'>,
+): Promise<Viewpoints | null> {
+  return narrativeCall.then(n => runViewpointsDebate({
+    ...p,
+    sections: (n.narrative?.sections ?? []).map(s => ({ heading: s.heading, takeaway: s.takeaway, body: s.body })),
+  }))
+}
+
 export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief> {
   const { date, market, editor, stage, progress } = p
   const marketCloseFraming = buildMarketCloseFraming(market.taiexCloseDate, date)
@@ -155,14 +167,8 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
 
   const finalized: NonNullable<DailyProgress['finalize']> = {}
   progress.finalize = finalized
-  const [viewpoints, narrative, groupedChains] = await stage('finalize', () => settleFinalize([
-    thesis
-      ? runViewpointsDebate({ thesis, headline: assembled.headline, summary: assembled.summary, marketSnapshot: market.snapshotBlock, cascadeChains: mergedChains, claimLedger: claimLedger.claims }).then((r) => {
-          finalized.viewpoints = r
-          return r
-        })
-      : Promise.resolve(null),
-    callNarrativeWriter({
+  const [viewpoints, narrative, groupedChains] = await stage('finalize', () => {
+    const narrativeCall = callNarrativeWriter({
       brief: assembled,
       analystOutputs,
       news: survived.map(s => s.news),
@@ -180,12 +186,22 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
     }).then((r) => {
       finalized.narrative = r
       return r
-    }),
-    tagChainForceGroups({ chains: assembled.cascadeChains ?? [], forceNames: assembled.affectedIndustries.map(i => i.name) }).then((r) => {
-      finalized.groupedChains = r
-      return r
-    }),
-  ]))
+    })
+    const viewpointsCall = thesis
+      ? debateAfterNarrative(narrativeCall, { thesis, headline: assembled.headline, summary: assembled.summary, marketSnapshot: market.snapshotBlock, cascadeChains: mergedChains, claimLedger: claimLedger.claims }).then((r) => {
+          finalized.viewpoints = r
+          return r
+        })
+      : Promise.resolve(null)
+    return settleFinalize([
+      viewpointsCall,
+      narrativeCall,
+      tagChainForceGroups({ chains: assembled.cascadeChains ?? [], forceNames: assembled.affectedIndustries.map(i => i.name) }).then((r) => {
+        finalized.groupedChains = r
+        return r
+      }),
+    ])
+  })
 
   return {
     ...assembled,

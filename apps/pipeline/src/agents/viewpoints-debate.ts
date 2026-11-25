@@ -1,4 +1,5 @@
 import type { CascadeChain, EvidenceClaim, Viewpoints } from '@suanomics/shared'
+import type { DebateSection } from '../prompts/viewpoints-debate.prompt.js'
 import type { LlmCallRecord } from './call-agent.js'
 import { checkCompliance, stripViolatingProse, ViewpointsSchema } from '@suanomics/shared'
 import {
@@ -13,6 +14,7 @@ import { truncateAtSentence } from './_truncate.js'
 import { callAgent } from './call-agent.js'
 import { CostGateError } from './cost-gate.js'
 import { ViewpointsNetReadResponse, ViewpointsPointsResponse } from './response-schemas.js'
+import { resolveSectionRef } from './viewpoint-refs.js'
 
 export interface RunViewpointsDebateParams {
   thesis: string
@@ -23,6 +25,8 @@ export interface RunViewpointsDebateParams {
   // analyst 已核對過的證據；缺席時辯論只剩 headline/summary/snapshot/chains，
   // 反向數字會兩個讀者面欄位都到不了
   claimLedger?: readonly EvidenceClaim[]
+  // narrative 的詳解段落；缺席或空陣列時論點不帶段落參照
+  sections?: readonly DebateSection[]
   onCallRecord?: (r: LlmCallRecord) => void
 }
 
@@ -57,6 +61,7 @@ export async function runViewpointsDebate(
       marketSnapshot: p.marketSnapshot,
       cascadeChains: p.cascadeChains,
       ...(p.claimLedger ? { claimLedger: p.claimLedger } : {}),
+      ...(p.sections ? { sections: p.sections } : {}),
     })
     const onCall = p.onCallRecord
     const opt = onCall ? { onCallRecord: onCall } : {}
@@ -70,7 +75,7 @@ export async function runViewpointsDebate(
       }),
     ])
 
-    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(material, support.points, risk.points) }, ViewpointsNetReadResponse, {
+    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(material, support.points.map(x => x.text), risk.points.map(x => x.text)) }, ViewpointsNetReadResponse, {
       ...opt,
     })
 
@@ -81,9 +86,17 @@ export async function runViewpointsDebate(
     // （`成由攥䍕挧攥萱刑甘成甥、嘐瀕外資售日買超台股達903.08億元`），而 compliance gate
     // 與 schema 都會放行。見 `_garbled-text.ts`。
     const clean = (pt: string): boolean => checkCompliance(pt) === null && !hasGarbledChars(pt)
+    const sectionCount = p.sections?.length ?? 0
+    // 論點與段落號成對過濾，丟掉違規點時它的參照一起走，兩個陣列才對得齊。
+    const keep = (points: { text: string, section: number | null }[]) => points
+      .map(x => ({ text: x.text.trim(), section: resolveSectionRef(x.section, sectionCount) }))
+      .filter(x => x.text && clean(x.text))
+    const supportKept = keep(support.points)
+    const riskKept = keep(risk.points)
     const candidate = {
-      supportPoints: support.points.map(s => s.trim()).filter(Boolean).filter(clean),
-      riskPoints: risk.points.map(s => s.trim()).filter(Boolean).filter(clean),
+      supportPoints: supportKept.map(x => x.text),
+      riskPoints: riskKept.map(x => x.text),
+      ...(sectionCount > 0 ? { supportRefs: supportKept.map(x => x.section), riskRefs: riskKept.map(x => x.section) } : {}),
       // 先 strip 再截：違規句移除後可能已在上限內，順序反過來會多切掉合規內容。
       netRead: fitNetRead(stripViolatingProse(netReadOut.netRead.trim())),
     }

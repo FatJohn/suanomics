@@ -33,7 +33,7 @@ summary：半導體資本支出上修、市場對降息時點看法分歧
 # 本日已核對的證據（claim ledger、共 1 條）
 [c18] (fact/named-number) 2026年8月11日費城半導體指數收於12,098點。 — 來源：（無）
 
-請輸出風險論據 JSON {points:[...]}。",
+請輸出風險論據 JSON {points:[{text,section}, ...]}。",
   "support": "# 今日核心論點（thesis）
 今日主線由 AI 算力與利率拉鋸主導
 
@@ -46,7 +46,7 @@ summary：半導體資本支出上修、市場對降息時點看法分歧
 # 本日已核對的證據（claim ledger、共 1 條）
 [c18] (fact/named-number) 2026年8月11日費城半導體指數收於12,098點。 — 來源：（無）
 
-請輸出支持論據 JSON {points:[...]}。",
+請輸出支持論據 JSON {points:[{text,section}, ...]}。",
 }
 `;
 
@@ -80,7 +80,7 @@ summary：半導體資本支出上修、市場對降息時點看法分歧
 
 # 連動鏈（analyst）
 
-請輸出風險論據 JSON {points:[...]}。",
+請輸出風險論據 JSON {points:[{text,section}, ...]}。",
   "support": "# 今日核心論點（thesis）
 今日主線由 AI 算力與利率拉鋸主導
 
@@ -90,6 +90,70 @@ summary：半導體資本支出上修、市場對降息時點看法分歧
 
 # 連動鏈（analyst）
 
-請輸出支持論據 JSON {points:[...]}。",
+請輸出支持論據 JSON {points:[{text,section}, ...]}。",
+}
+`;
+
+exports[`viewpoints-debate inline user content snapshot (characterization) > captures userContent with narrative sections 1`] = `
+{
+  "netRead": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+# 詳解段落（讀者面的「詳解 N」）
+[詳解 1] AI 伺服器出貨
+結論：雲端資本支出續增
+甲段內文。
+[詳解 2] 利率路徑分歧
+乙段內文。
+
+# 支持論據
+- 支持論據一
+- 支持論據二
+
+# 風險論據
+- 風險論據一
+- 風險論據二
+
+請收斂成一段綜合淨讀、輸出 JSON {netRead:"..."}。",
+  "risk": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+# 詳解段落（讀者面的「詳解 N」）
+[詳解 1] AI 伺服器出貨
+結論：雲端資本支出續增
+甲段內文。
+[詳解 2] 利率路徑分歧
+乙段內文。
+
+請輸出風險論據 JSON {points:[{text,section}, ...]}。",
+  "support": "# 今日核心論點（thesis）
+今日主線由 AI 算力與利率拉鋸主導
+
+# Synthesizer
+headline：AI 資本支出加速、利率預期分歧
+summary：半導體資本支出上修、市場對降息時點看法分歧
+
+# 連動鏈（analyst）
+
+# 詳解段落（讀者面的「詳解 N」）
+[詳解 1] AI 伺服器出貨
+結論：雲端資本支出續增
+甲段內文。
+[詳解 2] 利率路徑分歧
+乙段內文。
+
+請輸出支持論據 JSON {points:[{text,section}, ...]}。",
 }
 `;

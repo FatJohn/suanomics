@@ -107,7 +107,7 @@ export const EditorResponse = z.object({
   newStorylines: z.array(z.object({ title: z.string(), thesis: z.string(), entities: z.array(z.string()) })),
 })
 
-export const ViewpointsPointsResponse = z.object({ points: z.array(z.string()) })
+export const ViewpointsPointsResponse = z.object({ points: z.array(z.object({ text: z.string(), section: z.number().nullable() })) })
 export const ViewpointsNetReadResponse = z.object({ netRead: z.string() })
 
 // claimIds 與 relatedNewsIds 刻意 optional：沒東西可掛時省略，不要為了滿足 schema 硬掰 id。
