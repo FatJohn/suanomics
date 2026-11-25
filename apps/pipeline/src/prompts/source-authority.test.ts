@@ -35,6 +35,7 @@ describe('論據來源紀律段', () => {
   it('議員對個別企業的指控在正式行動前算評論', () => {
     expect(SOURCE_AUTHORITY_SECTION).toContain('議員對個別企業或其經營者的指控、質疑')
     expect(SOURCE_AUTHORITY_SECTION).toContain('正式調查')
+    expect(SOURCE_AUTHORITY_SECTION).toContain('之前，也算評論、不當論據')
   })
 
   it('市場素材不在排除之列', () => {
