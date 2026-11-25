@@ -1,0 +1,76 @@
+---
+import Base from '../layouts/Base.astro'
+import { groupByMonth, lectureNumbers, weekdayLabel } from '../lib/handout'
+import { getSiteData } from '../lib/site-data'
+
+const { briefs } = await getSiteData()
+const numbers = lectureNumbers(briefs.map(b => b.date))
+const months = groupByMonth(briefs)
+---
+
+<Base
+  title="歷史講義"
+  current="archive"
+  description={`掐指連總經歷來每一回開盤前重點講義，共 ${briefs.length} 回，依月份排列，可逐日翻閱當天的主軸、牽動的台股與引用來源。`}
+>
+  <h1>歷史講義</h1>
+  <p class="lead">共 {briefs.length} 回，新的在上面。</p>
+  {months.length === 0 && <p>還沒有任何一回講義。</p>}
+  {months.map(m => (
+    <section aria-labelledby={`m-${m.items[0]?.date.slice(0, 7)}`}>
+      <h2 id={`m-${m.items[0]?.date.slice(0, 7)}`}>{m.month}</h2>
+      <ol>
+        {m.items.map(b => (
+          <li>
+            <span class="when">第 {numbers.get(b.date)} 回・{b.date.slice(5).replace('-', '/')}（{weekdayLabel(b.date)}）</span>
+            <a href={`/d/${b.date}`}>{b.headline}</a>
+          </li>
+        ))}
+      </ol>
+    </section>
+  ))}
+</Base>
+
+<style>
+  h1 {
+    margin: 14px 0 0;
+    font-size: 24px;
+    font-weight: 900;
+  }
+  .lead {
+    margin: 2px 0 0;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  section {
+    max-width: 68ch;
+    margin-top: 32px;
+  }
+  h2 {
+    margin: 0;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--ink);
+    font-size: 17px;
+    font-weight: 900;
+  }
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  li {
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--rule);
+    line-height: 1.6;
+  }
+  .when {
+    display: block;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  li a {
+    font-weight: 500;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+</style>

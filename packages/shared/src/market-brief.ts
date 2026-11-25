@@ -34,7 +34,7 @@ export const MarketBriefCitationSchema = z.object({
   title: z.string().min(1),
   // 真 source URL（組裝層 assembleBriefCitations 由 analyst cascade citations http(s)-filter + 去重）
   url: z.string().url(),
-  // quote 放寬到 600（Cascade depth analysis）、Gemini 對深度分析自然引用 300-500 字段落、
+  // quote 放寬到 600（Cascade depth analysis）、v0 的 Gemini 對深度分析自然引用 300-500 字段落、
   // 200 常切句中、可信度降；UI 用 line-clamp 處理顯示。
   quote: z.string().min(1).max(600),
 })
@@ -120,7 +120,7 @@ export type Narrative = z.infer<typeof NarrativeSchema>
 export const ViewpointsSchema = z.object({
   supportPoints: z.array(z.string().min(1).max(120)).min(2).max(4),
   riskPoints: z.array(z.string().min(1).max(120)).min(2).max(4),
-  // prompt 目標 120-300 字（NET_READ_PROMPT）、max=安全 buffer 天花板：刻意高於 prompt
+  // prompt 目標 180-260、上限 300 字（NET_READ_PROMPT）、max=安全 buffer 天花板：刻意高於 prompt
   // 目標、給 LLM 波動留餘裕、避免偶爾超標就整段 degrade null。勿縮到 300「對齊」prompt。
   netRead: z.string().min(120).max(360),
 })

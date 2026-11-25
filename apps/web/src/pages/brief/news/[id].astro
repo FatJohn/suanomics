@@ -1,0 +1,83 @@
+---
+import type { GetStaticPaths } from 'astro'
+import type { NewsRow } from '../../../lib/db/site-repo'
+import Base from '../../../layouts/Base.astro'
+import { redactBlockedSentences } from '../../../lib/compliance'
+import { formatTaipeiDate } from '../../../lib/date'
+import { safeHttpUrl, WITHHELD_NEWS_TITLE } from '../../../lib/present-brief'
+import { getSiteData } from '../../../lib/site-data'
+
+export const getStaticPaths = (async () => {
+  const { news } = await getSiteData()
+  return news.map(item => ({ params: { id: String(item.id) }, props: { item } }))
+}) satisfies GetStaticPaths
+
+interface Props { item: NewsRow }
+const { item } = Astro.props
+const title = redactBlockedSentences(item.title) || WITHHELD_NEWS_TITLE
+const href = safeHttpUrl(item.url)
+---
+
+<Base
+  title={title}
+  description={`講義引用的新聞出處：${item.sourceName}${item.publishedAt ? `・${formatTaipeiDate(item.publishedAt)}` : ''}。本站只列標題與連結，內容請到原站閱讀。`}
+>
+  <article class="card">
+    <h1>{title}</h1>
+    <p class="meta">
+      {item.sourceName}{item.publishedAt && `・${formatTaipeiDate(item.publishedAt)}`}
+    </p>
+    <p class="note">這是講義引用的新聞出處。本站只列標題與連結，內容請到原站閱讀。</p>
+    {href && (
+      <a class="go" href={href} rel="noopener">
+        閱讀原文
+        <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4.5 2H10v5.5M10 2 2.5 9.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+      </a>
+    )}
+  </article>
+  <p class="back"><a href="/">回到今日講義</a>・<a href="/dates">歷史講義</a></p>
+</Base>
+
+<style>
+  .card {
+    max-width: 68ch;
+    margin-top: 14px;
+    border-top: 3px solid var(--ink);
+    border-bottom: 1px solid var(--rule);
+    padding: 12px 0 18px;
+  }
+  h1 {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 900;
+    line-height: 1.5;
+  }
+  .meta {
+    margin: 6px 0 0;
+    font-size: 13.5px;
+    color: var(--ink-2);
+  }
+  .note {
+    margin: 12px 0 0;
+    font-size: 14px;
+    color: var(--ink-2);
+  }
+  .go {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 8px 16px;
+    background: var(--blue);
+    color: #fff;
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .go:hover {
+    background: var(--blue-deep);
+  }
+  .back {
+    margin-top: 20px;
+    font-size: 14px;
+  }
+</style>

@@ -2,55 +2,59 @@ import antfu from '@antfu/eslint-config'
 import importX from 'eslint-plugin-import-x'
 
 // monorepo root path、用於 import-x/no-restricted-paths 的 basePath。
-// 當 lint 從 subdir 跑（例：pnpm --filter <ws> lint）、process.cwd() 會
-// 落在 workspace dir 而非 repo root、zone target 解析就會錯位。
+// 從 subdir 跑 eslint 時 process.cwd() 會落在 workspace dir，zone target 會錯位。
 const REPO_ROOT = import.meta.dirname
+
+// LLM 只經 ai 套件與 @ai-sdk/*（ADR 0004）。ESLint 同名規則後者整條覆蓋前者，
+// 所以 apps/web 的設定要帶上這兩份清單，不能只寫差異。
+const BANNED_LLM_SDK_PATHS = [
+  { name: '@anthropic-ai/sdk', message: 'LLM 呼叫走 ai 套件（ADR 0004）。' },
+  { name: '@google/genai', message: 'LLM 呼叫走 ai 套件（ADR 0004）。' },
+  { name: 'openai', message: 'LLM 呼叫走 ai 套件（ADR 0004）。' },
+]
+const BANNED_LLM_SDK_PATTERNS = [
+  { group: ['@anthropic-ai/sdk/*', '@google/genai/*', 'openai/*'], message: 'LLM 呼叫走 ai 套件（ADR 0004）。' },
+]
 
 export default antfu(
   {
-    vue: true,
     typescript: true,
-    formatters: true,
+    astro: true,
+    // astro 不交給 formatter：formatter 會把 .astro 的 parser 換成 parser-plain，
+    // astro-eslint-parser 被蓋掉後 import 邊界規則就檢查不到 .astro 的 frontmatter。
+    formatters: {
+      astro: false,
+      css: true,
+      html: true,
+    },
     stylistic: {
       semi: false,
       quotes: 'single',
     },
     ignores: [
       '**/dist/**',
+      '**/.astro/**',
       '**/node_modules/**',
       '**/*.md',
       'docs/**',
-      'apps/server/drizzle/**',
-      '**/drizzle/meta/**',
+      'spikes/**',
       '**/migrations/meta/**',
+      // 上游回應的原樣樣本（parser 測試的輸入），不套 formatter
       '**/__fixtures__/**/*.html',
-      // prompt-research CLI 的本機生成 dump（gitignored、非 source）、不 lint
-      '**/.prompt-research-out/**',
-      // brief:quality / brief:canary 的本機生成 pairwise 明細（gitignored、非 source）
-      '**/.eval-out/**',
-      // 自備的真實 canary fixtures（非 source、內含網頁全形/nbsp 等不規則空白）
-      '**/eval/fixtures/canary/**',
     ],
   },
   {
-    files: ['**/*.{ts,tsx,vue}'],
+    files: ['**/*.{ts,tsx,astro}'],
     plugins: {
       'import-x': importX,
     },
-    // 走 TypeScript resolver、否則 `from './foo.js'`（TS ESM 慣例、實際檔
-    // 是 .ts）會解析失敗、no-restricted-paths 無法判斷 zone 就 silently
-    // 跳過、@/* 等 tsconfig path alias 也讀不到。alwaysTryTypes 讓
-    // @suanomics/* workspace package 的 .d.ts → .ts source mapping 也能跑、
-    // project glob 涵蓋全 workspace tsconfig 讓 alias 解析正常。
+    // 走 TypeScript resolver，否則 `from './foo.js'`（實際檔是 .ts）解析失敗，
+    // no-restricted-paths 無法判斷 zone 就會靜默跳過。
     settings: {
       'import-x/resolver': {
         typescript: {
           alwaysTryTypes: true,
-          // monorepo workspace 都有自己的 tsconfig（含 @/* alias）、project
-          // 用 glob 全 cover；noWarnOnMultipleProjects 抑制 resolver 對「多
-          // tsconfig」的 advisory warning（已知設計、不是 misconfig）。
           project: [
-            './tsconfig.json',
             './apps/*/tsconfig.json',
             './packages/*/tsconfig.json',
           ],
@@ -59,35 +63,24 @@ export default antfu(
       },
     },
     rules: {
-      'ts/no-explicit-any': 'error',
-      'ts/no-non-null-assertion': 'error',
-      'ts/consistent-type-imports': 'error',
-      'import-x/extensions': ['error', 'ignorePackages', {
-        ts: 'never',
-        tsx: 'never',
-        mts: 'never',
-        cts: 'never',
-        vue: 'always',
-        js: 'always',
-        mjs: 'always',
-        cjs: 'always',
-        jsx: 'always',
-      }],
-      // workspace 邊界紀律機械化：
-      // - apps/* 互不能直接 import（要共用就抽到 packages/<shared>）
-      // - packages/* 不能 import apps/*（leaf 不依賴上層）
-      // 走 @suanomics/* workspace package 是允許 path、rule 解析後對應到
-      // packages/<pkg>/src/...、不會誤觸發。
-      // basePath 鎖到 REPO_ROOT、避免 `pnpm --filter <ws> lint` 從 subdir
-      // 跑時 process.cwd() 落在 workspace dir 導致 zone target 錯位。
+      // workspace 邊界（design-basis「Workspace 與依賴方向」）：
+      // - apps/web 不得 import apps/pipeline
+      // - packages/* 不得 import apps/*
       'import-x/no-restricted-paths': ['error', {
         basePath: REPO_ROOT,
         zones: [
-          { target: './apps/server', from: './apps/web' },
-          { target: './apps/web', from: './apps/server' },
+          { target: './apps/web', from: './apps/pipeline' },
           { target: './packages', from: './apps' },
         ],
       }],
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'ts/no-explicit-any': 'error',
+      'ts/no-non-null-assertion': 'error',
+      'ts/consistent-type-imports': 'error',
     },
   },
   {
@@ -96,28 +89,53 @@ export default antfu(
       'no-debugger': 'error',
       'prefer-template': 'error',
       'pnpm/yaml-enforce-settings': 'off',
-      // @antfu/eslint-config 10 新增的排版規則；全 repo 套用會改動四千多處、
-      // 部分檔案還可能因此超過 max-lines 300，先關掉維持既有排版，要採用另開 PR。
       'antfu/reasonable-newline': 'off',
     },
   },
   {
-    // 把專案的「檔 < 300、函式 < 50」guideline 機械化把關。
-    // 只套 source code（ts/tsx/vue/js）、不套 CSS / JSON / Markdown
-    // （Design System CSS / drizzle snapshot 等 generated artifact 屬合理大）。
-    // max-lines 設 error、超過必須拆檔 / 抽 module / 或 inline disable + 註解 why。
-    // max-lines-per-function 設 warn（80 是務實閾值、50 太嚴）、容忍 prompt
-    // builder 等 string concat 較長的 helper、IDE highlight 提醒重構即可。
-    files: ['**/*.{ts,tsx,vue,js,mjs,cjs}'],
+    // 「檔 < 300、函式 < 80」機械化把關，只套 source code。
+    files: ['**/*.{ts,tsx,astro,js,mjs,cjs}'],
     rules: {
       'max-lines': ['error', { max: 300, skipBlankLines: true, skipComments: true }],
       'max-lines-per-function': ['warn', { max: 80, skipBlankLines: true, skipComments: true }],
     },
   },
   {
-    // Test files：一個 SUT 對應多個 test case、單檔行數常突破 300、屬合理 cohesion、
-    // 機械 enforce 反而促成「為了縮行而拆 fixture」、與「測試易讀」目標衝突。
-    files: ['**/*.{test,spec}.{ts,tsx,js,vue}'],
+    files: ['**/*.{ts,mts,cts,tsx,astro,js,mjs,cjs,jsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          ...BANNED_LLM_SDK_PATHS,
+          { name: 'ai', importNames: ['generateObject'], message: 'generateObject 已 deprecated，用 generateText 加 Output.object。' },
+        ],
+        patterns: BANNED_LLM_SDK_PATTERNS,
+      }],
+    },
+  },
+  {
+    // 網站是靜態產生，LLM 呼叫只在 pipeline。
+    files: ['apps/web/**/*.{ts,mts,cts,tsx,astro,js,mjs,cjs,jsx}'],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [
+          ...BANNED_LLM_SDK_PATHS,
+          { name: 'ai', message: 'apps/web 不呼叫 LLM，只讀 pipeline 寫進 Postgres 的結果。' },
+        ],
+        patterns: [
+          ...BANNED_LLM_SDK_PATTERNS,
+          { group: ['ai/*', '@ai-sdk/*'], message: 'apps/web 不呼叫 LLM，只讀 pipeline 寫進 Postgres 的結果。' },
+        ],
+      }],
+    },
+  },
+  {
+    files: ['**/*.astro'],
+    rules: {
+      'ts/no-explicit-any': 'error',
+    },
+  },
+  {
+    files: ['**/*.{test,spec}.{ts,tsx,js}'],
     rules: {
       'max-lines': 'off',
       'max-lines-per-function': 'off',

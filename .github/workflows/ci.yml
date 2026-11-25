@@ -1,9 +1,7 @@
-name: ci
+name: CI
 
-# PR→main 與 push main 的完整驗證 gate（build + lint + type-check + test）。
-# 起真實 Postgres service、跑含 DB 連線的 repo 測試、不跳過。
-# 兩個 job：`ci`（build/lint/type-check/test）與 `docker`（兩個 image build 得過）。
-# 切成 public repo、設 branch protection 時，兩個都要列為 required status check。
+# 程式碼的驗證 gate：build → lint → type-check → db:migrate → test。
+# 真資料庫一律用 Postgres service container；Neon 的連線字串不進 CI。
 
 on:
   pull_request:
@@ -11,7 +9,6 @@ on:
   push:
     branches: [main]
 
-# 這個 workflow 只讀 repo 內容，不需要任何寫入權限。
 permissions:
   contents: read
 
@@ -21,9 +18,6 @@ jobs:
 
     services:
       postgres:
-        # 與 docker-compose.yml（本機）和 docker-compose.deploy.yml（部署參考）同一個大版本。
-        # 三邊要一起動：真 DB 測試刻意不 mock，它們跑在哪個版本就是這個專案唯一驗證過的版本。
-        # service container 不掛 volume，所以 PG18 改掉的 PGDATA 路徑在這裡沒有影響。
         image: postgres:18
         env:
           POSTGRES_USER: postgres
@@ -38,82 +32,84 @@ jobs:
           --health-retries 5
 
     env:
-      CI: 'true'
-      COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
       # 指向本 job 的 service container（GitHub 把 service port 映射到 localhost）
       DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/postgres'
-      # 測試多為 mock LLM、設 dummy 避免讀 env 的初始化路徑炸
-      GEMINI_API_KEY: test-key
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Setup Node 26
-        uses: actions/setup-node@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          node-version: 26
+          persist-credentials: false
 
-      # pnpm 版本由 package.json 的 packageManager 欄位自管（pnpm@11.8.0）。
-      # Node 25 起不再內建 corepack，要先從 npm 裝。
-      - name: Enable corepack
-        run: |
-          npm install -g corepack
-          corepack enable
+      # pnpm 版本取自 package.json 的 packageManager 欄位
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
-      - name: Resolve pnpm store path
-        id: pnpm-store
-        run: echo "path=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
-
-      - name: Cache pnpm store
-        uses: actions/cache@v6
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+          node-version-file: .nvmrc
+          cache: pnpm
 
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # build 先於 type-check/test：@suanomics/shared 等 exports 指 dist、後續步驟依賴 dist
+      # build 先於 type-check／test：@suanomics/shared 的 exports 指向 dist
       - name: Build
-        run: pnpm build
+        run: pnpm -r build
+
+      - name: Check packages/shared dependencies
+        run: |
+          node -e '
+            const deps = Object.keys(JSON.parse(require("node:fs").readFileSync("packages/shared/package.json", "utf8")).dependencies ?? {});
+            const extra = deps.filter(d => d !== "zod");
+            if (extra.length > 0) { console.error("packages/shared 的 dependencies 只能有 zod，多了：" + extra.join(", ")); process.exit(1); }
+          '
+
+      # 釘版的 release binary，不裝成 npm 依賴
+      - name: Install CI tools
+        run: |
+          mkdir -p "$RUNNER_TEMP/ci-tools/bin"
+          cd "$RUNNER_TEMP/ci-tools"
+          curl -fsSL -o zizmor.tar.gz https://github.com/zizmorcore/zizmor/releases/download/v1.32.0/zizmor-x86_64-unknown-linux-gnu.tar.gz
+          echo "bb110cc765eca9cd7efb2e284a956be5974c60027b0970f16397d86208a9957b  zizmor.tar.gz" | sha256sum -c -
+          curl -fsSL -o ripgrep.tar.gz https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz
+          echo "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c  ripgrep.tar.gz" | sha256sum -c -
+          mkdir extracted
+          tar -xzf zizmor.tar.gz -C extracted
+          tar -xzf ripgrep.tar.gz -C extracted
+          find extracted -type f \( -name zizmor -o -name rg \) -exec install -m 755 {} bin/ \;
+          echo "$RUNNER_TEMP/ci-tools/bin" >> "$GITHUB_PATH"
+
+      - name: Audit workflows
+        run: zizmor --offline .github/workflows
+
+      # ★（U+2605）不是 Unicode emoji，repo 註解用它標重點，所以不掃 U+2600-27BF 整段。
+      # rg 結束碼：0 有命中、1 無命中、2 執行錯誤；只有 1 算通過。
+      - name: Check emoji
+        run: |
+          status=0
+          rg -n '\p{Emoji_Presentation}|\x{FE0F}' apps packages || status=$?
+          test "$status" -eq 1
+
+      - name: Knip
+        run: pnpm knip
+
+      - name: Check docs
+        run: python3 tools/agents-guideline/check_docs.py --repo .
+
+      - name: Check rules index
+        run: python3 tools/agents-guideline/rules_index.py --repo . --config docs/rules/agent-rules.conf --check
 
       - name: Lint
         run: pnpm lint
 
       - name: Type check
-        run: pnpm type-check
+        run: pnpm -r type-check
 
-      # fresh Postgres 從空 DB 套用全部 migration（無 .env 時 db:migrate 吃 env var DATABASE_URL）
+      # 從空 DB 套用全部 migration，驗 drizzle migration 機制
       - name: DB migrate
-        run: pnpm --filter @suanomics/db run db:migrate
+        run: pnpm --filter @suanomics/pipeline run db:migrate
 
       - name: Test
-        run: pnpm test
-
-  docker:
-    runs-on: ubuntu-latest
-
-    # 只驗證兩個 image build 得過，不需要 Postgres、不 push、不登入任何 registry。
-    # `ci` job 的 `pnpm build` 跑在 host 上，不會經過 Dockerfile 的 COPY 清單與
-    # workspace 建置順序；Dockerfile.server / Dockerfile.web 各自把要用到的
-    # package.json 逐一 COPY 進 image 再 install，新增 workspace 忘記加進清單、
-    # 或 .dockerignore 排掉了實際需要的檔案，host 上 `pnpm build` 照樣綠、
-    # 只有實際跑 docker build 才會被擋下來。
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7
-
-      - name: Build server image
-        run: docker build -f Dockerfile.server -t suanomics-server:ci .
-
-      - name: Build web image
-        # VITE_API_URL 這個 ARG 沒有預設值：不傳時 Docker 會把它解析成空字串
-        # （不是 unset）。apps/web 的程式碼寫的是
-        # `import.meta.env.VITE_API_URL ?? 'http://localhost:3000'`，`??` 只在
-        # null/undefined 時才會 fallback，空字串會直接蓋掉這個預設值——build 仍會
-        # 成功，但跑出來的 image 會帶著空字串當 API base。這裡明傳一個佔位值只是
-        # 讓 build 這一步的行為貼近正式帶值時的樣子，不是部署用的值。
-        run: docker build -f Dockerfile.web --build-arg VITE_API_URL=http://localhost:3000 -t suanomics-web:ci .
+        run: pnpm -r test

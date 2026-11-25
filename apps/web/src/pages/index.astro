@@ -1,0 +1,35 @@
+---
+import BriefArticle from '../components/BriefArticle.astro'
+import Base from '../layouts/Base.astro'
+import { lectureNumbers } from '../lib/handout'
+import { getSiteData } from '../lib/site-data'
+import { pageTitle } from '../lib/title'
+
+const { briefs } = await getSiteData()
+const latest = briefs[0]
+const numbers = lectureNumbers(briefs.map(b => b.date))
+---
+
+<Base
+  issueDate={latest?.date}
+  current="today"
+  ogTitle={latest && pageTitle(latest.headline)}
+  description={latest && (latest.dailyThesis || latest.summary)}
+>
+  {latest
+    ? <BriefArticle brief={latest} lectureNo={numbers.get(latest.date) ?? briefs.length} />
+    : (
+        <section class="empty">
+          <h1>今天的講義還沒印好</h1>
+          <p>每個台股交易日開盤前會發一份。先翻翻<a href="/dates">歷史講義</a>。</p>
+        </section>
+      )}
+</Base>
+
+<style>
+  .empty h1 {
+    margin: 24px 0 8px;
+    font-size: 22px;
+    font-weight: 900;
+  }
+</style>

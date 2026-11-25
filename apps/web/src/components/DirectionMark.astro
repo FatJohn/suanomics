@@ -1,0 +1,43 @@
+---
+import type { IndustryView } from '../lib/present-brief'
+import { directionLabel } from '../lib/handout'
+
+interface Props { direction: IndustryView['direction'] }
+const { direction } = Astro.props
+---
+
+<span class:list={['mark', direction]}>
+  <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false">
+    {direction === 'positive' && <path d="M6 1.5 11 10H1z" />}
+    {direction === 'negative' && <path d="M6 10.5 1 2h10z" />}
+    {direction === 'mixed' && <path d="M6 .8 9.6 5H2.4zM6 11.2 2.4 7h7.2z" />}
+    {direction === 'uncertain' && <circle cx="6" cy="6" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6" />}
+  </svg>
+  {directionLabel(direction)}
+</span>
+
+<style>
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+  svg {
+    fill: currentColor;
+    flex: none;
+  }
+  .positive {
+    color: var(--up);
+  }
+  .negative {
+    color: var(--down);
+  }
+  .mixed,
+  .uncertain {
+    color: var(--flat);
+  }
+</style>

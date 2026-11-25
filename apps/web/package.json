@@ -1,40 +1,29 @@
 {
-  "name": "web",
+  "name": "@suanomics/web",
   "type": "module",
   "version": "0.1.0",
   "private": true,
   "license": "Apache-2.0",
   "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
-    "preview": "vite preview",
-    "test": "vitest run --passWithNoTests",
-    "layout:assert": "node scripts/layout-assertions.mjs",
-    "nav:assert": "node scripts/navigation-assertions.mjs",
-    "type-check": "vue-tsc --noEmit",
-    "lint": "eslint ."
+    "dev": "astro dev",
+    "build": "astro build",
+    "build:publish": "WEB_REQUIRE_DATABASE=1 astro build",
+    "preview": "astro preview",
+    "type-check": "astro check",
+    "test": "vitest run"
   },
   "dependencies": {
-    "@iconify-json/lucide": "^1.2.151",
-    "@iconify/vue": "^5.0.5",
     "@suanomics/shared": "workspace:*",
+    "astro": "^7.4.7",
+    "drizzle-orm": "^0.45.4",
     "markdown-it": "^15.0.3",
-    "pinia": "^4.1.0",
-    "reka-ui": "^2.11.0",
-    "vue": "^3.5.45",
-    "vue-router": "^5.4.0"
+    "postgres": "^3.4.9"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.3.4",
-    "@types/node": "^26.6.6",
-    "@vitejs/plugin-vue": "^6.0.10",
-    "autoprefixer": "^10.6.2",
-    "playwright-core": "^1.65.0",
-    "postcss": "^8.5.32",
-    "tailwindcss": "^4.3.4",
+    "@astrojs/check": "^0.9.12",
+    "@tailwindcss/vite": "^4.3.5",
+    "tailwindcss": "^4.3.5",
     "typescript": "~6.0.3",
-    "vite": "^8.3.6",
-    "vitest": "^5.1.0",
-    "vue-tsc": "^3.3.14"
+    "vitest": "^5.1.0"
   }
 }

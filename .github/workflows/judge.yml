@@ -1,0 +1,103 @@
+name: Brief Judge
+
+# Daily Brief 成功後評當天的 brief（quality 與 continuity），結果寫進 job summary、逐日 JSON 上傳 artifact。
+# 與 daily.yml 分開：judge 失敗、超過花費上限都不影響當天的報告與部署。見 #89。
+#
+# 自動觸發時報告日取 Daily Brief run 開始時的台北日期，並帶 --skip-missing --skip-judged：
+# 非交易日或報告未完成時沒有 brief，乾淨略過；備援 schedule 以 already-exists 成功時，
+# 帳本已有當天的 judge 紀錄，不重複評分。手動補評不帶這兩個旗標，指定日期就重評。
+
+on:
+  # workflow_run 的風險是拿 fork PR 的產物或 head 在有權限的 context 執行。這裡不成立：
+  # Daily Brief 只由 schedule 與 workflow_dispatch 觸發、限 main 分支，本 workflow
+  # 不 checkout 觸發 run 的 head、不下載它的 artifact，只讀 run_started_at 算日期。
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: [Daily Brief]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 報告日期 YYYY-MM-DD
+        required: true
+        type: string
+      max_usd:
+        description: 本次花費上限（USD）
+        required: false
+        type: string
+        default: '1.00'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: judge
+  cancel-in-progress: false
+
+jobs:
+  judge:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 30
+
+    steps:
+      # workflow_run 的預設 ref 是預設分支的最新 commit，不 checkout 觸發 run 的 head。
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # judge 只用到 shared 的 dist，不 build 網站。
+      - name: Build shared
+        run: pnpm --filter @suanomics/shared run build
+
+      # 上限另設、不吃 DAILY_COST_LIMIT_USD：兩個 judge 一天約 US$0.22，1.00 留餘裕又擋得住失控。
+      - name: Run judge
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          RUN_STARTED_AT: ${{ github.event.workflow_run.run_started_at }}
+          INPUT_DATE: ${{ inputs.date }}
+          INPUT_MAX_USD: ${{ inputs.max_usd }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AGENT_MODELS: brief-quality-judge:anthropic/claude-opus-5-5,brief-continuity-judge:anthropic/claude-opus-5-5
+        run: |
+          out="$RUNNER_TEMP/judge"
+          if [ "$EVENT_NAME" = "workflow_run" ]; then
+            date="$(TZ=Asia/Taipei date -d "$RUN_STARTED_AT" +%F)"
+            args=(--dates "$date" --max-usd 1.00 --skip-missing --skip-judged --out "$out")
+          else
+            args=(--dates "$INPUT_DATE" --max-usd "${INPUT_MAX_USD:-1.00}" --out "$out")
+          fi
+          pnpm --filter @suanomics/pipeline run eval:judge "${args[@]}"
+
+      - name: Write job summary
+        if: always()
+        run: |
+          summary="$RUNNER_TEMP/judge/summary.md"
+          if [ -f "$summary" ]; then
+            cat "$summary" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "judge 沒有產出 summary.md，原因見 Run judge 的 log。" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload judge JSON
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: judge-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/judge/*.json
+          if-no-files-found: ignore
+          retention-days: 90

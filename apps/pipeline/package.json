@@ -1,0 +1,47 @@
+{
+  "name": "@suanomics/pipeline",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
+    "db:seed": "tsx --env-file-if-exists=.env src/db/seed.ts",
+    "ingest:run": "tsx --env-file-if-exists=.env src/ingest/run.cli.ts",
+    "daily": "tsx --env-file-if-exists=.env src/orchestrator/daily.cli.ts",
+    "daily:shadow": "tsx --env-file-if-exists=.env src/orchestrator/shadow.cli.ts",
+    "analyze": "tsx --env-file-if-exists=.env src/analyze/analyze.cli.ts",
+    "corpus:refresh": "tsx --env-file-if-exists=.env src/corpus/corpus-refresh.cli.ts",
+    "fixtures:check": "tsx src/ingest/fixtures/cli.ts",
+    "llm:live-check": "tsx src/agents/live-check.cli.ts",
+    "llm:usage": "tsx --env-file-if-exists=.env src/agents/llm-usage.cli.ts",
+    "eval:judge": "tsx --env-file-if-exists=.env tools/eval/judge.cli.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^4.0.98",
+    "@mozilla/readability": "^0.6.0",
+    "@suanomics/shared": "workspace:*",
+    "ai": "^7.0.164",
+    "cheerio": "^1.2.0",
+    "drizzle-orm": "^0.45.4",
+    "fast-xml-parser": "^5.12.0",
+    "js-yaml": "^5.5.0",
+    "linkedom": "^0.18.15",
+    "p-map": "^7.1.1",
+    "postgres": "^3.4.9",
+    "undici": "^7.30.2",
+    "unpdf": "^2.2.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vitest": "^5.1.0"
+  }
+}

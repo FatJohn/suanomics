@@ -201,6 +201,87 @@ describe('containsTickerDirection', () => {
     expect(containsTickerDirection('投信加碼聯發科').hit).toBe(false)
   })
 
+  it('shouldNotAttributeVerbToActorAcrossSentenceEnd', () => {
+    // 前一句的 actor 不替下一句的方向詞背書：「加碼台積電」單獨成句就是推薦語氣（#73）
+    for (const end of ['。', '！', '？', '!', '?', '\n'])
+      expect(containsTickerDirection(`外資${end}加碼台積電`).hit, JSON.stringify(end)).toBe(true)
+  })
+
+  it('shouldKeepSameSentenceAttribution', () => {
+    // 正向語料：actor 與方向詞同句（逗號、頓號、空白不是句末）照常放行
+    const allowed = [
+      '外資加碼台積電',
+      '外資今日加碼台積電',
+      '外資，加碼台積電',
+      '外資、投信同步加碼台積電',
+      '外資 加碼 2330',
+      '外資賣超。投信加碼台積電。',
+      // 分號隔開的並列子句常省略主詞，仍是同一句（與 splitSentences 的句界一致）
+      '外資減碼聯發科；加碼台積電。',
+      '外資減碼聯發科;加碼台積電。',
+    ]
+    for (const text of allowed)
+      expect(containsTickerDirection(text).hit, text).toBe(false)
+  })
+
+  it('shouldNotAttributeVerbWhenLaterClauseAddressesReader', () => {
+    // 逗號後改成對讀者的語氣（情態詞）或換成讀者主詞：方向詞不再由前面的 actor 背書（#77）
+    const blocked = [
+      '外資賣超，可加碼台積電',
+      '外資賣超，散戶加碼台積電',
+      '外資賣超，宜加碼台積電',
+      '外資賣超，應減碼台積電',
+      '外資賣超，投資人可加碼台積電',
+      '外資賣超，投資人加碼台積電',
+      '外資賣超後，不妨加碼台積電',
+      '外資賣超，台積電可加碼',
+      '外資減碼聯發科；可加碼台積電',
+      '外資賣超、須加碼台積電',
+      '外資賣超,需加碼台積電',
+      '外資賣超;該加碼台積電',
+      '外資賣超：可加碼台積電',
+      '外資賣超:宜加碼台積電',
+      '外資賣超，你加碼台積電',
+      '外資賣超，您可加碼台積電',
+      '外資賣超，您加碼台積電',
+      '外資賣超，讀者加碼台積電',
+      '外資賣超，投資者加碼台積電',
+      '外資賣超，大家加碼台積電',
+    ]
+    for (const text of blocked)
+      expect(containsTickerDirection(text).hit, text).toBe(true)
+  })
+
+  it('shouldKeepAttributionWhenLaterClauseKeepsActorAsSubject', () => {
+    // 正向語料：逗號後省略主詞、沿用前面的 actor，或情態詞不在逗號後的子句（#77）
+    const allowed = [
+      '外資昨日買超，持續加碼台積電',
+      '外資看好，續加碼台積電',
+      '外資回補，加碼台積電',
+      '外資：加碼台積電',
+      '外資加碼台積電，減碼聯發科',
+      '外資可能加碼台積電',
+      '外資認為應加碼台積電',
+      '外資連續加碼台積電',
+      // 含情態字的一般詞彙不是對讀者的指示；可成是股名
+      '外資賣超，可能加碼台積電',
+      '外資連三買，可望續加碼台積電',
+      '外資買超，可見持續加碼台積電',
+      '外資買超，需求帶動加碼台積電',
+      '外資表示，應會加碼台積電',
+      '法人看好，可成獲加碼',
+      '外資回補，該股加碼台積電',
+      // 讀者詞不在子句開頭時是對手方或並列主體，不是方向詞的主詞
+      '外資趁散戶恐慌加碼台積電',
+      '外資不顧投資人賣壓加碼台積電',
+      '外資與散戶同步加碼台積電',
+      '外資賣超，趁散戶恐慌加碼台積電',
+      '外資散戶同步加碼台積電',
+    ]
+    for (const text of allowed)
+      expect(containsTickerDirection(text).hit, text).toBe(false)
+  })
+
   it('shouldStillHitUnattributedDirectionOnNamedStock', () => {
     // 自家未歸因 reader-facing：仍擋
     expect(containsTickerDirection('台積電可加碼').hit).toBe(true)
@@ -264,6 +345,10 @@ describe('checkCompliance', () => {
   it('allows factual macro reporting that previously false-positived (6/27 regression)', () => {
     const snippet = '度最為劇烈，成為外資減碼的主要重災區。\n台股週跌1893點　上市公司市值縮水'
     expect(checkCompliance(snippet)).toBeNull()
+  })
+
+  it('blocks a direction verb whose only actor sits in the previous sentence (#73)', () => {
+    expect(checkCompliance('外資。加碼台積電。')?.violation).toBe('ticker-direction')
   })
 
   it('still blocks reader-directed recommendation routed through 散戶 (not a third-party actor)', () => {

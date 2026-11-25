@@ -1,0 +1,23 @@
+[
+  {
+    "IndustryCat": "ETF",
+    "Numbers": "245",
+    "ShareNumber": "283390917260",
+    "ForeignMainlandAreaShare": "3114329914",
+    "Percentage": "1.10"
+  },
+  {
+    "IndustryCat": "水泥工業",
+    "Numbers": "8",
+    "ShareNumber": "14107198706",
+    "ForeignMainlandAreaShare": "1775041194",
+    "Percentage": "12.58"
+  },
+  {
+    "IndustryCat": "食品工業",
+    "Numbers": "24",
+    "ShareNumber": "14861672648",
+    "ForeignMainlandAreaShare": "2632647556",
+    "Percentage": "17.71"
+  }
+]

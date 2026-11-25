@@ -1,0 +1,3 @@
+# 只在本 repo 生效的 Codex 設定（需在 ~/.codex/config.toml 把本 repo 標成 trusted）
+[mcp_servers.neon]
+url = "https://mcp.neon.tech/mcp"

@@ -1,0 +1,219 @@
+---
+import type { BriefView } from '../lib/present-brief'
+import { annotateHtml, escapeHtml } from '../lib/glossary'
+import { GLOSSARY } from '../lib/glossary-terms'
+import { readingMinutes } from '../lib/handout'
+import { renderMarkdown } from '../lib/markdown'
+import KeyPoints from './KeyPoints.astro'
+import SourceLinks from './SourceLinks.astro'
+import Viewpoints from './Viewpoints.astro'
+
+interface Props { brief: BriefView, lectureNo: number }
+const { brief, lectureNo } = Astro.props
+const narrative = brief.narrative
+const sections = narrative?.sections ?? []
+const minutes = readingMinutes([
+  brief.dailyThesis,
+  narrative ? [narrative.intro, ...sections.flatMap(s => [s.takeaway, s.body]), narrative.outro].join('') : brief.summary,
+])
+
+// 每個術語整頁只標第一次出現，所以依閱讀順序一次算完，不交給子元件各自標。
+// 小標與結論句不標，它們已有自己的樣式。產業理由收在點開的列裡，排到最後才標，
+// 本文標過的術語就不會只藏在收合的列裡。
+const seen = new Set<string>()
+const glossMarkdown = (text: string) => annotateHtml(renderMarkdown(text), GLOSSARY, seen)
+const glossText = (text: string) => annotateHtml(escapeHtml(text), GLOSSARY, seen)
+const thesisHtml = glossText(brief.dailyThesis || brief.summary)
+const introHtml = narrative ? glossMarkdown(narrative.intro) : ''
+const bodyHtml = sections.map(s => glossMarkdown(s.body))
+const outroHtml = narrative?.outro ? glossMarkdown(narrative.outro) : ''
+const summaryHtml = !narrative && brief.summary && brief.dailyThesis ? glossText(brief.summary) : ''
+const viewpoints = brief.viewpoints && {
+  supportHtml: brief.viewpoints.supportPoints.map(glossText),
+  riskHtml: brief.viewpoints.riskPoints.map(glossText),
+  netReadHtml: brief.viewpoints.netRead ? glossText(brief.viewpoints.netRead) : '',
+}
+const industries = brief.industries.map(({ reasoning, ...rest }) => ({ ...rest, reasoningHtml: reasoning ? glossText(reasoning) : '' }))
+
+const toc = [
+  { id: 'key', label: '本日必考重點' },
+  ...(narrative ? [{ id: 'intro', label: '導讀' }] : []),
+  ...sections.map((s, i) => ({ id: `sec-${i + 1}`, label: `詳解 ${i + 1}：${s.heading}` })),
+  ...(brief.viewpoints ? [{ id: 'views', label: '正反觀點' }] : []),
+  ...(brief.selectedNews.length > 0 ? [{ id: 'news', label: '本日選稿' }] : []),
+  { id: 'sources', label: '引用來源' },
+]
+---
+
+<div class="layout">
+  <article class="brief">
+    <p class="fields">
+      <span>第 {lectureNo} 回</span><span>閱讀 {minutes} 分鐘</span><span>來源 {brief.citations.length} 則</span>
+    </p>
+    <h1>{brief.headline}</h1>
+
+    <KeyPoints thesisHtml={thesisHtml} industries={industries} />
+
+    {narrative
+      ? (
+          <>
+            <section id="intro" aria-labelledby="intro-title">
+              <h2 id="intro-title">導讀</h2>
+              <div class="prose-handout" set:html={introHtml} />
+            </section>
+            {sections.map((s, i) => (
+              <section id={`sec-${i + 1}`} aria-labelledby={`sec-${i + 1}-title`}>
+                <h2 id={`sec-${i + 1}-title`}><span class="no">詳解 {i + 1}／{sections.length}</span>{s.heading}</h2>
+                {s.takeaway && <p class="take">{s.takeaway}</p>}
+                <div class="prose-handout" set:html={bodyHtml[i]} />
+                <SourceLinks label="出處" links={s.citations} />
+              </section>
+            ))}
+            {outroHtml && <div class="prose-handout outro" set:html={outroHtml} />}
+          </>
+        )
+      : summaryHtml && <p set:html={summaryHtml} />}
+
+    {viewpoints && <Viewpoints viewpoints={viewpoints} />}
+
+    {brief.selectedNews.length > 0 && (
+      <section id="news" aria-labelledby="news-title">
+        <h2 id="news-title">本日選稿</h2>
+        <ul class="list">{brief.selectedNews.map(n => <li><a href={`/brief/news/${n.id}`}>{n.title}</a></li>)}</ul>
+      </section>
+    )}
+
+    <section id="sources" aria-labelledby="sources-title">
+      <h2 id="sources-title">引用來源</h2>
+      {brief.citations.length > 0
+        ? <ol class="list">{brief.citations.map(c => <li><a href={c.url} rel="noopener">{c.title}</a></li>)}</ol>
+        : <p>資料不足</p>}
+    </section>
+
+    <p class="disclaimer">{brief.disclaimer}</p>
+  </article>
+
+  <nav class="toc" aria-label="本講義目錄">
+    <p class="toc-title">本講義目錄</p>
+    <ol>{toc.map(t => <li><a href={`#${t.id}`}>{t.label}</a></li>)}</ol>
+  </nav>
+</div>
+
+<style>
+  .layout {
+    display: grid;
+    gap: 48px;
+  }
+  @media (min-width: 1024px) {
+    .layout {
+      grid-template-columns: minmax(0, 68ch) 15rem;
+      justify-content: space-between;
+    }
+  }
+  article {
+    min-width: 0;
+  }
+  .fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin: 0;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .fields span {
+    border-bottom: 1px solid var(--ink-2);
+    padding: 0 4px;
+    line-height: 1.6;
+  }
+  h1 {
+    margin: 14px 0 0;
+    font-size: clamp(21px, 1.2rem + 1vw, 30px);
+    font-weight: 900;
+    line-height: 1.45;
+    letter-spacing: 0.01em;
+  }
+  h2 .no {
+    white-space: nowrap;
+    margin-right: 0.5em;
+    font-size: 0.8em;
+    color: var(--blue);
+    letter-spacing: 0.12em;
+  }
+  /* 紅筆是劃線不是字色：紅色在本站代表上漲，負數印成紅字會被讀反。 */
+  .take {
+    margin: 6px 0 0;
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-color: var(--red);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.32em;
+    font-size: 15.5px;
+    line-height: 1.75;
+  }
+  .outro {
+    margin-top: 28px;
+    padding-top: 6px;
+    border-top: 1px solid var(--rule);
+  }
+  .list {
+    margin: 0;
+    padding-left: 1.5em;
+    list-style: decimal;
+  }
+  ul.list {
+    list-style: disc;
+  }
+  .list li {
+    margin: 6px 0;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .list li::marker {
+    color: var(--ink-2);
+  }
+  .disclaimer {
+    margin: 40px 0 0;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .toc {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .toc {
+      display: block;
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      border-top: 3px solid var(--ink);
+      padding-top: 8px;
+      font-size: 13.5px;
+      line-height: 1.6;
+    }
+  }
+  .toc-title {
+    margin: 0 0 6px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+  }
+  .toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .toc li {
+    padding: 5px 0;
+    border-top: 1px dashed var(--rule);
+  }
+  .toc a {
+    color: var(--ink);
+    text-decoration-color: var(--rule);
+  }
+  .toc a:hover {
+    color: var(--blue);
+    text-decoration-color: var(--blue);
+  }
+</style>

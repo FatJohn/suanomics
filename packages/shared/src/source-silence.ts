@@ -20,7 +20,7 @@
  *   這個形狀，不是那兩個來源本身。
  *
  * 分法是**明示接受**而不是時間啟發式：已知破損且不打算現在修的來源列進
- * `ACCEPTED_ZERO_OUTPUT_SLUGS`（`@suanomics/db` 的 seed 檔，就放在來源設定旁邊），其餘落進
+ * `ACCEPTED_ZERO_OUTPUT_SLUGS`（`apps/pipeline/src/db` 的 seed 檔，就放在來源設定旁邊），其餘落進
  * never 的一律告警。**改了某個來源的 feed 就要把它從那份清單拿掉**——這是這條告警缺的
  * forcing function，也是為什麼清單放在 seed 旁邊：改 feed 的那個 diff 會同時看到它。
  */
@@ -89,10 +89,10 @@ export interface SourceSilenceSummary {
 }
 
 export interface SourceSilenceOptions {
-  /** 已知零產出、明示接受不告警的 slug。來源見 `@suanomics/db` 的 `ACCEPTED_ZERO_OUTPUT_SLUGS`。 */
+  /** 已知零產出、明示接受不告警的 slug。來源見 `apps/pipeline/src/db` 的 `ACCEPTED_ZERO_OUTPUT_SLUGS`。 */
   acceptedZeroOutput: readonly string[]
   /**
-   * 已知「有列但不能用」且明示接受的 slug。corpus 端見 `@suanomics/db` 的
+   * 已知「有列但不能用」且明示接受的 slug。corpus 端見 `apps/pipeline/src/db` 的
    * `ACCEPTED_ZERO_ENRICHMENT_SLUGS`、日報端見 `ACCEPTED_ZERO_USABLE_NEWS_SLUGS`。
    * 省略＝一律不判 zeroUsable。
    */

@@ -1,4 +1,5 @@
 export * from './brief-health.js'
+export * from './compliance-strip.js'
 export * from './compliance.js'
 export * from './cross-market-signals.js'
 export * from './enrichable.js'
@@ -16,4 +17,5 @@ export * from './podcast.js'
 export * from './report-date.js'
 export * from './series-direction.js'
 export * from './source-silence.js'
-export * from './startup-config.js'
+
+export const SITE_NAME = '掐指連總經'

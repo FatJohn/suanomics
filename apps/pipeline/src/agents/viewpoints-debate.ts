@@ -1,0 +1,116 @@
+import type { CascadeChain, EvidenceClaim, Viewpoints } from '@suanomics/shared'
+import type { LlmCallRecord } from './call-agent.js'
+import { checkCompliance, stripViolatingProse, ViewpointsSchema } from '@suanomics/shared'
+import {
+  buildDebateMaterial,
+  NET_READ_PROMPT,
+  RISK_PROMPT,
+  SUPPORT_PROMPT,
+} from '../prompts/viewpoints-debate.prompt.js'
+import { VIEWPOINTS_DEBATE_USER_TEXT } from '../prompts/viewpoints-debate.user-content.js'
+import { hasGarbledChars } from './_garbled-text.js'
+import { truncateAtSentence } from './_truncate.js'
+import { callAgent } from './call-agent.js'
+import { CostGateError } from './cost-gate.js'
+import { ViewpointsNetReadResponse, ViewpointsPointsResponse } from './response-schemas.js'
+
+export interface RunViewpointsDebateParams {
+  thesis: string
+  headline: string
+  summary: string
+  marketSnapshot: string | null
+  cascadeChains: CascadeChain[]
+  // analyst 已核對過的證據；缺席時辯論只剩 headline/summary/snapshot/chains，
+  // 反向數字會兩個讀者面欄位都到不了
+  claimLedger?: readonly EvidenceClaim[]
+  onCallRecord?: (r: LlmCallRecord) => void
+}
+
+const NET_READ_MIN = 120
+const NET_READ_MAX = 360
+const ENDS_AT_SENTENCE = /[。！？][」』）"]*$/
+
+// 超長時截到句界，保住整個區塊。prompt 要求結論寫在最前面，被截掉的是後段條件。
+// 找不到合格句界就原樣回傳交給 schema 擋：truncateAtSentence 此時會硬切，半句話不該上讀者面。
+function fitNetRead(s: string): string {
+  if (s.length <= NET_READ_MAX)
+    return s
+  const cut = truncateAtSentence(s, NET_READ_MAX, NET_READ_MIN)
+  return typeof cut === 'string' && ENDS_AT_SENTENCE.test(cut) ? cut : s
+}
+
+// 所有 reader-facing viewpoints 文字拼成一字串、供 checkCompliance 掃描
+function viewpointsText(v: Viewpoints): string {
+  return [...v.supportPoints, ...v.riskPoints, v.netRead].join('\n')
+}
+
+// bounded debate：support ‖ risk（平行各一輪）→ net-read 收斂 → 合規 gate。
+// 任一步失敗 / 違規 / 不合 schema → 回 null（graceful degrade、brief 照常出稿、不阻擋）。
+export async function runViewpointsDebate(
+  p: RunViewpointsDebateParams,
+): Promise<Viewpoints | null> {
+  try {
+    const material = buildDebateMaterial({
+      thesis: p.thesis,
+      headline: p.headline,
+      summary: p.summary,
+      marketSnapshot: p.marketSnapshot,
+      cascadeChains: p.cascadeChains,
+      ...(p.claimLedger ? { claimLedger: p.claimLedger } : {}),
+    })
+    const onCall = p.onCallRecord
+    const opt = onCall ? { onCallRecord: onCall } : {}
+
+    const [support, risk] = await Promise.all([
+      callAgent('viewpoints-debate', { systemPrompt: SUPPORT_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.supportUserContent(material) }, ViewpointsPointsResponse, {
+        ...opt,
+      }),
+      callAgent('viewpoints-debate', { systemPrompt: RISK_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.riskUserContent(material) }, ViewpointsPointsResponse, {
+        ...opt,
+      }),
+    ])
+
+    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(material, support.points, risk.points) }, ViewpointsNetReadResponse, {
+      ...opt,
+    })
+
+    // 句級降級（取代整包 all-or-nothing）：逐點濾除違規 point、netRead 逐句 strip 違規句。
+    // 一個方向詞不再讓整個 viewpoints 消失；清乾淨後才驗 schema。
+    //
+    // 亂碼與合規並列在同一道濾網：2026-08-12 的 A/B 觀察到模型偶爾整句吐出被替換掉的字元
+    // （`成由攥䍕挧攥萱刑甘成甥、嘐瀕外資售日買超台股達903.08億元`），而 compliance gate
+    // 與 schema 都會放行。見 `_garbled-text.ts`。
+    const clean = (pt: string): boolean => checkCompliance(pt) === null && !hasGarbledChars(pt)
+    const candidate = {
+      supportPoints: support.points.map(s => s.trim()).filter(Boolean).filter(clean),
+      riskPoints: risk.points.map(s => s.trim()).filter(Boolean).filter(clean),
+      // 先 strip 再截：違規句移除後可能已在上限內，順序反過來會多切掉合規內容。
+      netRead: fitNetRead(stripViolatingProse(netReadOut.netRead.trim())),
+    }
+    // netRead 是單一段連續文字、沒有「丟掉壞的那一點」這個選項；亂碼就整包 degrade。
+    // brief 照常出稿（少了 viewpoints 區塊），比讓亂碼上讀者面好。
+    if (hasGarbledChars(candidate.netRead)) {
+      console.warn('[viewpoints-debate] degrade reason=garbled-netread')
+      return null
+    }
+    // strip 後若不足門檻（support/risk 各 <2、或 netRead <120）→ schema 擋下 → degrade null。
+    const parsed = ViewpointsSchema.safeParse(candidate)
+    if (!parsed.success) {
+      console.warn(`[viewpoints-debate] degrade reason=schema-invalid issues=${JSON.stringify(parsed.error.issues).slice(0, 800)}`)
+      return null
+    }
+    // 逐點/逐句 strip 後理應全 clean；防禦性複查跨點/跨句 proximity 殘留。
+    const violation = checkCompliance(viewpointsText(parsed.data))
+    if (violation) {
+      console.warn(`[viewpoints-debate] degrade reason=compliance violation=${violation.violation} matched=${violation.matched}`)
+      return null
+    }
+    return parsed.data
+  }
+  catch (err) {
+    if (err instanceof CostGateError)
+      throw err
+    console.warn(`[viewpoints-debate] degrade reason=error err=${err instanceof Error ? err.message : String(err)}`)
+    return null
+  }
+}

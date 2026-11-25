@@ -1,0 +1,132 @@
+---
+import type { IndustryView } from '../lib/present-brief'
+import { confidenceLabel } from '../lib/handout'
+import DirectionMark from './DirectionMark.astro'
+
+// *Html 欄位已跳脫並標好術語（BriefArticle 依整頁閱讀順序標），會用 set:html 輸出；
+// 型別和 IndustryView 的純文字 reasoning 分開，未跳脫的文字傳不進來。
+type IndustryRow = Omit<IndustryView, 'reasoning'> & { reasoningHtml: string }
+interface Props { thesisHtml: string, industries: IndustryRow[] }
+const { thesisHtml, industries } = Astro.props
+---
+
+<section class="box" id="key" aria-labelledby="key-title">
+  <h2 id="key-title">本日必考重點</h2>
+  {thesisHtml && <p class="thesis"><mark class="hl" set:html={thesisHtml} /></p>}
+  {industries.length > 0 && (
+    <>
+      <p class="hint">牽動產業（點開看理由）</p>
+      <ol>
+        {industries.map((industry, i) => (
+          <li>
+            <details>
+              <summary>
+                <span class="no">{i + 1}</span>
+                <span class="name">{industry.name}</span>
+                <DirectionMark direction={industry.direction} />
+                <svg class="toggle" viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.6" /></svg>
+              </summary>
+              <p class="why">
+                <Fragment set:html={industry.reasoningHtml || '這筆沒有附理由。'} />
+                <span class="conf">（{confidenceLabel(industry.confidence)}）</span>
+              </p>
+            </details>
+          </li>
+        ))}
+      </ol>
+    </>
+  )}
+</section>
+
+<style>
+  .box {
+    position: relative;
+    margin-top: 22px;
+    border: 2px solid var(--blue);
+    background: var(--sheet);
+    padding: 18px 14px 6px;
+  }
+  /* 用 .box > h2 提高權重，蓋過 global.css 的 .brief h2 節標題樣式。 */
+  .box > h2 {
+    position: absolute;
+    top: -0.85em;
+    left: 10px;
+    margin: 0;
+    background: var(--blue);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    line-height: 1.6;
+    padding: 1px 8px 1px 10px;
+  }
+  .thesis {
+    margin: 0;
+    font-size: 15.5px;
+    font-weight: 500;
+    line-height: 1.8;
+  }
+  .hint {
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: var(--ink-2);
+    letter-spacing: 0.08em;
+  }
+  ol {
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  li + li {
+    border-top: 1px dashed var(--rule);
+  }
+  summary {
+    display: grid;
+    grid-template-columns: 1.4em 1fr auto 12px;
+    align-items: baseline;
+    gap: 6px;
+    padding: 8px 0;
+    cursor: pointer;
+    list-style: none;
+    font-size: 14.5px;
+    line-height: 1.55;
+  }
+  summary::-webkit-details-marker {
+    display: none;
+  }
+  summary:hover .name {
+    text-decoration: underline;
+    text-decoration-color: var(--blue);
+    text-underline-offset: 0.22em;
+  }
+  .toggle {
+    align-self: center;
+    color: var(--ink-2);
+    transition: transform 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  details[open] .toggle {
+    transform: rotate(180deg);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toggle {
+      transition: none;
+    }
+  }
+  .no {
+    font-weight: 900;
+    color: var(--blue);
+  }
+  .name {
+    font-weight: 700;
+  }
+  .why {
+    margin: 0 0 10px 1.4em;
+    padding-left: 6px;
+    font-size: 14px;
+    line-height: 1.75;
+    color: var(--ink-2);
+  }
+  .conf {
+    white-space: nowrap;
+  }
+</style>

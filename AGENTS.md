@@ -1,131 +1,118 @@
 # AGENTS.md
 
-給在這個 repo 工作的 AI coding agent 的指示。人類貢獻者的完整說明在 [CONTRIBUTING.md](CONTRIBUTING.md)。這份只寫這個 repo 的 gotcha、鎖定的選型與邊界；長內容一律指向 `docs/`（見「要細節時去哪讀」）。
+讀者：在本 repo 工作的 AI coding agent（Claude Code 經 `CLAUDE.md` 匯入本檔）
+型別：規則
+
+本檔每個 session 全文載入，只放判斷規則適用性所需的一行標題、鎖定的選型與指令；規則的理由與機械化方式在 [程式碼規則](docs/rules/coding.md)。人類貢獻者的流程在 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ## 專案是什麼
 
-每天台股開盤前，自動產出一份總經報告：昨晚世界上發生了什麼、可能怎麼影響今天的台股。核心輸出是一串連動鏈，每條都長成「哪個產業、透過什麼機制、牽動哪些標的、往哪個方向」，全部附引用來源。完整背景見 [docs/architecture/orientation.md](docs/architecture/orientation.md)。
+每個台股交易日開盤前自動產出一份總經報告：前一晚世界上發生了什麼、透過什麼機制牽動哪些台股標的、方向為何，每條連動鏈附引用來源。系統是一條排程批次 pipeline 加一個 Astro 靜態網站，沒有常駐 server。架構與邊界見 [設計依據](docs/architecture/design-basis.md)，每個取捨的完整理由見 [決策紀錄](docs/adr/)。
 
-## 慣例
-
-- 文件與註解：繁體中文（台灣用語）；程式碼 identifier：英文。
-- 程式碼裡不要放 emoji。
-- 避免過度工程：能用原生 `fetch` 的不要引 axios、能用 JSON 的不要上資料庫。
-
-## 開發紀律
-
-**嚴格 TDD**（這些必定先寫測試）：Zod schemas、LLM prompt builders、citation URL 驗證、業務規則（compliance 攔截、cascade tier routing、選稿排序與 cap、cache key）、任何純函式。
-
-**先做 + 手動驗證**（事後補測試）：Vue 元件、API route handlers（後補 integration test）、部署設定（Dockerfile 與 compose，本機 `docker build` 預跑）。
-
-硬性紀律：
-
-- **structural 與 behavioral 絕對不混 commit**；兩者都要改時先做 structural、跑測試確認沒壞，再做 behavioral。
-- commit message 的 subject 或 body 要帶 `[STRUCTURAL]` 或 `[BEHAVIORAL]` tag；husky + commitlint 會擋（規則見 `commitlint.config.js`）：subject 上限 72 字元、type 限 `feat`／`fix`／`refactor`／`chore`／`docs`／`test`／`build`／`ci`。
-- 不要用 `--no-verify` 跳過 commit hook；不要 force push 到 main。
-- 小而頻繁優於大而罕見。
-
-完整方法論見 [docs/development-conventions.md](docs/development-conventions.md)；commit 範例與 PR 流程見 [CONTRIBUTING.md](CONTRIBUTING.md)「Commit 紀律：Tidy First（Kent Beck）」。
+`main` 是從空樹重寫的版本（原 `rewrite` branch，2026-11 依 ADR 0001 接回），PR 一律開進 `main`；`rewrite` 已凍結，不再開 PR 進去。v0 在 tag `v0-legacy`，只用 `git show v0-legacy:<path>` 讀，不 checkout、不修改。
 
 ## 指令
 
 ```bash
-pnpm -r build      # 依 workspace 相依的拓撲序建置。★ fresh clone 先跑這條：@suanomics/shared 等 package 的
-                    # exports 指向 dist，沒 build 過就跑 type-check 會報 Cannot find module '@suanomics/shared'
-                    # （CI 也是先 build 再 lint／type-check／test）。
-pnpm -r test       # CI 跑這個（CI 帶真實 Postgres 18）
-# 本機沒有 Postgres 時改跑這條：
-pnpm --filter '!@suanomics/db' -r --no-bail test
-# ↑ 仍會有幾支直連 Postgres 的測試必紅，清單見 CONTRIBUTING.md「測試」；清單以外的失敗都是真的。
-# --no-bail：pnpm -r 預設遇到第一個失敗就停、其餘 workspace 整批不跑，看起來會像「只錯一個」。
-pnpm -r type-check # tsc / vue-tsc
-pnpm lint          # 用這個，不是 `pnpm -r lint`——後者逐 workspace 跑、不含 root project，
-                    # root 的 package.json / 設定檔不會被掃到。CI 的 Lint step 跑的就是 `pnpm lint`。
+pnpm install --frozen-lockfile
+pnpm -r build        # fresh clone 先跑：@suanomics/shared 的 exports 指向 dist，沒 build 過 type-check 會找不到模組
+pnpm lint            # 用這條：ESLint 只在 root 跑，workspace 沒有 lint script
+pnpm -r type-check   # tsc；apps/web 是 astro check
+pnpm -r test         # vitest
+pnpm knip            # 未使用的檔案、export 與依賴
 
-# 樣本形狀體檢：打真的外部 API、只比形狀不比值，回報哪些 fixture 已經與現實漂移。
-# 刻意不在 CI——外部服務不可用造成的紅燈會訓練出忽略紅燈的習慣。動某個外部 client 之前跑一次。
-pnpm --filter server run fixtures:check
+# 需要 DATABASE_URL 指向本機 Postgres container，不用 Neon production
+pnpm --filter @suanomics/pipeline run db:migrate
 ```
 
-★ **寫真 DB 測試時，清理用的資料前綴要全 repo 唯一。** vitest 預設平行跑檔案，兩支測試若用同一個前綴做 `beforeEach`／`afterEach` 清理，會互刪對方剛 seed 的資料——症狀是「單獨跑全綠、一起跑紅好幾條」。新測試挑前綴前先 `rg` 一次。
+CI（`.github/workflows/ci.yml`）跑上面全部指令，資料庫是 Postgres 18 service container。本機起 Postgres 的步驟見 [本機開發](docs/operations/local-dev.md)。
 
-## Tech Stack（已鎖定、不要自行更換）
+## Tech Stack（已鎖定，要換先開 issue）
 
-| 層 | 選型 | 備註 |
-|----|------|------|
-| Frontend framework | Vue 3 + Vite + TypeScript | 不換 React/Next.js |
-| UI 元件 | Tailwind CSS + shadcn-vue | |
-| State management | Pinia | |
-| Frontend routing | Vue Router | |
-| Markdown 渲染 | markdown-it | |
-| Backend framework | Hono | 輕量、現代 streaming 支援 |
-| LLM SDK | `@google/genai`（Gemini、pipeline 預設）+ `@anthropic-ai/sdk`；OpenAI 相容端點走原生 `fetch`、不引 SDK | 每個 agent 打哪個 provider 由 `AGENT_MODELS`／`LLM_PROVIDER`／`AI_PROVIDER` 共同決定，規則見 [agents-and-prompts](docs/architecture/agents-and-prompts.md)「模型解析與 provider gate」 |
-| Schema 驗證 | Zod | 前後端共用型別（`@suanomics/shared`）|
-| YouTube 字幕 | `youtube-transcript-plus` npm | 免 API key |
-| 資料層 | Postgres（drizzle-orm） | `packages/db`；async job 由 `packages/jobs` 的 in-process runner 執行、狀態只在 `background_jobs`；podcast 音檔在 Cloudflare R2（S3 相容）|
-| 部署 | 未定 | 參考設定 `docker-compose.deploy.yml`（`Dockerfile.server`／`Dockerfile.web`），單一 server 容器＋web 靜態站＋Postgres 18；必要 env 與「單 instance、stop-then-start」硬要求見 [docs/operations/deploy.md](docs/operations/deploy.md) |
-| Package manager | pnpm | 不用 npm / yarn / bun；版本由 root `package.json` 的 `packageManager` 欄位鎖定 |
-| Node 版本 | 26 LTS | CI 鎖 26 |
+| 層 | 選型 | 決策紀錄 |
+|---|---|---|
+| 語言 | TypeScript（後端與網站都是），`strict` | [0006](docs/adr/0006-typescript-only-backend.md) |
+| Node | 26（`.nvmrc`、`engines`） | — |
+| Package manager | pnpm，版本由根目錄 `package.json` 的 `packageManager` 鎖定；不用 npm、yarn、bun | — |
+| Monorepo | pnpm workspace：`packages/shared`、`apps/pipeline`、`apps/web`、`apps/trigger` | [設計依據的〈Workspace 與依賴方向〉](docs/architecture/design-basis.md#workspace-與依賴方向) |
+| 執行環境 | GitHub Actions 排程批次 pipeline，沒有常駐 server | [0002](docs/adr/0002-batch-pipeline-and-static-site.md) |
+| 觸發器 | Cloudflare Worker Cron Trigger 為主，Actions `schedule` 為備援 | [0009](docs/adr/0009-cron-trigger-via-cloudflare-worker.md) |
+| 資料庫 | Neon Postgres，drizzle-orm 與 drizzle-kit migration | [0003](docs/adr/0003-neon-postgres.md) |
+| LLM 呼叫層 | Vercel AI SDK（`ai`、`@ai-sdk/anthropic`），不用 agent 框架 | [0004](docs/adr/0004-ai-sdk-no-agent-framework.md) |
+| LLM provider | Anthropic，judge 也是（#33 決定） | [0004](docs/adr/0004-ai-sdk-no-agent-framework.md) |
+| Schema 驗證 | Zod，契約放 `packages/shared` | [設計依據的〈Workspace 與依賴方向〉](docs/architecture/design-basis.md#workspace-與依賴方向) |
+| 網站 | Astro 靜態產生、Tailwind，部署到 Cloudflare Pages | [0005](docs/adr/0005-astro-static-site.md) |
+| 新聞來源 | 官方機構與發行商自己的 feed，正文在 pipeline 內抽取；不買新聞 API | [0007](docs/adr/0007-news-sources.md) |
+| Podcast 語音 | Azure Speech | [0010](docs/adr/0010-azure-tts-only.md) |
+| 測試 | vitest | — |
+| Lint | ESLint（`@antfu/eslint-config`）、commitlint、knip | — |
 
-要換選型先開 issue 討論，不要自行換。
+## 機械守門
 
-## Git 與 PR
+下列規則由工具擋下，違反時跑對應指令就會看到錯誤，不另寫成規則：
 
-- Feature branch：`feat/<topic>`、`refactor/<topic>` 等。
-- 每個 feature branch 做完開 PR；CI（`.github/workflows/ci.yml`）要全綠。
-- 由維護者 review 並以 merge commit 合併（不 squash）；agent 不自行 merge。
+| 守什麼 | 工具 |
+|---|---|
+| commit message：Conventional Commits、type 限 `feat`／`fix`／`refactor`／`chore`／`docs`／`test`／`build`／`ci`、標題上限 72 字元、必須含 `[STRUCTURAL]` 或 `[BEHAVIORAL]` | husky commit-msg 跑 commitlint（`commitlint.config.js`） |
+| 金鑰不進 repo | husky pre-commit 與 CI 各跑 gitleaks；GitHub push protection |
+| 單檔 300 行（不含空行與註解，測試檔除外） | ESLint `max-lines` error |
+| `apps/web` 不 import `apps/pipeline`；`packages/*` 不 import `apps/*` | ESLint `import-x/no-restricted-paths` |
+| `.ts` 與 `.astro` 不用 `any`；`.ts` 不用非空斷言 `!`，型別 import 用 `import type` | ESLint `ts/no-explicit-any`、`ts/no-non-null-assertion`、`ts/consistent-type-imports` |
+| 不 import `@anthropic-ai/sdk`、`@google/genai`、`openai`，也不 import `ai` 的 `generateObject`；`apps/web` 另不 import `ai`、`@ai-sdk/*`（只涵蓋靜態 import） | ESLint `no-restricted-imports` |
+| `packages/shared` 的 runtime 依賴只有 `zod` | CI `Check packages/shared dependencies` |
+| workflow 的 action 釘 commit SHA、最小 `permissions`、不用 `pull_request_target` | CI `Audit workflows`（zizmor） |
+| `apps/`、`packages/` 不放 emoji | CI `Check emoji` |
+| 長存文件通過 `check_docs.py`，`AGENTS.md` 規則清單與 `docs/rules/coding.md` 同步 | CI `Check docs`、`Check rules index`（`tools/agents-guideline/`） |
+| `strict`、`noUncheckedIndexedAccess`、`exactOptionalPropertyTypes` | `tsconfig.base.json`（shared、pipeline、trigger）與 `apps/web/tsconfig.json`，`pnpm -r type-check` |
+| `main` 要走 PR、`gitleaks` 與 `ci` 兩個 check 通過、commit 要簽章、禁 force push 與刪除 | GitHub ruleset |
 
-## Coding Standards
+## 規則
 
-- TypeScript：`strict: true`、`noUncheckedIndexedAccess: true`（陣列／物件存取強制 undefined 檢查）、無 `any`（必要時 `unknown` + type guard）。
-- Vue 3：Composition API（`<script setup>`）、`defineProps`／`defineEmits` 用 TypeScript 泛型。
-- 命名：元件檔 `PascalCase.vue`、composables `useXxx.ts`、Zod schema `XxxSchema`、型別 `type Xxx = z.infer<typeof XxxSchema>`。
-- **檔案 < 300 行**是 `eslint.config.js` 的 error，超了 lint 直接紅（要拆檔、抽 module，或 inline disable 附理由）。
-- **函式以 50 行為目標**，但 eslint 只在超過 80 行時 warn（`eslint .` 沒帶 `--max-warnings 0`，warn 不會讓 lint 失敗）——80/warn 是刻意的決策（容忍 prompt builder 這類長 helper），不要「順手」改回 50/error。
-- S.O.L.I.D.、可讀性 > 炫技；註解寫「為什麼」而非「做什麼」；一個檔案一個責任。
+每行是一條規則的完整判斷依據，理由與機械化方式在 [程式碼規則](docs/rules/coding.md) 的同名標題下。標「待 lint 化」的規則有現成檢查可接、還沒接上。
 
-## 安全鐵律
+<!-- BEGIN GENERATED RULES -->
 
-1. **絕對不要**從前端直接 call LLM API——API key 會洩漏。所有 LLM 請求走 `apps/server` proxy。
-2. `.env` 的值不要 commit。`apps/server/.env.example`、`apps/web/.env.example` 要維持最新。
-3. LLM 的 system prompt 要硬式攔截投信投顧法禁用字眼（「建議買 / 賣 / 持有」、「明牌」等），見 `packages/shared/src/compliance.ts` 的 `FORBIDDEN_PHRASES`。
-4. **跑真 LLM 之前先估「總呼叫數 × 尖峰並行」**。單一 job 內的四個扇出都有並行上限、也有呼叫數上限（`apps/server/src/agents/fanout-concurrency.ts`，全域有效尖峰由 `effectiveLlmPeak()` 算），但**跨 job 的累積量 repo 內沒有機制會擋**。批次跑（評測、A/B、重跑歷史資料）前先估總呼叫數，**預估超過 500 次呼叫或尖峰並行超過 10，就分批跑**——密集打法可能讓 LLM provider 把請求判為可疑並降級整個 project 的 key。量法：`background_jobs.metadata.llmCalls`；單份 brief 的實測數字與三層節流設計見 [README.md](README.md)「成本」。
+### 程式碼規則（[完整說明與範例](docs/rules/coding.md)）
 
-## 不做的事
+**開發紀律**
+- 新增或修改 Zod schema、prompt builder、citation 驗證、compliance 禁用語、選稿排序與名額、每日花費閘或任何純函式時，先寫會紅的測試再寫實作（HIGH）
+- 改 Astro 頁面與元件、CLI 入口接線、部署或 workflow 設定時可以先做再補測試，但 PR 說明要附手動跑過的指令與輸出（MEDIUM）
+- 同一個 commit 不同時含 structural 變更（改名、搬檔、抽函式等不改行為的整理）與 behavioral 變更（改行為）；兩者都要時先 commit structural、跑測試確認沒壞，再 commit behavioral（HIGH）
+- 從 v0（tag `v0-legacy`）或其他 repo 搬檔時，第一個 commit 原樣搬並標 `[STRUCTURAL]`，改寫放在之後的 commit（HIGH）
+- 不用 `--no-verify` 或任何方式跳過 husky 的 pre-commit 與 commit-msg hook；hook 擋下時修正內容再 commit（CRITICAL）
+- 不更換 `AGENTS.md`〈Tech Stack〉表裡的選型，也不引入表外的同類替代品；要換先開 issue（HIGH）
+- 實作碰到設計依據〈不做的事〉列出的項目（線上即時分析、註冊登入、agent 框架、OpenAI 相容端點、向量檢索、換後端語言等）時，停下來開 issue 或問維護者（HIGH）
+- agent 不 merge PR，也不 push 到 `main`；PR 開進 `main`，由維護者以 merge commit 合併（HIGH）
+**LLM 與報告內容**
+- 呼叫 LLM 只用 `ai` 套件的 `generateText` 加 `Output.object({ schema })`（HIGH）
+- `apps/web` 不 import 任何 LLM SDK，網站只讀 pipeline 寫進 Postgres 的結果（HIGH）
+- 每個 agent 用哪家哪個 model 只寫在 `apps/pipeline` 的 model 對照表，agent 程式碼裡不寫死 model ID（MEDIUM）
+- 新增或修改 agent 的 system prompt 時，帶入 `packages/shared` 的 compliance 禁用語清單（「建議買／賣／持有」「明牌」等投信投顧法禁用語），不在 prompt 內另寫一份（CRITICAL）
+- 連動鏈的每個數字、事件與因果都要帶可追溯的來源 URL，找不到來源的條目不寫進 brief（CRITICAL）
+- 批次跑真 LLM（評測、A/B、重跑歷史資料）前先估總呼叫數、尖峰並行與費用；超過 500 次呼叫或尖峰並行超過 10 就分批跑（HIGH）
+- 新增新聞或資料來源前，先在 `docs/sources.md` 記下 feed URL、條款連結與允許用法；條款禁止 AI 用途的來源不接（HIGH）
+**資料庫與測試**
+- 測試、本機開發與 CI 只連本機或 CI 的 Postgres container，不使用 Neon production 的連線字串（CRITICAL）
+- 寫真資料庫測試時，清理用的資料前綴要全 repo 唯一，挑前綴前先用 `rg` 搜一次（MEDIUM）
+**依賴與設定**
+- 新增 dependency 前確認授權與 Apache-2.0 相容（例如 AGPL 不相容）（MEDIUM）
+- 能用 Node 原生 API（`fetch`、`node:*` 模組）解決的，不引入第三方套件（LOW）
+- 新增或改名環境變數時，同步更新根目錄 `.env.example`，只寫 key 名不寫值（MEDIUM）
+- eslint 的函式行數上限 80 行 warn 是刻意設定，不要改成 50 行或 error；寫函式時仍以 50 行為目標（LOW）
+**程式碼與文件風格**
+- 文件與註解用繁體中文（台灣用語），程式碼 identifier 用英文（LOW）
+- 註解寫為什麼這樣做，不重述程式在做什麼（LOW）
 
-見 [ROADMAP.md](ROADMAP.md)「明確不做」。發現自己開始在做這些項目，立刻停下來開 issue 或問維護者。
-
-## 授權相容
-
-新增 dependency 前確認授權與 Apache-2.0 相容（例：AGPL 不相容）。
+<!-- END GENERATED RULES -->
 
 ## 要細節時去哪讀
 
 | 情境 | 檔案 |
-|------|------|
-| 專案總覽、Quick Start | [README.md](README.md) |
-| 人類貢獻者指南（開發環境、測試、PR 流程） | [CONTRIBUTING.md](CONTRIBUTING.md) |
-| 已知限制、想做的方向、明確不做 | [ROADMAP.md](ROADMAP.md) |
-| 視覺設計系統（色彩、字體、版面、元件規範） | [DESIGN.md](DESIGN.md) |
-| 安全政策、漏洞回報方式 | [SECURITY.md](SECURITY.md) |
-| 給第一次接觸這專案的人 | [orientation](docs/architecture/orientation.md) |
-| 五分鐘建立 Cascade 的產品與 runtime 心智模型 | [system-overview](docs/architecture/system-overview.md) |
-| 各 workspace 的 ownership、public surface、依賴方向 | [module-map](docs/architecture/module-map.md) |
-| Cascade 主功能 spec | [features/cascade.md](docs/features/cascade.md) |
-| 投信投顧法 compliance 與 citation 規則 | [compliance-and-citations](docs/architecture/compliance-and-citations.md) |
-| 各 agent 的 prompt contract、model / provider 決策 | [agents-and-prompts](docs/architecture/agents-and-prompts.md) |
-| 品質量測工具（pairwise judge、canary、model A/B、claim 指標）怎麼跑、怎麼讀 | [evaluation](docs/architecture/evaluation.md) |
-| 同步讀取、非同步 job、資料落地與降級路徑 | [runtime-flows](docs/architecture/runtime-flows.md) |
-| 環境變數背景說明（為什麼長這樣、啟動檢查怎麼分級） | [configuration](docs/architecture/configuration.md) |
-| 外部依賴盤點（失敗可不可見） | [external-dependencies](docs/architecture/external-dependencies.md) |
-| 兩套語料系統：brief 選題 vs cascade 檢索 | [news-corpus-systems](docs/architecture/news-corpus-systems.md) |
-| 財經 knowledge layer 的目標架構草案（尚未實作） | [shared-finance-knowledge](docs/architecture/shared-finance-knowledge.md) |
-| Podcast 人設與品牌 | [podcast-persona](docs/features/podcast-persona.md) |
-| 本機跑起來 | [local-dev](docs/operations/local-dev.md) |
-| 部署（目前沒有 prod） | [deploy](docs/operations/deploy.md) |
-| 部署後驗證 | [smoke-test](docs/operations/smoke-test.md) |
-| 完整 TDD / Tidy First / commit 紀律全文 | [development-conventions](docs/development-conventions.md) |
-
-## Issue
-
-Issue 走本 repo 的 GitHub Issues。
+|---|---|
+| 系統長什麼樣、為什麼這樣設計、不做什麼 | [設計依據](docs/architecture/design-basis.md) |
+| 每個重大取捨的完整理由 | [決策紀錄](docs/adr/) |
+| 規則的理由、待 lint 化的檢查 | [程式碼規則](docs/rules/coding.md) |
+| 分支、commit、PR 流程與文件檢查 | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| 本機環境與資料庫 | [本機開發](docs/operations/local-dev.md) |
+| v0 的變更紀錄、實驗與產品假設（歷史，不描述現況） | [v0 歷史文件](docs/history/README.md) |
+| 進度與待辦 | GitHub Issues 的 milestone |

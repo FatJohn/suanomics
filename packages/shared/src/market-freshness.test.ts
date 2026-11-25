@@ -6,6 +6,7 @@ import {
   lagCycles,
   STALE_HIDE_CYCLES,
 } from './market-freshness.js'
+import { HOLIDAY_COVERAGE_START } from './market-holidays.js'
 
 // 規則實例取自 2026-07-31 對 FRED release 日曆的實測
 const US_DAILY_LAG1 = { cadence: 'trading-daily', market: 'us', lagTradingDays: 1 } as const
@@ -40,7 +41,7 @@ describe('expectedAsOf：trading-daily', () => {
     expect(expectedAsOf(US_DAILY_LAG1, '2026-09-29')).toBe('2026-09-28')
   })
   it('超出假日表涵蓋窗回 null（不可信、不硬算）', () => {
-    expect(expectedAsOf(US_DAILY_LAG1, '2027-01-05')).toBeNull()
+    expect(expectedAsOf(US_DAILY_LAG1, '2028-01-05')).toBeNull()
   })
 })
 
@@ -59,7 +60,7 @@ describe('expectedAsOf：weekly', () => {
     expect(expectedAsOf(WEEKLY_WED, '2026-07-29')).toBe('2026-07-20')
   })
   it('超出涵蓋窗回 null', () => {
-    expect(expectedAsOf(WEEKLY_MON, '2027-01-05')).toBeNull()
+    expect(expectedAsOf(WEEKLY_MON, '2028-01-05')).toBeNull()
   })
 })
 
@@ -81,7 +82,7 @@ describe('expectedAsOf：monthly（不需假日表、涵蓋窗外仍可算）', 
     expect(expectedAsOf(MONTHLY_PAYROLLS, '2026-08-07')).toBe('2026-07-01')
   })
   it('涵蓋窗外照算（月頻不看交易日曆）', () => {
-    expect(expectedAsOf(MONTHLY_CPI, '2027-03-01')).toBe('2027-01-01')
+    expect(expectedAsOf(MONTHLY_CPI, '2028-03-01')).toBe('2028-01-01')
   })
   it('跨年往回找參考月', () => {
     expect(expectedAsOf(MONTHLY_CPI, '2027-01-10')).toBe('2026-11-01')
@@ -93,6 +94,21 @@ describe('lagCycles', () => {
     expect(lagCycles(US_DAILY_LAG1, '2026-07-30', '2026-07-30')).toBe(0)
     expect(lagCycles(US_DAILY_LAG1, '2026-07-30', '2026-07-29')).toBe(1)
     expect(lagCycles(US_DAILY_LAG1, '2026-07-27', '2026-07-23')).toBe(2) // 週一 vs 前週四
+  })
+  it('trading-daily 計數跳過各自市場的休市日', () => {
+    // 美股 11-26 感恩節休市：11-25 到 11-27 只隔 1 個美股交易日
+    expect(lagCycles(US_DAILY_LAG1, '2026-11-27', '2026-11-25')).toBe(1)
+    // 台股 09-25 中秋、09-28 教師節休市：09-24 到 09-29 只隔 1 個台股交易日，美股是 3 個
+    expect(lagCycles(TW_DAILY, '2026-09-29', '2026-09-24')).toBe(1)
+    expect(lagCycles(US_DAILY_LAG1, '2026-09-29', '2026-09-24')).toBe(3)
+  })
+  it('trading-daily 的計數範圍跨到假日表涵蓋起點之前 → null（窗外休市日沒收錄、數不準）', () => {
+    // 07-03 是美股獨立紀念日補假，但不在假日表裡；照算會多數一個交易日
+    expect(lagCycles(US_DAILY_LAG1, '2026-07-30', '2026-07-02')).toBeNull()
+    expect(lagCycles(TW_DAILY, '2026-07-30', '2026-07-19')).toBeNull()
+    // 起點前一天仍可判定：只計之後的日子，全在涵蓋窗內（07-21～07-30 共 8 個台股交易日）
+    expect(lagCycles(TW_DAILY, '2026-07-30', '2026-07-20')).toBe(8)
+    expect(lagCycles(US_DAILY_LAG1, '2026-07-23', HOLIDAY_COVERAGE_START)).toBe(2)
   })
   it('weekly 以發布週期計數', () => {
     expect(lagCycles(WEEKLY_MON, '2026-07-24', '2026-07-24')).toBe(0)
@@ -138,8 +154,12 @@ describe('classifyFreshness：五種狀態', () => {
     expect(r).toMatchObject({ state: 'missing', lagCycles: null, actualAsOf: null })
   })
   it('涵蓋窗外 → unknown（不標注落後、交給降級路徑判）', () => {
-    const r = classifyFreshness({ ...base, reportDate: '2027-01-05', actualAsOf: '2026-12-30' })
+    const r = classifyFreshness({ ...base, reportDate: '2028-01-05', actualAsOf: '2027-12-30' })
     expect(r).toMatchObject({ state: 'unknown', expectedAsOf: null, lagCycles: null })
+  })
+  it('trading-daily 的實際日早於涵蓋起點 → unknown（保留 expectedAsOf）', () => {
+    const r = classifyFreshness({ ...base, actualAsOf: '2026-07-02' })
+    expect(r).toMatchObject({ state: 'unknown', expectedAsOf: '2026-07-30', lagCycles: null })
   })
 })
 

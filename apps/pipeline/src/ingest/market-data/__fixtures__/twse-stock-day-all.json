@@ -1,0 +1,41 @@
+[
+  {
+    "Date": "1151106",
+    "Code": "00400A",
+    "Name": "主動國泰動能高息",
+    "TradeVolume": "92784561",
+    "TradeValue": "1038797013",
+    "OpeningPrice": "10.78",
+    "HighestPrice": "11.48",
+    "LowestPrice": "10.78",
+    "ClosingPrice": "11.18",
+    "Change": "0.0000",
+    "Transaction": "20248"
+  },
+  {
+    "Date": "1151106",
+    "Code": "00401A",
+    "Name": "主動摩根台灣鑫收",
+    "TradeVolume": "19680413",
+    "TradeValue": "221657396",
+    "OpeningPrice": "11.00",
+    "HighestPrice": "11.53",
+    "LowestPrice": "10.96",
+    "ClosingPrice": "11.34",
+    "Change": "-0.5700",
+    "Transaction": "3351"
+  },
+  {
+    "Date": "1151106",
+    "Code": "00402A",
+    "Name": "主動安聯美國科技",
+    "TradeVolume": "3392177",
+    "TradeValue": "28573600",
+    "OpeningPrice": "8.30",
+    "HighestPrice": "8.52",
+    "LowestPrice": "8.30",
+    "ClosingPrice": "8.45",
+    "Change": "-0.5200",
+    "Transaction": "1274"
+  }
+]
