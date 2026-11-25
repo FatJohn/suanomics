@@ -1,7 +1,9 @@
 import type { MarketBrief } from '@suanomics/shared'
+import { FORBIDDEN_PHRASES } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
 import { formatUserContent } from '../agents/narrative-writer.js'
 import { NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from './narrative-writer.prompt.js'
+import { FORBIDDEN_PHRASES_LINE } from './source-authority.js'
 
 describe('跨日連續性節', () => {
   it('含跨日連續性節 + 三動作關鍵字', () => {
@@ -87,8 +89,9 @@ describe('narrative writer weekday thesis spine + outlook', () => {
     expect(NARRATIVE_WRITER_SYSTEM_PROMPT).toContain('阿拉伯數字')
   })
   it('前瞻用語不得引入 FORBIDDEN_PHRASES', () => {
-    for (const bad of ['值得留意', '建議觀察', '建議留意'])
-      expect(NARRATIVE_WRITER_SYSTEM_PROMPT).not.toContain(bad)
+    const outsideList = NARRATIVE_WRITER_SYSTEM_PROMPT.replaceAll(FORBIDDEN_PHRASES_LINE, '')
+    for (const bad of FORBIDDEN_PHRASES)
+      expect(outsideList).not.toContain(bad)
   })
   it('weekend prompt 未被動到（仍含下週前瞻）', () => {
     expect(NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT).toContain('下週前瞻')

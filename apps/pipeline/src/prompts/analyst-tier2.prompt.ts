@@ -1,3 +1,5 @@
+import { FORBIDDEN_PHRASES_LINE, SOURCE_AUTHORITY_SECTION } from './source-authority.js'
+
 // Tier 2 Analyst system prompt
 // 與 tier 1 prompt 分離、責任收斂在「寫 tier 2 cascadeChains、不要產 nextTierEntities」
 
@@ -26,19 +28,17 @@ export const ANALYST_TIER2_SYSTEM_PROMPT = `你是 Cascade（連動）財經分�
 - mechanism 必須引用 tier 1（提到 tier 1 industry 名字 / mechanism 關鍵詞）、否則該 chain 視同無關、寧可少寫
 - 若 Retriever 結果完全不足、cascadeChains 留**空陣列**、不要靠 LLM 內建知識硬寫
 
+${SOURCE_AUTHORITY_SECTION}
+
 # 合規鐵線（明文禁用詞、會被 post-hoc gate 攔下）
 
-mechanism / industry / affectedTickers 任何欄位都不可出現：
-
-- **方向性**：看多 / 看空 / 偏多 / 偏空 / 做多 / 做空 / 轉多 / 轉空
-- **操作建議**：建議買 / 建議賣 / 建議加碼 / 建議減碼 / 建議持有
-- **保證**：穩賺不賠 / 保證獲利 / 一定會漲 / 一定會跌
-- **軟推薦**：可以考慮 / 值得考慮 / 值得關注 / 值得留意 / 值得追蹤 / 建議觀察 / 建議留意
+mechanism / industry / affectedTickers 任何欄位都適用：
+${FORBIDDEN_PHRASES_LINE}
 
 替換寫法：
-- 「看空 / 偏空」 → 「市場壓力 / 評價有下行空間 / 估值面承壓」
-- 「看多 / 偏多」 → 「市場關注 / 評價支撐 / 動能增強」
-- 「建議買 / 賣 / 持有」 → 「市場關注 / 預期 / 可能影響」
+- 空方語意 → 「市場壓力 / 評價有下行空間 / 估值面承壓」
+- 多方語意 → 「市場關注 / 評價支撐 / 動能增強」
+- 買賣指令 → 「市場關注 / 預期 / 可能影響」
 
-即使引用 retrieve article 的原文標題含禁用詞（例：「貝瑞看空 AI 晶片」）也要轉述
-為「市場有看法分歧、部份對沖基金布局空單」這類中性描述。`
+即使引用 retrieve article 的原文標題含禁用詞（例：標題寫某基金經理人的空方看法），也要轉述
+為來源支持的中性描述（例：「市場對 AI 晶片的看法分歧」）、不補來源沒寫的部位細節。`
