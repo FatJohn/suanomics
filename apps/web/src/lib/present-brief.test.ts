@@ -44,7 +44,33 @@ describe('presentBrief', () => {
 
   it('viewpoints 逐點過濾，被攔截的點不顯示', () => {
     const view = presentBrief('2095-01-01', { ...BASE, viewpoints: { supportPoints: ['需求強', '建議加碼'], riskPoints: ['匯率'], netRead: '淨讀。' } }, [])
-    expect(view.viewpoints?.supportPoints).toEqual(['需求強'])
+    expect(view.viewpoints?.supportPoints.map(p => p.text)).toEqual(['需求強'])
+  })
+})
+
+// #100：每個論點旁的「見詳解 N」要指到讀者實際看到的第 N 段
+describe('presentBrief 正反觀點的段落參照', () => {
+  const section = (heading: string, body: string) => ({ ...NARRATIVE.sections[0] as NonNullable<typeof NARRATIVE.sections[0]>, heading, body })
+  const narrative = { ...NARRATIVE, sections: [section('甲', '甲本文。'), section('乙', '建議買進。'), section('丙', '丙本文。')] }
+  const viewpoints = { supportPoints: ['支持一', '支持二', '支持三'], riskPoints: ['風險一', '建議加碼'], netRead: '淨讀。', supportRefs: [1, 3, null], riskRefs: [2, 1] }
+
+  it('段落號對到顯示序號，整段被攔截的段落之後的號往前補', () => {
+    const view = presentBrief('2095-01-01', { ...BASE, narrative, viewpoints }, [])
+    expect(view.viewpoints?.supportPoints).toEqual([
+      { text: '支持一', section: 1 },
+      { text: '支持二', section: 2 },
+      { text: '支持三', section: 'overall' },
+    ])
+  })
+
+  it('指到被攔截段落的參照改標整體性，被攔截的論點連同參照一起拿掉', () => {
+    const view = presentBrief('2095-01-01', { ...BASE, narrative, viewpoints }, [])
+    expect(view.viewpoints?.riskPoints).toEqual([{ text: '風險一', section: 'overall' }])
+  })
+
+  it('舊報告沒有參照時不標任何段落', () => {
+    const view = presentBrief('2095-01-01', { ...BASE, narrative, viewpoints: { supportPoints: ['支持一', '支持二'], riskPoints: ['風險一', '風險二'], netRead: '淨讀。' } }, [])
+    expect(view.viewpoints?.supportPoints).toEqual([{ text: '支持一', section: null }, { text: '支持二', section: null }])
   })
 })
 
