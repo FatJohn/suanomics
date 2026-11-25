@@ -1,6 +1,6 @@
 <!doctype html>
-<!-- favicon 與 apple-touch-icon 的原稿：藍筆框裡一個墨黑「掐」字，底下一道黃色螢光筆。
-     畫布邊長由 brand/render.sh 用視窗大小決定，所有尺寸都用 vw 跟著縮放。 -->
+<!-- favicon 與 apple-touch-icon 的原稿：直接放刊頭 logo（public/logo-mark.svg），兩者共用同一張圖。
+     畫布邊長由 brand/render.sh 用視窗大小決定，圖片用 vw 跟著縮放。 -->
 <html lang="zh-Hant-TW">
   <head>
     <meta charset="utf-8" />
@@ -12,31 +12,14 @@
         height: 100vh;
         overflow: hidden;
       }
-      body {
-        background: #f4f6f8;
-        display: grid;
-        place-items: center;
-        font-family: 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', 'Heiti TC', sans-serif;
-      }
-      .mark {
+      img {
+        display: block;
         width: 100vw;
         height: 100vw;
-        box-sizing: border-box;
-        border: 7vw solid #1e4fd8;
-        background: #fbfcfd;
-        display: grid;
-        place-items: center;
-      }
-      span {
-        font-size: 70vw;
-        font-weight: 900;
-        color: #16202b;
-        line-height: 1;
-        background-image: linear-gradient(transparent 66%, #ffe14d 66%, #ffe14d 92%, transparent 92%);
       }
     </style>
   </head>
   <body>
-    <div class="mark"><span>掐</span></div>
+    <img src="../public/logo-mark.svg" alt="" />
   </body>
 </html>
