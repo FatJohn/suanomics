@@ -166,15 +166,18 @@ const cardTitle = ogTitle ?? pageTitle(title)
     .brand b {
       font-size: 18px;
     }
-    .brand-mark {
-      width: 36px;
-      height: 36px;
-    }
     .nav {
       padding: 2px 0 6px;
     }
   }
-  /* 360px 以下 logo 加間距會把 slogan 擠成兩行、刊頭長高，這種寬度只留文字。 */
+  /* 手機寬度下 40px 的 logo 會把 slogan 擠成兩行、刊頭長高（361px 寬的高螢幕實測過），
+     480px 以下一律縮成 36px；360px 以下連 36px 都放不下，只留文字。 */
+  @media (max-width: 480px) {
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+    }
+  }
   @media (max-width: 360px) {
     .brand-mark {
       display: none;
