@@ -31,7 +31,7 @@ web
 ## Operating Context
 
 - **每日節奏**：Cloudflare Worker 05:00（台北）觸發 pipeline，產出後 Astro build、部署到 `https://suanomics.everbegin.net/`。非交易日（週末、TWSE 休市日）不產報告，網站停在前一份。
-- **一份報告的組成**（`apps/web/src/lib/present-brief.ts` 的 `BriefView`）：日期、標題（≤80 字）、本日主軸 `dailyThesis`、摘要 `summary`、長文 `narrative`（導言、1～4 節〔小標、一句話結論 takeaway、本文 250～800 字、該節來源〕、結語）、正反觀點 `viewpoints`（支持 2～4 點、風險 2～4 點、淨讀）、本日選稿（連到站內新聞頁）、引用來源清單、免責聲明。
+- **一份報告的組成**（`apps/web/src/lib/present-brief.ts` 的 `BriefView`）：日期、標題（≤80 字）、本日主軸 `dailyThesis`、摘要 `summary`、長文 `narrative`（導言、1～4 節〔小標、一句話結論 takeaway、本文 250～800 字、該節來源〕、結語）、正反觀點 `viewpoints`（支持 2～4 點、風險 2～4 點，每點標出依據的詳解段落或整體判斷；淨讀）、本日選稿（連到站內新聞頁）、引用來源清單、免責聲明。
 - **頁面**：首頁（日期最晚的一份）、單日頁 `/d/<date>`、歷史日期 `/dates`、新聞頁 `/brief/news/<id>`（標題、來源、發佈日、原文連結）。
 - **內容形狀**：單日頁是 2,500～4,000 字的繁中長文，數字密度高（百分比、點數、億元、口數、日期）。
 

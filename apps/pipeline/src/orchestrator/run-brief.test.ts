@@ -9,6 +9,7 @@ import { callNarrativeWriter } from '../agents/narrative-writer.js'
 import { retrieveForDecomposed } from '../agents/retrieve-for-decomposed.js'
 import { callSynthesizer } from '../agents/synthesizer.js'
 import { runTier2Fanout } from '../agents/tier2-fanout.js'
+import { runViewpointsDebate } from '../agents/viewpoints-debate.js'
 import { assembleDailyBrief } from '../brief/assemble.js'
 import { EMPTY_MARKET_CONTEXT } from '../ingest/market-data/context.js'
 import { generateBrief } from './run-brief.js'
@@ -19,6 +20,7 @@ vi.mock('../agents/synthesizer.js')
 vi.mock('../agents/retrieve-for-decomposed.js')
 vi.mock('../agents/chain-grouper.js')
 vi.mock('../agents/narrative-writer.js')
+vi.mock('../agents/viewpoints-debate.js')
 vi.mock('../brief/assemble.js')
 vi.mock('../agents/tier2-fanout.js', () => ({ stampTier1: (c: unknown) => c, runTier2Fanout: vi.fn() }))
 
@@ -118,6 +120,28 @@ describe('generateBrief', () => {
     const { p } = params()
     await expect(generateBrief(p)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
     expect(p.progress.analystOutputs?.map(a => a.newsId)).toEqual(['1'])
+  })
+
+  // 論點要標出依據的詳解段落，辯論得在 narrative 之後跑、拿到段落。
+  it('正反觀點拿到 narrative 的詳解段落', async () => {
+    const section = { heading: '小標', takeaway: '結論', body: '內文', relatedNewsIds: [], claimIds: [], citationUrls: ['https://e.com/1'] }
+    vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+    vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', dailyThesis: '主軸', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+    vi.mocked(tagChainForceGroups).mockResolvedValue([])
+    vi.mocked(callNarrativeWriter).mockResolvedValue({ narrative: { intro: 'i', sections: [section], outro: 'o' } } as never)
+    vi.mocked(runViewpointsDebate).mockResolvedValue(null)
+    await generateBrief(params().p)
+    expect(vi.mocked(runViewpointsDebate).mock.calls[0]?.[0].sections).toEqual([{ heading: '小標', takeaway: '結論', body: '內文' }])
+  })
+
+  it('narrative 降級時正反觀點照跑、不帶段落', async () => {
+    vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+    vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', dailyThesis: '主軸', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+    vi.mocked(tagChainForceGroups).mockResolvedValue([])
+    vi.mocked(callNarrativeWriter).mockResolvedValue({ narrative: null } as never)
+    vi.mocked(runViewpointsDebate).mockResolvedValue(null)
+    await generateBrief(params().p)
+    expect(vi.mocked(runViewpointsDebate).mock.calls[0]?.[0].sections).toEqual([])
   })
 
   it('finalize 帳務錯誤與花費閘例外同時出現時丟帳務錯誤', async () => {

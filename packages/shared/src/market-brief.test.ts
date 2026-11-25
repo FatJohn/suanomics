@@ -363,6 +363,20 @@ describe('viewpointsSchema', () => {
   it('rejects netRead over 360 chars', () => {
     expect(() => ViewpointsSchema.parse({ ...VALID_VP, netRead: 'a'.repeat(361) })).toThrow()
   })
+  // 每個論點對應的詳解段落號（1 起算），null＝整體性論點。
+  describe('段落參照', () => {
+    it('接受與論點等長的參照陣列', () => {
+      expect(() => ViewpointsSchema.parse({ ...VALID_VP, supportRefs: [1, null], riskRefs: [2, 3] })).not.toThrow()
+    })
+    it('參照與論點數量不同時擋下', () => {
+      expect(() => ViewpointsSchema.parse({ ...VALID_VP, supportRefs: [1] })).toThrow()
+      expect(() => ViewpointsSchema.parse({ ...VALID_VP, riskRefs: [1, 2, 3] })).toThrow()
+    })
+    it('段落號從 1 起算、必須是整數', () => {
+      expect(() => ViewpointsSchema.parse({ ...VALID_VP, supportRefs: [0, 1] })).toThrow()
+      expect(() => ViewpointsSchema.parse({ ...VALID_VP, supportRefs: [1.5, 1] })).toThrow()
+    })
+  })
 })
 
 describe('marketBriefSchema · viewpoints', () => {
@@ -390,6 +404,20 @@ describe('marketBriefSchema · viewpoints', () => {
   })
   it('accepts brief without viewpoints (backward compat)', () => {
     expect(() => MarketBriefSchema.parse(briefBase())).not.toThrow()
+  })
+
+  describe('段落參照對得到 narrative', () => {
+    const section = (url = 'https://example.com/a') => ({ heading: 'h', body: 'b'.repeat(260), citationUrls: [url] })
+    const narrative = { intro: 'i'.repeat(130), sections: [section(), section()], outro: 'o'.repeat(130) }
+    it('參照落在段落數內時通過', () => {
+      expect(() => MarketBriefSchema.parse(briefBase({ narrative, viewpoints: { ...VALID_VP, supportRefs: [1, 2], riskRefs: [null, 2] } }))).not.toThrow()
+    })
+    it('參照超出段落數時擋下', () => {
+      expect(() => MarketBriefSchema.parse(briefBase({ narrative, viewpoints: { ...VALID_VP, supportRefs: [1, 3] } }))).toThrow(/unknown section/)
+    })
+    it('沒有 narrative 時不得帶段落號', () => {
+      expect(() => MarketBriefSchema.parse(briefBase({ narrative: null, viewpoints: { ...VALID_VP, riskRefs: [1, null] } }))).toThrow(/unknown section/)
+    })
   })
 
   // ledger 落地。相容性是這個欄位唯一的風險——既有 brief 全部沒有它。

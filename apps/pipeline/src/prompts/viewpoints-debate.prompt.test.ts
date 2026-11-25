@@ -1,6 +1,21 @@
 import type { EvidenceClaim } from '@suanomics/shared'
+import { FORBIDDEN_PHRASES } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
-import { buildDebateMaterial, NET_READ_PROMPT } from './viewpoints-debate.prompt.js'
+import { buildDebateMaterial, NET_READ_PROMPT, RISK_PROMPT, SUPPORT_PROMPT } from './viewpoints-debate.prompt.js'
+
+describe('辯論 system prompt', () => {
+  it.each([['support', SUPPORT_PROMPT], ['risk', RISK_PROMPT], ['net-read', NET_READ_PROMPT]])('%s 帶入 shared 的 compliance 禁用語清單', (_, prompt) => {
+    for (const phrase of FORBIDDEN_PHRASES)
+      expect(prompt).toContain(phrase)
+  })
+
+  // 讀者要看得出每個論點在講哪一段
+  it.each([['support', SUPPORT_PROMPT], ['risk', RISK_PROMPT]])('%s 要求每點標出依據的詳解段落或整體性', (_, prompt) => {
+    expect(prompt).toContain('section')
+    expect(prompt).toContain('詳解')
+    expect(prompt).toContain('null')
+  })
+})
 
 describe('net read prompt', () => {
   // 上限要低於 schema 的 360：模型對中文字數估得偏少，目標貼著上限就會超標。
@@ -40,6 +55,17 @@ describe('buildDebateMaterial', () => {
   })
   it('renders cascade chain lines', () => {
     expect(buildDebateMaterial(base)).toContain('半導體｜CoWoS 滿載｜positive')
+  })
+  it('列出詳解段落的編號、小標、結論與內文', () => {
+    const out = buildDebateMaterial({ ...base, sections: [{ heading: '小標甲', takeaway: '結論甲', body: '內文甲' }, { heading: '小標乙', takeaway: null, body: '內文乙' }] })
+    expect(out).toContain('# 詳解段落')
+    expect(out).toContain('[詳解 1] 小標甲')
+    expect(out).toContain('結論甲')
+    expect(out).toContain('內文甲')
+    expect(out).toContain('[詳解 2] 小標乙')
+  })
+  it('沒有詳解段落時不出現該區塊', () => {
+    expect(buildDebateMaterial(base)).not.toContain('# 詳解段落')
   })
   it('caps cascade chains at 20', () => {
     const many = Array.from({ length: 25 }, (_, i) => ({ industry: `ind${i}`, mechanism: 'm', affectedTickers: [], direction: 'neutral' as const, citations: [] }))

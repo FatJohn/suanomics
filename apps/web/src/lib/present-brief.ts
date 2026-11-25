@@ -6,6 +6,9 @@ export interface CitationLink { title: string, url: string }
 export interface NewsLink { id: number, title: string }
 export type IndustryView = Pick<MarketBrief['affectedIndustries'][number], 'name' | 'direction' | 'confidence' | 'reasoning'> & { citations: CitationLink[] }
 
+// section：讀者看到的「詳解 N」序號；'overall'＝整體性論點；null＝舊報告沒有參照，不標。
+export interface ViewpointView { text: string, section: number | 'overall' | null }
+
 export interface BriefView {
   date: string
   headline: string
@@ -16,7 +19,7 @@ export interface BriefView {
     sections: { heading: string, takeaway: string, body: string, citations: CitationLink[] }[]
     outro: string
   } | null
-  viewpoints: { supportPoints: string[], riskPoints: string[], netRead: string } | null
+  viewpoints: { supportPoints: ViewpointView[], riskPoints: ViewpointView[], netRead: string } | null
   industries: IndustryView[]
   selectedNews: NewsLink[]
   citations: CitationLink[]
@@ -76,13 +79,31 @@ function presentNarrative(brief: MarketBrief, citations: CitationLink[]): BriefV
   }
 }
 
+// 原始段落號（1 起算）→ 讀者看到的序號。本文整段被攔截的段落不輸出（presentNarrative），
+// 後面的段落序號會往前補，參照要跟著換，否則「見詳解 3」會跳到別段。
+function displayedSectionNumbers(brief: MarketBrief): Map<number, number> {
+  const map = new Map<number, number>()
+  brief.narrative?.sections.forEach((s, i) => {
+    if (redactBlockedMarkdown(s.body))
+      map.set(i + 1, map.size + 1)
+  })
+  return map
+}
+
 function presentViewpoints(brief: MarketBrief): BriefView['viewpoints'] {
   if (!brief.viewpoints)
     return null
-  const points = (list: string[]): string[] => list.map(redactBlockedSentences).filter(Boolean)
+  const shown = displayedSectionNumbers(brief)
+  // 段落被攔下不顯示時不標：那個論點不是整體性的，標「整體判斷」會說錯。
+  const toSection = (ref: number | null | undefined): ViewpointView['section'] =>
+    ref === undefined ? null : ref === null ? 'overall' : shown.get(ref) ?? null
+  const points = (list: string[], refs: (number | null)[] | undefined): ViewpointView[] => list.flatMap((p, i) => {
+    const text = redactBlockedSentences(p)
+    return text ? [{ text, section: refs ? toSection(refs[i]) : null }] : []
+  })
   return {
-    supportPoints: points(brief.viewpoints.supportPoints),
-    riskPoints: points(brief.viewpoints.riskPoints),
+    supportPoints: points(brief.viewpoints.supportPoints, brief.viewpoints.supportRefs),
+    riskPoints: points(brief.viewpoints.riskPoints, brief.viewpoints.riskRefs),
     netRead: redactBlockedSentences(brief.viewpoints.netRead),
   }
 }
