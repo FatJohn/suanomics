@@ -129,4 +129,21 @@ const { thesisHtml, industries } = Astro.props
   .conf {
     white-space: nowrap;
   }
+  /* 矮手機首屏要放得下全部產業列（#96）：收緊論點行距與列高，字級不低於 14px。 */
+  @media (max-width: 480px) and (max-height: 740px) {
+    .box {
+      margin-top: 18px;
+      padding: 14px 12px 2px;
+    }
+    .thesis {
+      font-size: 15px;
+      line-height: 1.65;
+    }
+    .hint {
+      margin-top: 8px;
+    }
+    summary {
+      padding: 5px 0;
+    }
+  }
 </style>

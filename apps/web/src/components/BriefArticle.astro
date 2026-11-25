@@ -135,6 +135,17 @@ const toc = [
     line-height: 1.45;
     letter-spacing: 0.01em;
   }
+  /* 矮手機首屏要放得下全部產業列（#96）。 */
+  @media (max-width: 480px) and (max-height: 740px) {
+    .fields {
+      padding: 2px 0;
+    }
+    h1 {
+      margin-top: 8px;
+      font-size: 20px;
+      line-height: 1.4;
+    }
+  }
   h2 .no {
     white-space: nowrap;
     margin-right: 0.5em;
