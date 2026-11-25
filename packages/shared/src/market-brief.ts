@@ -123,6 +123,17 @@ export const ViewpointsSchema = z.object({
   // prompt 目標 180-260、上限 300 字（NET_READ_PROMPT）、max=安全 buffer 天花板：刻意高於 prompt
   // 目標、給 LLM 波動留餘裕、避免偶爾超標就整段 degrade null。勿縮到 300「對齊」prompt。
   netRead: z.string().min(120).max(360),
+  // 與 supportPoints／riskPoints 逐項對應的詳解段落號（`narrative.sections` 的 1 起算序號），
+  // null＝整體性論點。另開平行陣列而不把 points 改成物件，舊 brief 的 points 是字串陣列、要照常 parse。
+  // undefined＝舊 brief 或當天沒有 narrative 可對應。
+  supportRefs: z.array(z.number().int().min(1).nullable()).optional(),
+  riskRefs: z.array(z.number().int().min(1).nullable()).optional(),
+}).superRefine((v, ctx) => {
+  for (const [points, refs] of [['supportPoints', 'supportRefs'], ['riskPoints', 'riskRefs']] as const) {
+    const list = v[refs]
+    if (list && list.length !== v[points].length)
+      ctx.addIssue({ code: 'custom', path: [refs], message: `${refs} length ${list.length} != ${points} length ${v[points].length}` })
+  }
 })
 export type Viewpoints = z.infer<typeof ViewpointsSchema>
 
@@ -171,6 +182,13 @@ export const MarketBriefSchema = z.object({
   // undefined = 舊版 brief 沒有這個欄位；空陣列 = 當日真的沒有 claim（例如 claim 產出旗標關閉）。
   claimLedger: z.array(EvidenceClaimSchema).optional(),
 }).superRefine((data, ctx) => {
+  const sectionCount = data.narrative?.sections.length ?? 0
+  for (const key of ['supportRefs', 'riskRefs'] as const) {
+    data.viewpoints?.[key]?.forEach((ref, i) => {
+      if (ref !== null && ref > sectionCount)
+        ctx.addIssue({ code: 'custom', path: ['viewpoints', key, i], message: `unknown section ref: ${ref}` })
+    })
+  }
   if (!data.narrative)
     return
   const validUrls = new Set(data.citations.map(c => c.url))
