@@ -1,0 +1,35 @@
+---
+// 原生 <audio controls>：不載 JS 就能播，Tab 移到播放器、空白鍵播放暫停，鍵盤操作交給瀏覽器。
+interface Props { url: string }
+const { url } = Astro.props
+---
+
+<section class="podcast" aria-labelledby="podcast-title">
+  <h2 id="podcast-title">收聽本講義</h2>
+  <audio controls preload="none" src={url}>
+    你的瀏覽器無法播放，可以<a href={url}>下載 MP3</a>。
+  </audio>
+  <p class="note">掐指連總經：賽博半仙以 AI 語音把本講義講一遍，內容僅供參考。</p>
+</section>
+
+<style>
+  .podcast {
+    margin: 18px 0 0;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  h2 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  audio {
+    display: block;
+    width: 100%;
+  }
+  .note {
+    margin: 6px 0 0;
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+</style>

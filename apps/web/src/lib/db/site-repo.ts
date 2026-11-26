@@ -3,7 +3,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { dailyBriefs, newsItems, newsSources } from './schema'
 
-export interface BriefRow { briefDate: string, selectedNewsIds: number[], briefJson: unknown }
+export interface BriefRow { briefDate: string, selectedNewsIds: number[], briefJson: unknown, audioUrl: string | null }
 export interface NewsRow { id: number, title: string, url: string, publishedAt: Date | null, sourceName: string }
 export interface SiteRows { briefs: BriefRow[], news: NewsRow[] }
 
@@ -13,7 +13,7 @@ export async function readSiteRows(databaseUrl: string): Promise<SiteRows> {
   try {
     const db = drizzle(client)
     const briefs = await db
-      .select({ briefDate: dailyBriefs.briefDate, selectedNewsIds: dailyBriefs.selectedNewsIds, briefJson: dailyBriefs.briefJson })
+      .select({ briefDate: dailyBriefs.briefDate, selectedNewsIds: dailyBriefs.selectedNewsIds, briefJson: dailyBriefs.briefJson, audioUrl: dailyBriefs.podcastAudioPath })
       .from(dailyBriefs)
       .where(eq(dailyBriefs.status, 'complete'))
       .orderBy(desc(dailyBriefs.briefDate))

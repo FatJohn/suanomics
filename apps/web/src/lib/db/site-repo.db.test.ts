@@ -38,13 +38,13 @@ describe('readSiteRows', () => {
     const selected = await insertNews('selected')
     const onlyIncomplete = await insertNews('only-incomplete')
     await insertNews('unselected')
-    await sql`INSERT INTO daily_briefs (brief_date, selected_news_ids, summary, status) VALUES
-      (${OLDER}, ${`{${selected}}`}, 's', 'complete'), (${COMPLETE}, '{}', 's', 'complete'), (${INCOMPLETE}, ${`{${onlyIncomplete}}`}, '', 'incomplete')`
+    await sql`INSERT INTO daily_briefs (brief_date, selected_news_ids, summary, status, podcast_audio_path) VALUES
+      (${OLDER}, ${`{${selected}}`}, 's', 'complete', null), (${COMPLETE}, '{}', 's', 'complete', 'https://audio.example.com/c.mp3'), (${INCOMPLETE}, ${`{${onlyIncomplete}}`}, '', 'incomplete', null)`
 
     const { briefs, news } = await readSiteRows(url as string)
 
-    const mine = briefs.map(b => b.briefDate).filter(d => [COMPLETE, OLDER, INCOMPLETE].includes(d))
-    expect(mine).toEqual([COMPLETE, OLDER])
+    const mine = briefs.filter(b => [COMPLETE, OLDER, INCOMPLETE].includes(b.briefDate))
+    expect(mine.map(b => [b.briefDate, b.audioUrl])).toEqual([[COMPLETE, 'https://audio.example.com/c.mp3'], [OLDER, null]])
     const myNews = news.filter(n => n.url.startsWith('https://example.com/'))
     expect(myNews).toMatchObject([{ id: selected, title: 'selected', sourceName: '測試來源' }])
   })

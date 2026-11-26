@@ -6,6 +6,7 @@ export const dailyBriefs = pgTable('daily_briefs', {
   briefDate: date('brief_date').notNull(),
   selectedNewsIds: integer('selected_news_ids').array().notNull(),
   briefJson: jsonb('brief_json').$type<unknown>(),
+  podcastAudioPath: text('podcast_audio_path'),
   status: text('status').notNull(),
 })
 
