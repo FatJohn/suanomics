@@ -1,6 +1,6 @@
 import type { Podcast } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
-import { buildFullScript, DEFAULT_MAX_CHARS, segmentPodcastScript } from './script-builder.js'
+import { DEFAULT_MAX_CHARS, segmentPodcastScript } from './script-builder.js'
 
 function makePodcast(overrides: Partial<Podcast> = {}): Podcast {
   return {
@@ -49,18 +49,5 @@ describe('segmentPodcastScript', () => {
 
   it('dEFAULT_MAX_CHARS 為 400', () => {
     expect(DEFAULT_MAX_CHARS).toBe(400)
-  })
-})
-
-describe('buildFullScript', () => {
-  it('joins hook → acts(in order) → takeaway with double newline, no actTitle/url', () => {
-    expect(buildFullScript(makePodcast())).toBe('hook body text\n\nact 1 body\n\nact 2 body\n\ntakeaway body')
-  })
-
-  it('handles a single act', () => {
-    const podcast = makePodcast({
-      acts: [{ actTitle: 'A', storyline: 'ai-tech', body: '單段', citationUrls: ['https://x.com/1'], relatedNewsIds: ['n1'] }],
-    })
-    expect(buildFullScript(podcast)).toBe('hook body text\n\n單段\n\ntakeaway body')
   })
 })

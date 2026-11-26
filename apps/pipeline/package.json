@@ -14,6 +14,7 @@
     "ingest:run": "tsx --env-file-if-exists=.env src/ingest/run.cli.ts",
     "daily": "tsx --env-file-if-exists=.env src/orchestrator/daily.cli.ts",
     "daily:shadow": "tsx --env-file-if-exists=.env src/orchestrator/shadow.cli.ts",
+    "podcast": "tsx --env-file-if-exists=.env src/podcast/podcast.cli.ts",
     "analyze": "tsx --env-file-if-exists=.env src/analyze/analyze.cli.ts",
     "corpus:refresh": "tsx --env-file-if-exists=.env src/corpus/corpus-refresh.cli.ts",
     "fixtures:check": "tsx src/ingest/fixtures/cli.ts",

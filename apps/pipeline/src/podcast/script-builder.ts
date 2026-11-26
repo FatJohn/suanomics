@@ -2,16 +2,6 @@ import type { Podcast } from '@suanomics/shared'
 
 export const DEFAULT_MAX_CHARS = 400
 
-// 整集全文（hook → acts → takeaway、雙換行分段）。給穩定、可吃長文的 provider
-// （如 Azure）整集一次送用；不含 actTitle / citationUrls（音檔不念這些）。
-export function buildFullScript(podcast: Podcast): string {
-  return [
-    podcast.hook.body,
-    ...podcast.acts.map(act => act.body),
-    podcast.takeaway.body,
-  ].join('\n\n')
-}
-
 export interface PodcastSegment {
   text: string
   section: 'hook' | 'act' | 'takeaway'
