@@ -85,6 +85,33 @@ jobs:
           fi
           pnpm --filter @suanomics/pipeline run daily "${args[@]}"
 
+      # podcast（#32）：讀當日 brief 寫稿，Azure TTS 轉 MP3 後上傳 R2，網址寫回 DB。
+      # 失敗不擋部署，沒音檔的那天網站不顯示播放器；已有音檔時以 exit 0 略過，
+      # 備援或重跑會補做。brief 用 --force 重跑時 podcast 跟著重做，免得稿子對不上新 brief。
+      - name: Generate podcast
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          INPUT_DATE: ${{ inputs.date }}
+          INPUT_FORCE: ${{ inputs.force }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DAILY_COST_LIMIT_USD: '0.40'
+          AZURE_SPEECH_KEY: ${{ secrets.AZURE_SPEECH_KEY }}
+          AZURE_SPEECH_REGION: ${{ vars.AZURE_SPEECH_REGION }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          R2_PUBLIC_BASE_URL: ${{ vars.R2_PUBLIC_BASE_URL }}
+        run: |
+          date="${INPUT_DATE:-$(TZ=Asia/Taipei date +%F)}"
+          args=(--date "$date")
+          if [ "$INPUT_FORCE" = "true" ]; then
+            args+=(--force)
+          fi
+          pnpm --filter @suanomics/pipeline run podcast "${args[@]}"
+
       # 備援跑到 skip 時仍重新部署：補上前一次 build 或部署失敗的情況。
       - name: Build site
         env:
