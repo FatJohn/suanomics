@@ -59,10 +59,9 @@ export const dailyBriefs = pgTable('daily_briefs', {
   // 存完整 MarketBrief JSON（含 narrative / cascadeChains / newsTitlesById / 等所有 structured 欄位）
   // nullable 為既有 row 向後相容、新 worker 寫入後 frontend 才有 narrative 可 render
   briefJson: jsonb('brief_json').$type<unknown>(),
-  // nullable jsonb, written by podcast-generate CLI only (no auto-gen)
+  // podcast CLI 寫入的稿子（PodcastSchema）
   podcastJson: jsonb('podcast_json').$type<unknown>(),
-  // TTS audio 檔案路徑（container local relative）+ 生成時間戳
-  // path null = 尚未跑 podcast:tts、應 fallback frontend stub
+  // 音檔在 R2 的公開網址（欄名沿用 v0）＋生成時間；null＝尚未產出，網站不顯示播放器
   podcastAudioPath: text('podcast_audio_path'),
   podcastAudioGeneratedAt: timestamp('podcast_audio_generated_at', { withTimezone: true }),
   // 'incomplete' = 花費閘中止；此時 brief_json 為 null，已完成階段的產出在 progress。

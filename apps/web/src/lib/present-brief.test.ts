@@ -21,6 +21,13 @@ const NARRATIVE = {
 }
 
 describe('presentBrief', () => {
+  it('podcast 音檔只收 https 網址，沒有或不合格時為 null', () => {
+    expect(presentBrief('2095-01-01', BASE, [], 'https://audio.example/podcasts/2095-01-01.mp3').audioUrl).toBe('https://audio.example/podcasts/2095-01-01.mp3')
+    expect(presentBrief('2095-01-01', BASE, []).audioUrl).toBeNull()
+    expect(presentBrief('2095-01-01', BASE, [], 'http://audio.example/a.mp3').audioUrl).toBeNull()
+    expect(presentBrief('2095-01-01', BASE, [], 'javascript:alert(1)').audioUrl).toBeNull()
+  })
+
   it('敘事裡被攔截的句子不進 view', () => {
     const view = presentBrief('2095-01-01', { ...BASE, narrative: NARRATIVE }, [])
     expect(view.narrative?.intro).toBe('開場。')

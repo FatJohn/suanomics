@@ -263,8 +263,9 @@ export async function saveDailyBrief(
   runInputs?: unknown,
 ): Promise<number> {
   const db = getDb()
-  // 重跑一律覆寫 run_inputs（沒給就清成 null），避免留著上一次的輸入對不上新的 brief。
-  const updateSet = { selectedNewsIds: [...selectedIds], summary, status: 'complete', progress: null, runInputs: runInputs ?? null, ...(briefJson !== undefined ? { briefJson } : {}) }
+  // 重跑一律覆寫 run_inputs（沒給就清成 null），避免留著上一次的輸入對不上新的 brief；
+  // podcast 稿與音檔也一併清掉，否則網站會播舊 brief 的內容。
+  const updateSet = { selectedNewsIds: [...selectedIds], summary, status: 'complete', progress: null, runInputs: runInputs ?? null, podcastJson: null, podcastAudioPath: null, podcastAudioGeneratedAt: null, ...(briefJson !== undefined ? { briefJson } : {}) }
   const insertValues = { briefDate, ...updateSet }
   const [row] = await db.insert(dailyBriefs).values(insertValues).onConflictDoUpdate({ target: dailyBriefs.briefDate, set: updateSet }).returning({ id: dailyBriefs.id })
   if (!row)

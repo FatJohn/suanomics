@@ -35,6 +35,7 @@ async function load(): Promise<SiteData> {
         const item = newsById.get(id)
         return item ? [{ id, title: item.title }] : []
       }),
+      b.audioUrl,
     )),
     news,
   }

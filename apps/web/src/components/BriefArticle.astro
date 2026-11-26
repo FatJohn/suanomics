@@ -5,6 +5,7 @@ import { GLOSSARY } from '../lib/glossary-terms'
 import { readingMinutes } from '../lib/handout'
 import { renderMarkdown } from '../lib/markdown'
 import KeyPoints from './KeyPoints.astro'
+import PodcastPlayer from './PodcastPlayer.astro'
 import SourceLinks from './SourceLinks.astro'
 import Viewpoints from './Viewpoints.astro'
 
@@ -53,6 +54,8 @@ const toc = [
       <span>第 {lectureNo} 回</span><span>閱讀 {minutes} 分鐘</span><span>來源 {brief.citations.length} 則</span>
     </p>
     <h1>{brief.headline}</h1>
+
+    {brief.audioUrl && <PodcastPlayer url={brief.audioUrl} />}
 
     <KeyPoints thesisHtml={thesisHtml} industries={industries} />
 

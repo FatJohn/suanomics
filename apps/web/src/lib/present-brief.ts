@@ -24,6 +24,7 @@ export interface BriefView {
   selectedNews: NewsLink[]
   citations: CitationLink[]
   disclaimer: string
+  audioUrl: string | null
 }
 
 export const WITHHELD_NEWS_TITLE = '（此標題依合規規則不顯示）'
@@ -131,7 +132,12 @@ function presentIndustries(brief: MarketBrief, citations: CitationLink[]): Indus
   })
 }
 
-export function presentBrief(date: string, brief: MarketBrief, selectedNews: readonly NewsLink[]): BriefView {
+// 音檔只收 https：頁面是 https，http 音檔會被瀏覽器當混合內容擋掉。
+function httpsUrl(url: string | null): string | null {
+  return url !== null && safeHttpUrl(url)?.startsWith('https:') ? url : null
+}
+
+export function presentBrief(date: string, brief: MarketBrief, selectedNews: readonly NewsLink[], audioUrl: string | null = null): BriefView {
   const citations = citationLinks(brief)
   return {
     date,
@@ -144,5 +150,6 @@ export function presentBrief(date: string, brief: MarketBrief, selectedNews: rea
     selectedNews: selectedNews.map(n => ({ id: n.id, title: redactBlockedSentences(n.title) || WITHHELD_NEWS_TITLE })),
     citations,
     disclaimer: brief.disclaimer,
+    audioUrl: httpsUrl(audioUrl),
   }
 }
