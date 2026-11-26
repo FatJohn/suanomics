@@ -1,7 +1,7 @@
 import { clampString, stripControlChars } from './narrative-shared.js'
 
 // Pre-validate normalize: clamp body lengths, filter unknown citation urls,
-// inject briefDate / persona / generatedAt if Gemini omits them.
+// inject briefDate / persona / generatedAt if the model omits them.
 // 原 72 行單函式拆成 section-level helpers（< 50 行紀律）、行為等價。
 
 function normalizeHook(hook: unknown): unknown {

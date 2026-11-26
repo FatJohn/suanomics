@@ -1,5 +1,7 @@
+import { containsForbiddenPhrase, FORBIDDEN_PHRASES } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
 import { PODCAST_WRITER_SYSTEM_PROMPT } from './podcast-writer.prompt.js'
+import { FORBIDDEN_PHRASES_LINE } from './source-authority.js'
 
 describe('podcastWriter prompt — 子軸2 兜底保留（防誤刪）', () => {
   it('keeps the de-jargon framing + denylist interpolation', () => {
@@ -11,8 +13,16 @@ describe('podcastWriter prompt — 子軸2 兜底保留（防誤刪）', () => {
   })
   it('keeps the 絕對禁止 compliance block', () => {
     expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('絕對禁止')
-    expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('建議買')
-    expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('看多')
+  })
+  it('帶入 shared 的 compliance 禁用語清單', () => {
+    for (const phrase of FORBIDDEN_PHRASES)
+      expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain(phrase)
+  })
+  // prompt 不另抄一份清單，也不拿禁用語當反例：shared 清單更新時抄本不會跟著變，模型也會照範例寫。
+  it('只在 shared 清單那一行出現禁用語', () => {
+    const outsideList = PODCAST_WRITER_SYSTEM_PROMPT.replaceAll(FORBIDDEN_PHRASES_LINE, '')
+    expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain(FORBIDDEN_PHRASES_LINE)
+    expect(containsForbiddenPhrase(outsideList)).toEqual({ hit: false })
   })
 })
 

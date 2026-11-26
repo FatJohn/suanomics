@@ -1,21 +1,21 @@
 import type { MarketBrief, Narrative, Podcast } from '@suanomics/shared'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
 import { callPodcastWriter } from './podcast-writer.js'
 
 // Characterization test：formatUserContent 在 podcast-writer.ts 內未 export，用既有測試
-// 檔（podcast-writer.test.ts）同款手法 mock callAgentLLM、從呼叫參數取出 userContent 做
+// 檔（podcast-writer.test.ts）同款手法 mock callAgent、從呼叫參數取出 userContent 做
 // snapshot。目的：在把字面值搬到 prompts/podcast-writer.user-content.ts 之前先凍結行為基線。
 
-vi.mock('./llm-wrapper.js', async () => {
-  const actual = await vi.importActual<typeof import('./llm-wrapper.js')>('./llm-wrapper.js')
-  return { ...actual, callAgentLLM: vi.fn() }
+vi.mock('./call-agent.js', async () => {
+  const actual = await vi.importActual<typeof import('./call-agent.js')>('./call-agent.js')
+  return { ...actual, callAgent: vi.fn() }
 })
 
 const FULL_NARRATIVE: Narrative = {
   intro: '今日科技板塊呈現結構性分化、AI 算力需求拉動上游設備鏈。',
   sections: [
-    { heading: 'AI 算力與半導體鏈', body: 'B'.repeat(300), relatedNewsIds: ['n1'], citationUrls: ['https://example.com/a'] },
+    { heading: 'AI 算力與半導體鏈', takeaway: null, body: 'B'.repeat(300), relatedNewsIds: ['n1'], claimIds: [], citationUrls: ['https://example.com/a'] },
   ],
   outro: '科技與地緣風險併行、配置上需平衡。',
 }
@@ -70,7 +70,7 @@ beforeEach(() => {
 
 describe('podcast-writer formatUserContent — characterization baseline', () => {
   it('renders the full template with every optional block, both branches of every conditional', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(fakeValidPodcast() as unknown)
+    vi.mocked(callAgent).mockResolvedValueOnce(fakeValidPodcast() as unknown)
     await callPodcastWriter({
       briefDate: '2026-06-27',
       brief: FULL_BRIEF,
@@ -79,13 +79,13 @@ describe('podcast-writer formatUserContent — characterization baseline', () =>
       marketSnapshot: '## 今日市場數據\n- 加權指數：23,150 點（+0.8%）',
       marketCloseFraming: '## 市場收盤時間框架\n- 台股（加權指數）最近收盤：昨日',
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toMatchSnapshot()
     expect(args?.userContent).toContain('AI 算力與半導體鏈')
   })
 
   it('renders the minimal template: no narrative, no cascadeChains, no optional blocks', async () => {
-    vi.mocked(callAgentLLM).mockResolvedValueOnce(fakeValidPodcast() as unknown)
+    vi.mocked(callAgent).mockResolvedValueOnce(fakeValidPodcast() as unknown)
     await callPodcastWriter({
       briefDate: '2026-01-05',
       brief: MINIMAL_BRIEF,
@@ -94,7 +94,7 @@ describe('podcast-writer formatUserContent — characterization baseline', () =>
       marketSnapshot: null,
       marketCloseFraming: null,
     })
-    const args = vi.mocked(callAgentLLM).mock.calls[0]?.[0]
+    const args = vi.mocked(callAgent).mock.calls[0]?.[1]
     expect(args?.userContent).toMatchSnapshot()
     expect(args?.userContent).toContain('(narrative 為空、請從 brief 自行構建)')
     expect(args?.userContent).toContain('(無 cascade chains)')

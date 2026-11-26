@@ -1,5 +1,5 @@
 import type { MarketBrief, Podcast } from '@suanomics/shared'
-import type { LlmCallRecord } from './llm-wrapper.js'
+import type { LlmCallRecord } from './call-agent.js'
 import type { RetryReason } from './narrative-shared.js'
 import {
   checkCompliance,
@@ -8,23 +8,24 @@ import {
 } from '@suanomics/shared'
 import { PODCAST_WRITER_SYSTEM_PROMPT } from '../prompts/podcast-writer.prompt.js'
 import { PODCAST_WRITER_USER_TEXT } from '../prompts/podcast-writer.user-content.js'
-import { callAgentLLM } from './llm-wrapper.js'
+import { callAgent } from './call-agent.js'
+import { CostGateError } from './cost-gate.js'
 import { READER_SNAPSHOT_HEADING } from './market-snapshot-section.js'
 import { clampString, classifyError, rewriteText } from './narrative-shared.js'
-import { PODCAST_GEMINI_SCHEMA } from './podcast-writer-schema.js'
 import { preNormalizePodcastRaw } from './podcast-writer.normalize.js'
+import { PodcastWriterResponse } from './response-schemas.js'
 
 export interface CallPodcastWriterParams {
   briefDate: string
   brief: MarketBrief
-  // 本週財經行事曆 block（前瞻素材）、podcast worker 自行 loadMarketContext 注入、缺則略過
+  // 本週財經行事曆 block（前瞻素材）、缺則略過
   calendarBlock?: string | null
   // 開放敘事線 block（追蹤線進展回顧）、缺則略過
   storylineBlock?: string | null
-  // 今日市場數據 snapshot block（讀者面具名數字來源）；podcast worker 注入、缺則略過
+  // 今日市場數據 snapshot block（讀者面具名數字來源）；缺則略過
   marketSnapshot?: string | null
   // 台股收盤時間框架 block（buildMarketCloseFraming、taiex-close 真實收盤日錨定今/昨）；
-  // podcast worker 注入、缺（空字串 / null）則略過。defense-in-depth、與 narrative-writer 一致。
+  // 缺（空字串 / null）則略過。defense-in-depth、與 narrative-writer 一致。
   marketCloseFraming?: string | null
   onCallRecord?: (r: LlmCallRecord) => void
 }
@@ -52,11 +53,7 @@ export async function callPodcastWriter(
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const raw = await callAgentLLM<unknown>({
-        agentName: 'podcast-writer',
-        systemPrompt: PODCAST_WRITER_SYSTEM_PROMPT,
-        userContent,
-        responseSchema: PODCAST_GEMINI_SCHEMA,
+      const raw = await callAgent('podcast-writer', { systemPrompt: PODCAST_WRITER_SYSTEM_PROMPT, userContent }, PodcastWriterResponse, {
         ...(p.onCallRecord !== undefined ? { onCallRecord: p.onCallRecord } : {}),
       })
 
@@ -76,19 +73,15 @@ export async function callPodcastWriter(
       if (violation)
         throw new Error(`podcast compliance violation: ${violation.matched}`)
 
-      emitAudit(p.onCallRecord, {
-        failed: false,
-        retryReason: null,
-        fabricationStripped: 0,
-        forbiddenSanitized: forbiddenCount,
-      })
-
       return {
         podcast: final,
         audit: { failed: false, retryReason: null, fabricationStripped: 0, forbiddenSanitized: forbiddenCount },
       }
     }
     catch (err) {
+      // 花費閘或帳戶錯誤重試也不會過，交給呼叫端決定。
+      if (err instanceof CostGateError)
+        throw err
       const reason = classifyError(err)
       const e = err as { message?: string, issues?: unknown }
       console.warn(`[podcast-writer] attempt ${attempt} fail reason=${reason} message=${e.message ?? '(unknown)'}`)
@@ -97,12 +90,6 @@ export async function callPodcastWriter(
       if (attempt === 1)
         firstFailReason = reason
       if (attempt >= MAX_ATTEMPTS) {
-        emitAudit(p.onCallRecord, {
-          failed: true,
-          retryReason: firstFailReason,
-          fabricationStripped: 0,
-          forbiddenSanitized: 0,
-        })
         return {
           podcast: null,
           audit: { failed: true, retryReason: firstFailReason, fabricationStripped: 0, forbiddenSanitized: 0 },
@@ -114,25 +101,6 @@ export async function callPodcastWriter(
     podcast: null,
     audit: { failed: true, retryReason: 'zod-parse', fabricationStripped: 0, forbiddenSanitized: 0 },
   }
-}
-
-function emitAudit(
-  onCall: ((r: LlmCallRecord) => void) | undefined,
-  audit: { failed: boolean, retryReason: RetryReason, fabricationStripped: number, forbiddenSanitized: number },
-) {
-  if (!onCall)
-    return
-  onCall({
-    agentName: 'podcast-writer',
-    tokensIn: 0,
-    tokensOut: 0,
-    costUsd: 0,
-    latencyMs: 0,
-    attempts: 0,
-    podcastFailed: audit.failed,
-    podcastRetryReason: audit.retryReason,
-    podcastForbiddenSanitized: audit.forbiddenSanitized,
-  })
 }
 
 function sanitizePodcastForbidden(p: Podcast): { sanitized: Podcast, count: number } {
