@@ -1,4 +1,5 @@
 import type { AgentName } from '../agents/models.js'
+import { readdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { FORBIDDEN_PHRASES } from '@suanomics/shared'
@@ -40,8 +41,9 @@ interface AgentSpec {
   note?: string
 }
 
-// v0 packages/prompt-research 的 GARNISH_DENYLIST 原樣：podcast-writer 不得當固定收尾的抽象評價詞。
-const PODCAST_GARNISH_TERMS = [
+// v0 packages/prompt-research 的 GARNISH_DENYLIST 原樣：不得當固定收尾的抽象評價詞。v0 對被編譯的
+// decomposer／analyst／synthesizer 與 podcast-writer 都套用；baguanomics 據此不把它們列成推薦術語。
+const GARNISH_TERMS = [
   '評價趨勢評估',
   '配置調整建議',
   '營運展望樂觀',
@@ -58,15 +60,16 @@ const SPECS: Record<AgentName, AgentSpec> = {
   'news-tagger': { frameStyle: 'none', prompts: { NEWS_TAGGER_SYSTEM_PROMPT }, schemas: { NewsTaggerResponse: schemas.NewsTaggerResponse } },
   'chain-grouper': { frameStyle: 'none', prompts: { CHAIN_GROUPER_SYSTEM_PROMPT }, schemas: { ChainGrouperResponse: schemas.ChainGrouperResponse } },
   'corpus-entity-summary': { frameStyle: 'none', prompts: { 'buildEntitySummaryPrompt()': buildEntitySummaryPrompt() }, schemas: { CorpusEntitySummaryResponse: schemas.CorpusEntitySummaryResponse } },
-  'decomposer': { frameStyle: 'decomposer', prompts: { DECOMPOSER_SYSTEM_PROMPT }, schemas: { DecomposerResponse: schemas.DecomposerResponse } },
+  'decomposer': { frameStyle: 'decomposer', prompts: { DECOMPOSER_SYSTEM_PROMPT }, schemas: { DecomposerResponse: schemas.DecomposerResponse }, garnishTerms: GARNISH_TERMS },
   'analyst-tier1': {
     frameStyle: 'analyst',
     prompts: { ANALYST_TIER1_SYSTEM_PROMPT },
     appendices: { CLAIMS_PROMPT_SECTION },
     schemas: { AnalystTier1Response: schemas.AnalystTier1Response, AnalystTier1WithClaimsResponse: schemas.AnalystTier1WithClaimsResponse },
+    garnishTerms: GARNISH_TERMS,
   },
-  'analyst-tier2': { frameStyle: 'analyst', prompts: { ANALYST_TIER2_SYSTEM_PROMPT }, schemas: { AnalystTier2Response: schemas.AnalystTier2Response } },
-  'synthesizer': { frameStyle: 'synthesizer', prompts: { SYNTHESIZER_SYSTEM_PROMPT }, schemas: { SynthesizerResponse: schemas.SynthesizerResponse } },
+  'analyst-tier2': { frameStyle: 'analyst', prompts: { ANALYST_TIER2_SYSTEM_PROMPT }, schemas: { AnalystTier2Response: schemas.AnalystTier2Response }, garnishTerms: GARNISH_TERMS },
+  'synthesizer': { frameStyle: 'synthesizer', prompts: { SYNTHESIZER_SYSTEM_PROMPT }, schemas: { SynthesizerResponse: schemas.SynthesizerResponse }, garnishTerms: GARNISH_TERMS },
   'editor': { frameStyle: 'none', prompts: { EDITOR_SYSTEM_PROMPT }, schemas: { EditorResponse: schemas.EditorResponse } },
   'viewpoints-debate': {
     frameStyle: 'none',
@@ -83,7 +86,7 @@ const SPECS: Record<AgentName, AgentSpec> = {
     frameStyle: 'none',
     prompts: {},
     schemas: { PodcastWriterResponse: schemas.PodcastWriterResponse },
-    garnishTerms: PODCAST_GARNISH_TERMS,
+    garnishTerms: GARNISH_TERMS,
     note: 'podcast-writer 的 system prompt 尚未移植進 apps/pipeline，本段沒有 prompt。',
   },
   'brief-quality-judge': { frameStyle: 'none', prompts: { QUALITY_JUDGE_SYSTEM_PROMPT }, schemas: { QualityJudgeResponse } },
@@ -142,6 +145,11 @@ const SPECS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../
 describe('docs/prompt-specs 與程式常數一致', () => {
   it('每個 AGENT_NAMES 都有規格', () => {
     expect(Object.keys(SPECS).sort()).toEqual([...AGENT_NAMES].sort())
+  })
+
+  // baguanomics 會讀目錄裡全部 *.md；agent 改名後留下的舊檔要擋下。
+  it('規格目錄沒有 AGENT_NAMES 以外的檔案', () => {
+    expect(readdirSync(SPECS_DIR).sort()).toEqual(AGENT_NAMES.map(a => `${a}.md`).sort())
   })
 
   it.each(AGENT_NAMES)('%s', async (agent) => {

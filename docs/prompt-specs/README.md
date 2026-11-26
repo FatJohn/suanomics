@@ -12,12 +12,13 @@
 | 現行 prompt 全文、條件附加段 | `apps/pipeline/src/prompts/` 與 `apps/pipeline/tools/eval/` 的 prompt 常數 |
 | 輸出 schema | 各 agent 傳給模型的 Zod schema，以 `z.toJSONSchema` 轉成 JSON Schema |
 | 禁用語 | `packages/shared` 的 `FORBIDDEN_PHRASES`，每份規格檔都帶完整清單 |
-| 抽象評價贅詞 | 測試檔內的 `PODCAST_GARNISH_TERMS`，只有 podcast-writer 帶 |
+| 抽象評價贅詞 | 測試檔內的 `GARNISH_TERMS`，decomposer、analyst-tier1、analyst-tier2、synthesizer、podcast-writer 帶 |
 | agent 清單 | `apps/pipeline/src/agents/models.ts` 的 `AGENT_NAMES`，每個 agent 一份 |
 
-測試用 vitest 的 file snapshot 比對規格檔與程式常數，不符時 `pnpm -r test` 失敗，CI 因此擋下 prompt 改了、規格檔沒重產的 PR。改了 prompt 或禁用語後，執行下列指令重產，規格檔的 diff 與程式改動放同一個 PR：
+測試用 vitest 的 file snapshot 比對規格檔與程式常數，不符時 `pnpm -r test` 失敗，CI 因此擋下 prompt 改了、規格檔沒重產的 PR；`agents/` 多出 `AGENT_NAMES` 以外的檔也會失敗。改了 prompt 或禁用語後，執行下列指令重產，規格檔的 diff 與程式改動放同一個 PR。`@suanomics/shared` 從 `dist` 匯出，禁用語改在 `packages/shared` 時要先 build，否則會從舊的 `dist` 重產：
 
 ```bash
+pnpm --filter @suanomics/shared build
 pnpm --filter @suanomics/pipeline exec vitest run src/prompts/prompt-specs.test.ts -u
 ```
 
