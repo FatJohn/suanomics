@@ -45,7 +45,7 @@ web
 - **不做**：註冊登入、付費、個人化、線上即時分析、留言（[設計依據〈不做的事〉](docs/architecture/design-basis.md#不做的事)）。
 - **「牽動哪些台股」的資料在 brief_json 但網站沒讀**：`affectedIndustries`（產業、方向、信心、理由）、`cascadeChains`（機制、受影響標的、方向）、`relatedETFs` 存在 `daily_briefs.brief_json`，`BriefView` 沒有帶出來。要顯示就得擴充 `present-brief.ts` 並套合規處理，屬資料層變更，要維護者另外決定。
 - **術語解釋來自維護者手寫的固定詞庫**（#94）：報告本文不附術語解釋；網站用 `apps/web/src/lib/glossary-terms.ts` 的詞庫，在講義頁每個術語第一次出現處加點開的解釋，不經 LLM、不動 pipeline。解釋文字是給讀者看的內容，同樣要通過 compliance 禁用語檢查（詞庫測試）。新增術語依真實 brief 的詞頻決定。
-- **podcast 會進網站**：音檔（#32，Azure TTS），屆時以 Astro island 加播放器；版面要留得下，但本輪不設計播放器。
+- **podcast 播放器**（#32）：單日頁標題下方放原生 `<audio controls>`（`PodcastPlayer.astro`），音檔是 R2 的公開網址，不載 JS、鍵盤操作交給瀏覽器；`daily_briefs.podcast_audio_path` 沒有值或不是 https 時整區不顯示。
 - **技術限制**：Tailwind v4；`apps/`、`packages/` 不放 emoji；單檔 300 行上限（ESLint）。
 - 未決：亮色以外是否提供暗色主題。
 
