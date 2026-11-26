@@ -19,7 +19,8 @@ export function createPodcastDeps(env: PodcastEnv): PodcastDeps {
     synthesize: ssml => synthesizeAzure({ ssml, ...env.azure }),
     upload: async (key, mp3) => {
       await putR2Object(env.r2, { key, body: mp3, contentType: 'audio/mpeg' })
-      return `${env.publicBaseUrl}/${key}`
+      // 同一天 --force 重產會覆寫同一個 key，網址帶版本才不會被 CDN 快取播到舊檔。
+      return `${env.publicBaseUrl}/${key}?v=${Date.now().toString(36)}`
     },
     saveAudio: savePodcastAudio,
     log: event => console.warn(JSON.stringify(event)),

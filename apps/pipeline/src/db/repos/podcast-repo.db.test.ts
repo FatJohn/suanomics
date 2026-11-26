@@ -26,6 +26,15 @@ describe('podcast repo', () => {
     expect(row?.podcastAudioGeneratedAt?.getTime()).toBeGreaterThanOrEqual(before - 1000)
   })
 
+  it('brief 重跑覆寫時清掉舊的 podcast 稿與音檔', async () => {
+    await saveDailyBrief(DATE, [], 'ok', { headline: 'H' })
+    await savePodcastJson(DATE, { acts: [] })
+    await savePodcastAudio(DATE, 'https://audio.example.com/podcasts/2094-05-01.mp3')
+    await saveDailyBrief(DATE, [], 'rerun', { headline: 'H2' })
+    const row = await getDailyBriefByDate(DATE)
+    expect(row).toMatchObject({ summary: 'rerun', podcastJson: null, podcastAudioPath: null, podcastAudioGeneratedAt: null })
+  })
+
   it('沒有那天的 brief 時丟錯，不默默寫空', async () => {
     await expect(savePodcastJson(DATE, { acts: [] })).rejects.toThrow(DATE)
     await expect(savePodcastAudio(DATE, 'https://x')).rejects.toThrow(DATE)

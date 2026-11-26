@@ -55,7 +55,8 @@ export interface SynthesizeAzureOptions {
 }
 
 const defaultFetch: AzureFetch = async (url, init) => {
-  const r = await fetch(url, { method: init.method, headers: init.headers, body: init.body })
+  // 一段最多約 3 分鐘音檔，120 秒內合成不完就當失敗，不讓 workflow 卡到逾時。
+  const r = await fetch(url, { method: init.method, headers: init.headers, body: init.body, signal: AbortSignal.timeout(120_000) })
   return { ok: r.ok, status: r.status, arrayBuffer: () => r.arrayBuffer(), text: () => r.text() }
 }
 

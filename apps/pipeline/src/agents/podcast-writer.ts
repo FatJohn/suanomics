@@ -42,6 +42,12 @@ export interface CallPodcastWriterResult {
 
 const MAX_ATTEMPTS = 2
 
+class ComplianceResidualError extends Error {
+  constructor(matched: string) {
+    super(`podcast compliance violation: ${matched}`)
+  }
+}
+
 export async function callPodcastWriter(
   p: CallPodcastWriterParams,
 ): Promise<CallPodcastWriterResult> {
@@ -71,7 +77,7 @@ export async function callPodcastWriter(
       // violation → throw → 走既有 catch → retry → 第二次仍違規 degrade 成 null（比照 narrative-writer 的既有作法）。
       const violation = checkCompliance(podcastProseText(final))
       if (violation)
-        throw new Error(`podcast compliance violation: ${violation.matched}`)
+        throw new ComplianceResidualError(violation.matched)
 
       return {
         podcast: final,
@@ -82,7 +88,7 @@ export async function callPodcastWriter(
       // 花費閘或帳戶錯誤重試也不會過，交給呼叫端決定。
       if (err instanceof CostGateError)
         throw err
-      const reason = classifyError(err)
+      const reason = err instanceof ComplianceResidualError ? 'compliance-residual' : classifyError(err)
       const e = err as { message?: string, issues?: unknown }
       console.warn(`[podcast-writer] attempt ${attempt} fail reason=${reason} message=${e.message ?? '(unknown)'}`)
       if (e.issues)
@@ -130,8 +136,7 @@ function recomputeTotalChars(p: Podcast): Podcast {
     ...p,
     meta: {
       ...p.meta,
-      totalChars: Math.min(2800, Math.max(1800, total)),
-      generatedAt: new Date().toISOString(),
+      totalChars: total,
     },
   }
 }

@@ -102,7 +102,7 @@ describe('callPodcastWriter — happy path', () => {
 })
 
 describe('callPodcastWriter — edge cases', () => {
-  it('filters unknown citation URLs and falls back to a valid one', async () => {
+  it('filters unknown citation URLs and keeps the valid ones', async () => {
     const podcast = fakeValidPodcast({
       acts: [
         {
@@ -180,6 +180,7 @@ describe('callPodcastWriter — edge cases', () => {
     const result = await callPodcastWriter({ briefDate: '2026-04-30', brief: FAKE_BRIEF })
     expect(result.podcast).toBeNull()
     expect(result.audit.failed).toBe(true)
+    expect(result.audit.retryReason).toBe('compliance-residual')
   })
 
   it('sanitizes forbidden trading verbs ("看多" → "動能延續") and counts hits', async () => {
@@ -203,6 +204,28 @@ describe('callPodcastWriter — edge cases', () => {
     expect(result.podcast?.acts[0]?.body).not.toContain('看多')
     expect(result.podcast?.acts[0]?.body).toContain('動能延續')
     expect(result.audit.forbiddenSanitized).toBeGreaterThan(0)
+  })
+})
+
+describe('callPodcastWriter — meta 由程式填', () => {
+  it('totalChars 寫實際字數、generatedAt 用當下時間，不採模型給的值', async () => {
+    vi.mocked(callAgent).mockResolvedValueOnce(fakeValidPodcast({ meta: { totalChars: 2700, persona: 'panpan', generatedAt: '2020-01-01T00:00:00.000Z' } }) as unknown)
+    const before = Date.now()
+    const result = await callPodcastWriter({ briefDate: '2026-04-30', brief: FAKE_BRIEF })
+    expect(result.podcast?.meta.totalChars).toBe(2050)
+    expect(Date.parse(result.podcast?.meta.generatedAt ?? '')).toBeGreaterThanOrEqual(before)
+  })
+
+  it('實際字數不到 1800 時擋下重試，不 clamp 成合格值', async () => {
+    const short = fakeValidPodcast({
+      hook: { headline: '今天聊一個你可能還沒注意到的訊號 — 不是輝達、是電力', body: '開'.repeat(150) },
+      acts: fakeValidPodcast().acts.map(a => ({ ...a, body: '段'.repeat(300) })),
+      takeaway: { body: '收'.repeat(150) },
+    })
+    vi.mocked(callAgent).mockResolvedValueOnce(short as unknown).mockResolvedValueOnce(short as unknown)
+    const result = await callPodcastWriter({ briefDate: '2026-04-30', brief: FAKE_BRIEF })
+    expect(result.podcast).toBeNull()
+    expect(result.audit.retryReason).toBe('zod-parse')
   })
 })
 

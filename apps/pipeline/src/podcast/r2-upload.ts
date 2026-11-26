@@ -70,7 +70,7 @@ export type R2Fetch = (
 ) => Promise<{ ok: boolean, status: number, text: () => Promise<string> }>
 
 const defaultFetch: R2Fetch = async (url, init) => {
-  const r = await fetch(url, { ...init, body: new Uint8Array(init.body) })
+  const r = await fetch(url, { ...init, body: new Uint8Array(init.body), signal: AbortSignal.timeout(60_000) })
   return { ok: r.ok, status: r.status, text: () => r.text() }
 }
 

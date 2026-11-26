@@ -22,3 +22,13 @@ describe('preNormalizePodcastRaw control-char hygiene', () => {
     expect(out.takeaway.body).toBe('\u6536\u5C3E')
   })
 })
+
+describe('preNormalizePodcastRaw citation hygiene', () => {
+  const act = (urls: string[]) => ({ actTitle: '八個字以上的標題', storyline: 'other', body: 'b', citationUrls: urls, relatedNewsIds: ['n1'] })
+
+  it('引用全部不在 brief 裡的段落整段丟掉，不補別的來源', () => {
+    const raw = { acts: [act(['https://x/a']), act(['https://hallucinated/x']), act(['https://x/a', 'https://hallucinated/y'])] }
+    const out = preNormalizePodcastRaw(raw, ['https://x/a', 'https://x/b'], '2026-06-16') as { acts: Array<{ citationUrls: string[] }> }
+    expect(out.acts.map(a => a.citationUrls)).toEqual([['https://x/a'], ['https://x/a']])
+  })
+})

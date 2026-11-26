@@ -105,6 +105,12 @@ describe('runPodcast', () => {
     expect(d.writeScript).not.toHaveBeenCalled()
   })
 
+  it('brief 沒有引用來源時丟錯，不寫沒有出處的稿', async () => {
+    const d = deps({ ...COMPLETE, briefJson: { ...BRIEF, citations: [] } })
+    await expect(runPodcast({ date: DATE, force: false }, d)).rejects.toThrow()
+    expect(d.writeScript).not.toHaveBeenCalled()
+  })
+
   it('單集上限乘 31 天仍在 Azure F0 每月 50 萬字元內', () => {
     expect(MAX_EPISODE_BILLABLE_CHARS * 31).toBeLessThanOrEqual(500_000)
   })
