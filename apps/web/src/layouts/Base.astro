@@ -52,8 +52,11 @@ const cardTitle = ogTitle ?? pageTitle(title)
     <div class="page">
       <header class="masthead">
         <a class="brand" href="/">
-          <b>{SITE_NAME}</b>
-          <small>賽博半仙・算命不如算力</small>
+          <img class="brand-mark" src="/logo-mark.svg" alt="" width="40" height="40" />
+          <span>
+            <b>{SITE_NAME}</b>
+            <small>賽博半仙・算命不如算力</small>
+          </span>
         </a>
         <p class="meta">
           開盤前重點講義
@@ -101,9 +104,17 @@ const cardTitle = ogTitle ?? pageTitle(title)
     border-bottom: 3px solid var(--ink);
   }
   .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
     color: var(--ink);
     text-decoration: none;
     line-height: 1.35;
+  }
+  .brand-mark {
+    flex: none;
+    width: 40px;
+    height: 40px;
   }
   .brand b {
     display: block;
@@ -157,6 +168,19 @@ const cardTitle = ogTitle ?? pageTitle(title)
     }
     .nav {
       padding: 2px 0 6px;
+    }
+  }
+  /* 手機寬度下 40px 的 logo 會把 slogan 擠成兩行、刊頭長高（361px 寬的高螢幕實測過），
+     480px 以下一律縮成 36px；360px 以下連 36px 都放不下，只留文字。 */
+  @media (max-width: 480px) {
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+    }
+  }
+  @media (max-width: 360px) {
+    .brand-mark {
+      display: none;
     }
   }
   .foot {
