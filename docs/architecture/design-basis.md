@@ -135,7 +135,7 @@ repo 是 public，金鑰防線分三層：
 
 ## 相關 repo
 
-Prompt 研究工具（從 YouTube／podcast 逐字稿蒸餾分析框架、編成 prompt 候選）是獨立 repo `baguanomics`，與本 repo 零 package 依賴。介面是檔案：本 repo 提供各 agent 的「目標 prompt 規格」檔，工具輸出 candidate 與 diff。決策見 [Prompt 研究工具拆成獨立 repo，介面是檔案](../adr/0008-split-prompt-research.md)。
+Prompt 研究工具（從 YouTube 逐字稿等素材蒸餾分析框架、編成 prompt 候選）是獨立 repo `baguanomics`，與本 repo 零 package 依賴。介面是檔案：本 repo 在 `docs/prompt-specs/` 提供各 agent 的「目標 prompt 規格」檔，工具輸出 candidate 與 diff；規格檔怎麼產生與保持一致見 [目標 prompt 規格](../prompt-specs/README.md)。決策見 [Prompt 研究工具拆成獨立 repo，介面是檔案](../adr/0008-split-prompt-research.md)。
 
 ## 決策紀錄索引
 
