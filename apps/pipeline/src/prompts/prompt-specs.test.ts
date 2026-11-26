@@ -23,7 +23,7 @@ import { NEWS_TAGGER_SYSTEM_PROMPT } from './news-tagger.prompt.js'
 import { SYNTHESIZER_SYSTEM_PROMPT } from './synthesizer.prompt.js'
 import { NET_READ_PROMPT, RISK_PROMPT, SUPPORT_PROMPT } from './viewpoints-debate.prompt.js'
 
-// 產生 docs/prompt-specs/<agent>.md：baguanomics 讀的「目標 prompt 規格」（ADR 0008）。
+// 產生 docs/prompt-specs/agents/<agent>.md：baguanomics 讀的「目標 prompt 規格」（ADR 0008）。
 // prompt 全文、schema 與禁用語都直接取自程式常數，file snapshot 不符時 CI 的 pnpm -r test 會紅，
 // 規格檔因此不會與程式漂移。改了 prompt 就加 -u 重產，規格檔 diff 與 prompt 改動放同一個 PR。
 // 格式要與 baguanomics 的 src/spec/parse-spec.ts 一致：meta 兩行、現行 prompt 用五個以上反引號的 text fence。
@@ -114,7 +114,7 @@ function renderSpec(agent: AgentName, spec: AgentSpec): string {
     '讀者：baguanomics 與調整 prompt 的開發者',
     '型別：參考',
     '',
-    '本檔由 `apps/pipeline/src/prompts/prompt-specs.test.ts` 從程式常數產生，不要手改；格式與用途見 [規格檔說明](README.md)。',
+    '本檔由 `apps/pipeline/src/prompts/prompt-specs.test.ts` 從程式常數產生，不要手改；格式與用途見 [目標 prompt 規格](../README.md)。',
     '',
     `- agent: \`${agent}\``,
     `- frame-style: \`${spec.frameStyle}\``,
@@ -137,7 +137,7 @@ function renderSpec(agent: AgentName, spec: AgentSpec): string {
   return `${lines.join('\n')}\n`
 }
 
-const SPECS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../docs/prompt-specs')
+const SPECS_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../docs/prompt-specs/agents')
 
 describe('docs/prompt-specs 與程式常數一致', () => {
   it('每個 AGENT_NAMES 都有規格', () => {

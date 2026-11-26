@@ -3,7 +3,7 @@
 讀者：baguanomics 與調整 prompt 的開發者
 型別：參考
 
-本檔由 `apps/pipeline/src/prompts/prompt-specs.test.ts` 從程式常數產生，不要手改；格式與用途見 [規格檔說明](README.md)。
+本檔由 `apps/pipeline/src/prompts/prompt-specs.test.ts` 從程式常數產生，不要手改；格式與用途見 [目標 prompt 規格](../README.md)。
 
 - agent: `analyst-tier1`
 - frame-style: `analyst`

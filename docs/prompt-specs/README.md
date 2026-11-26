@@ -3,7 +3,7 @@
 讀者：調整 agent prompt 的開發者、baguanomics 的使用者
 型別：參考
 
-本目錄每個 agent 一份規格檔，是本 repo 給 prompt 研究工具 baguanomics 的介面。規格檔由 `apps/pipeline/src/prompts/prompt-specs.test.ts` 從程式常數產生，不手改。
+`agents/` 底下每個 agent 一份規格檔，是本 repo 給 prompt 研究工具 baguanomics 的介面，baguanomics 的 `--specs` 指向這個子目錄。規格檔由 `apps/pipeline/src/prompts/prompt-specs.test.ts` 從程式常數產生，不手改。
 
 ## 一致性怎麼維持
 
