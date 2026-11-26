@@ -85,7 +85,7 @@ beforeEach(() => {
 })
 
 describe('callPodcastWriter — happy path', () => {
-  it('returns parsed podcast when Gemini emits valid JSON', async () => {
+  it('returns parsed podcast when the model emits valid JSON', async () => {
     vi.mocked(callAgent).mockResolvedValueOnce(fakeValidPodcast() as unknown)
     const result = await callPodcastWriter({ briefDate: '2026-04-30', brief: FAKE_BRIEF })
     expect(result.podcast).not.toBeNull()

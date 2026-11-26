@@ -8,7 +8,7 @@ describe('podcastWriter prompt — 子軸2 兜底保留（防誤刪）', () => {
     expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('白話優先')
     expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('嚴禁')
     expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('抽象評價贅詞')
-    expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('資本配置效率') // GARNISH_DENYLIST interpolated
+    expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('資本配置效率')
     expect(PODCAST_WRITER_SYSTEM_PROMPT).toContain('營運效率指標趨於穩健')
   })
   it('keeps the 絕對禁止 compliance block', () => {
