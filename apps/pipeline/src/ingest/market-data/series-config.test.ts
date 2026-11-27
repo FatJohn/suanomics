@@ -4,9 +4,9 @@ import { SERIES_SPECS } from './series-config.js'
 import { FLOW_PHRASES } from './snapshot.js'
 
 describe('series config', () => {
-  it('has 31 series with unique ids', () => {
-    expect(SERIES_SPECS).toHaveLength(31)
-    expect(new Set(SERIES_SPECS.map(s => s.seriesId)).size).toBe(31)
+  it('has 32 series with unique ids', () => {
+    expect(SERIES_SPECS).toHaveLength(32)
+    expect(new Set(SERIES_SPECS.map(s => s.seriesId)).size).toBe(32)
   })
   it('carries the two Nasdaq index series (美股股價指數)', () => {
     const byId = new Map(SERIES_SPECS.map(s => [s.seriesId, s]))
@@ -47,6 +47,17 @@ describe('series config', () => {
         freshness: { cadence: 'monthly', releaseDaysAfterMonthEnd: 31 },
       })
     }
+  })
+  it('carries the TPEx index from the TPEx OpenAPI', () => {
+    expect(SERIES_SPECS.find(s => s.seriesId === 'tpex-close')).toMatchObject({
+      source: 'tpex',
+      sourceCode: '/tpex_index',
+      unit: '點',
+      frequency: 'daily',
+      section: 'taiwan',
+      kind: 'level',
+      freshness: { cadence: 'trading-daily', market: 'tw', lagTradingDays: 1 },
+    })
   })
   it('spread series reference existing legs', () => {
     const ids = new Set(SERIES_SPECS.map(s => s.seriesId))

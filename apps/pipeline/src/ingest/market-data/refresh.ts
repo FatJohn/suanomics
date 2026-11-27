@@ -5,6 +5,7 @@ import { fetchFredObservations } from './fred-client.js'
 import { fetchNasdaqSeries } from './nasdaq-client.js'
 import { SERIES_SPECS } from './series-config.js'
 import { fetchTaifexSeries } from './taifex-client.js'
+import { fetchTpexSeries } from './tpex-client.js'
 import { applySpread, applyTransform } from './transform.js'
 import { createTwseSeriesFetcher } from './twse-client.js'
 
@@ -14,6 +15,7 @@ export interface RefreshDeps {
   fetchTwseSeries?: (spec: SeriesSpec) => Promise<RawPoint[]>
   fetchTaifexSeries?: (spec: SeriesSpec) => Promise<RawPoint[]>
   fetchNasdaqSeries?: (spec: SeriesSpec) => Promise<RawPoint[]>
+  fetchTpexSeries?: (spec: SeriesSpec) => Promise<RawPoint[]>
   upsert?: typeof upsertMarketDataPoints
   getLatest?: typeof getLatestPoints
 }
@@ -36,6 +38,7 @@ export async function refreshMarketData(deps: RefreshDeps): Promise<RefreshResul
   const fetchTwse = deps.fetchTwseSeries ?? createTwseSeriesFetcher()
   const fetchTaifex = deps.fetchTaifexSeries ?? fetchTaifexSeries
   const fetchNasdaq = deps.fetchNasdaqSeries ?? fetchNasdaqSeries
+  const fetchTpex = deps.fetchTpexSeries ?? fetchTpexSeries
   const upsert = deps.upsert ?? upsertMarketDataPoints
   const getLatest = deps.getLatest ?? getLatestPoints
 
@@ -48,7 +51,7 @@ export async function refreshMarketData(deps: RefreshDeps): Promise<RefreshResul
   // (1) 非 derived 序列逐條（序列少、不需並發）。
   for (const spec of direct) {
     try {
-      const raw = await fetchOneRaw(spec, { fredApiKey: deps.fredApiKey, fetchFred, fetchTwse, fetchTaifex, fetchNasdaq })
+      const raw = await fetchOneRaw(spec, { fredApiKey: deps.fredApiKey, fetchFred, fetchTwse, fetchTaifex, fetchNasdaq, fetchTpex })
       const points = applyTransform(spec.transform as DirectTransform, raw)
       pointsUpserted += await upsert(points.map(p => ({ seriesId: spec.seriesId, date: p.date, value: p.value })))
     }
@@ -84,6 +87,7 @@ interface FetchCtx {
   fetchTwse: (spec: SeriesSpec) => Promise<RawPoint[]>
   fetchTaifex: (spec: SeriesSpec) => Promise<RawPoint[]>
   fetchNasdaq: (spec: SeriesSpec) => Promise<RawPoint[]>
+  fetchTpex: (spec: SeriesSpec) => Promise<RawPoint[]>
 }
 
 /** 有自己抓取路徑的 source（`derived` 不在此列：它從已落地的兩腿算出來、不對外抓）。 */
@@ -111,6 +115,7 @@ const SOURCE_ADAPTERS: Record<FetchableSource, (spec: SeriesSpec, ctx: FetchCtx)
   twse: (spec, ctx) => ctx.fetchTwse(spec),
   taifex: (spec, ctx) => ctx.fetchTaifex(spec),
   nasdaq: (spec, ctx) => ctx.fetchNasdaq(spec),
+  tpex: (spec, ctx) => ctx.fetchTpex(spec),
 }
 
 async function fetchOneRaw(spec: SeriesSpec, ctx: FetchCtx): Promise<RawPoint[]> {

@@ -104,6 +104,15 @@ export const marketDataFixtures: FixtureManifest = {
       note: '成交量排名用；回應約 5 MB，Actions 上要 22 秒。',
     },
     {
+      file: 'tpex-index.json',
+      kind: 'json',
+      origin: 'captured',
+      url: 'https://www.tpex.org.tw/openapi/v1/tpex_index',
+      capturedAt: '2026-11-28',
+      transform: 'truncated',
+      note: 'series tpex-close（櫃買指數）。只留 2026-11-24～27 四列；Date 是西元 yyyymmdd。',
+    },
+    {
       file: 'twse-t187ap04-l.json',
       kind: 'json',
       origin: 'captured',

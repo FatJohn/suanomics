@@ -22,6 +22,7 @@ describe('refreshMarketData', () => {
       fetchTwseSeries: vi.fn(async () => [{ date: '2026-06-11', value: 23150 }]),
       fetchTaifexSeries: vi.fn(async () => []),
       fetchNasdaqSeries: vi.fn(async () => []),
+      fetchTpexSeries: vi.fn(async () => []),
       upsert: vi.fn(async (pts: unknown[]) => pts.length),
       getLatest: vi.fn(async () => [{ date: '2026-06-11', value: 1 }]),
     }
@@ -40,6 +41,7 @@ describe('refreshMarketData', () => {
       fetchTwseSeries: vi.fn(async () => []),
       fetchTaifexSeries: vi.fn(async () => []),
       fetchNasdaqSeries: vi.fn(async () => []),
+      fetchTpexSeries: vi.fn(async () => []),
       upsert: vi.fn(async () => 0),
       getLatest: vi.fn(async () => []),
     })
@@ -63,6 +65,7 @@ describe('refreshMarketData', () => {
       fetchTwseSeries: vi.fn(async () => []),
       fetchTaifexSeries: vi.fn(async () => []),
       fetchNasdaqSeries: vi.fn(async () => []),
+      fetchTpexSeries: vi.fn(async () => []),
       upsert,
       getLatest,
     })
@@ -85,6 +88,7 @@ describe('refreshMarketData', () => {
       fetchTwseSeries: vi.fn(async () => [{ date: '2026-07-07', value: 23150 }]),
       fetchTaifexSeries,
       fetchNasdaqSeries: vi.fn(async () => []),
+      fetchTpexSeries: vi.fn(async () => []),
       upsert: vi.fn(async (pts: unknown[]) => pts.length),
       getLatest: vi.fn(async () => [{ date: '2026-07-07', value: 1 }]),
     })
@@ -103,6 +107,7 @@ describe('refreshMarketData', () => {
       fetchTwseSeries: vi.fn(async () => [{ date: '2026-07-07', value: 23150 }]),
       fetchTaifexSeries,
       fetchNasdaqSeries: vi.fn(async () => []),
+      fetchTpexSeries: vi.fn(async () => []),
       upsert,
       getLatest: vi.fn(async () => []),
     })
@@ -113,6 +118,40 @@ describe('refreshMarketData', () => {
     expect(taifexCall?.[0]).toEqual([
       { seriesId: 'foreign-taifex-net', date: '2026-07-07', value: -80042 },
     ])
+  })
+
+  it('upserts fetched tpex points for tpex-close and isolates its failures', async () => {
+    const upsert = vi.fn(async (pts: unknown[]) => pts.length)
+    const fetchTpexSeries = vi.fn(async () => [{ date: '2026-11-25', value: 275.97 }])
+    await refreshMarketData({
+      fredApiKey: 'k',
+      fetchFred: vi.fn(async () => []),
+      fetchTwseSeries: vi.fn(async () => []),
+      fetchTaifexSeries: vi.fn(async () => []),
+      fetchNasdaqSeries: vi.fn(async () => []),
+      fetchTpexSeries,
+      upsert,
+      getLatest: vi.fn(async () => []),
+    })
+    const tpexCall = upsert.mock.calls.find(call =>
+      Array.isArray(call[0])
+      && (call[0] as { seriesId?: string }[]).some(p => p.seriesId === 'tpex-close'))
+    expect(tpexCall?.[0]).toEqual([{ seriesId: 'tpex-close', date: '2026-11-25', value: 275.97 }])
+
+    const failing = await refreshMarketData({
+      fredApiKey: 'k',
+      fetchFred: vi.fn(async () => []),
+      fetchTwseSeries: vi.fn(async () => []),
+      fetchTaifexSeries: vi.fn(async () => []),
+      fetchNasdaqSeries: vi.fn(async () => []),
+      fetchTpexSeries: vi.fn(async () => {
+        throw new Error('tpex boom')
+      }),
+      upsert: vi.fn(async () => 0),
+      getLatest: vi.fn(async () => []),
+    })
+    expect(failing.failures).toContain('tpex-close')
+    expect(failing.failures).not.toContain('taiex-close')
   })
 
   it('upserts fetched nasdaq points for us-sox and isolates its failures', async () => {
@@ -129,6 +168,7 @@ describe('refreshMarketData', () => {
       fetchTwseSeries: vi.fn(async () => [{ date: '2026-07-30', value: 23150 }]),
       fetchTaifexSeries: vi.fn(async () => []),
       fetchNasdaqSeries,
+      fetchTpexSeries: vi.fn(async () => []),
       upsert,
       getLatest: vi.fn(async () => []),
     })

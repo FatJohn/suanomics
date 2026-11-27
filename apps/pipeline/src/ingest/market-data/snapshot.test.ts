@@ -365,6 +365,13 @@ describe('#123 新序列進快照並帶資料日', () => {
     expect(out).toContain('- 自營商買賣超：-128 億元（2026-11-25）')
   })
 
+  it('櫃買指數帶資料日與前值變化', () => {
+    const out = buildSnapshotBlock([
+      { spec: spec('tpex-close'), points: [{ date: '2026-11-25', value: 275.97 }, { date: '2026-11-24', value: 293.23 }] },
+    ], RUN_AT, REPORT)
+    expect(out).toContain('- 櫃買指數：276 點（2026-11-25、前值 293 點、-17 點 / -5.89%）')
+  })
+
   it('pce 年增率以參考月標日期', () => {
     const out = buildSnapshotBlock([
       { spec: spec('us-pce-yoy'), points: [{ date: '2026-10-01', value: 2.84 }, { date: '2026-09-01', value: 2.79 }] },

@@ -8,8 +8,8 @@ export type SeriesKind = 'level' | 'flow'
 
 export interface SeriesSpec {
   seriesId: string
-  source: 'fred' | 'twse' | 'derived' | 'taifex' | 'nasdaq'
-  sourceCode: string // FRED series id / TWSE dataset path / TAIFEX commodityId / Nasdaq symbol / derived: ''
+  source: 'fred' | 'twse' | 'derived' | 'taifex' | 'nasdaq' | 'tpex'
+  sourceCode: string // FRED series id / TWSE dataset path / TAIFEX commodityId / Nasdaq symbol / TPEx OpenAPI path / derived: ''
   displayName: string
   unit: '%' | '美元' | '元' | '點' | '億元' | '千人' | '口' | '億股' | '張'
   frequency: 'daily' | 'monthly'
@@ -87,6 +87,8 @@ export const SERIES_SPECS: SeriesSpec[] = [
   { seriesId: 'us-nasdaq-comp', source: 'nasdaq', sourceCode: 'COMP', displayName: '納斯達克綜合指數', unit: '點', frequency: 'daily', transform: 'level', section: 'us-equity', kind: 'level', freshness: US_TRADING_T1 },
   { seriesId: 'usd-twd', source: 'fred', sourceCode: 'DEXTAUS', displayName: '美元兌台幣', unit: '元', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'level', freshness: FRED_H10_WEEKLY },
   { seriesId: 'taiex-close', source: 'twse', sourceCode: '/v1/exchangeReport/FMTQIK', displayName: '加權指數', unit: '點', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'level', freshness: TW_TRADING_T1 },
+  // TPEx OpenAPI tpex_index 當日 23:30 前後更新（2026-11-27 實測 Last-Modified 15:30 UTC），05:00 起跑時已有前一交易日。
+  { seriesId: 'tpex-close', source: 'tpex', sourceCode: '/tpex_index', displayName: '櫃買指數', unit: '點', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'level', freshness: TW_TRADING_T1 },
   // OpenAPI 的 BFI82U 已下架（404/302）。改用傳統 JSON API（legacy host www.twse.com.tw）、
   // 回傳含「合計」row 的官方買賣差額（單位：元）、parser 取合計 row 的「買賣差額」÷1e8 轉億元。
   { seriesId: 'taiex-institutional-net', source: 'twse', sourceCode: 'https://www.twse.com.tw/rwd/zh/fund/BFI82U?response=json', displayName: '三大法人買賣超', unit: '億元', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'flow', freshness: TW_TRADING_T1 },
