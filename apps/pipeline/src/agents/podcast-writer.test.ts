@@ -207,6 +207,26 @@ describe('callPodcastWriter — edge cases', () => {
   })
 })
 
+describe('callPodcastWriter — 禁用語改寫後的長度（#132）', () => {
+  it('改寫讓字串變長時仍守住 schema 上限，不因此整份失敗', async () => {
+    // 「看多」改寫成「動能延續」多 2 字：800 字的 body 與 40 字的 actTitle 改寫後會超過上限
+    const body = `${'輝達算力需求仍強。'.repeat(88)}算力需求很強看多`
+    const actTitle = `${'標'.repeat(38)}看多`
+    expect(body).toHaveLength(800)
+    expect(actTitle).toHaveLength(40)
+    const base = fakeValidPodcast()
+    // eslint-disable-next-line ts/no-non-null-assertion -- fakeValidPodcast always returns 3 acts
+    const raw = fakeValidPodcast({ acts: [{ ...base.acts[0]!, body, actTitle }, base.acts[1]!, base.acts[2]!] })
+    vi.mocked(callAgent).mockResolvedValueOnce(raw as unknown)
+    const result = await callPodcastWriter({ briefDate: '2026-04-30', brief: FAKE_BRIEF })
+    expect(result.podcast).not.toBeNull()
+    expect(result.podcast?.acts[0]?.body.length).toBeLessThanOrEqual(800)
+    expect(result.podcast?.acts[0]?.actTitle.length).toBeLessThanOrEqual(40)
+    expect(result.podcast?.acts[0]?.body).not.toContain('看多')
+    expect(result.audit.forbiddenSanitized).toBeGreaterThan(0)
+  })
+})
+
 describe('callPodcastWriter — meta 由程式填', () => {
   it('totalChars 寫實際字數、generatedAt 用當下時間，不採模型給的值', async () => {
     vi.mocked(callAgent).mockResolvedValueOnce(fakeValidPodcast({ meta: { totalChars: 2700, persona: 'panpan', generatedAt: '2020-01-01T00:00:00.000Z' } }) as unknown)

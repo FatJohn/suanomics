@@ -4,14 +4,13 @@ import type { RetryReason } from './narrative-shared.js'
 import {
   checkCompliance,
   makePodcastSchemaWithCitations,
-  PodcastSchema,
 } from '@suanomics/shared'
 import { PODCAST_WRITER_SYSTEM_PROMPT } from '../prompts/podcast-writer.prompt.js'
 import { PODCAST_WRITER_USER_TEXT } from '../prompts/podcast-writer.user-content.js'
 import { callAgent } from './call-agent.js'
 import { CostGateError } from './cost-gate.js'
 import { READER_SNAPSHOT_HEADING } from './market-snapshot-section.js'
-import { clampString, classifyError, rewriteText } from './narrative-shared.js'
+import { clampString, classifyError } from './narrative-shared.js'
 import { preNormalizePodcastRaw } from './podcast-writer.normalize.js'
 import { PodcastWriterResponse } from './response-schemas.js'
 
@@ -63,15 +62,10 @@ export async function callPodcastWriter(
         ...(p.onCallRecord !== undefined ? { onCallRecord: p.onCallRecord } : {}),
       })
 
-      const normalized = preNormalizePodcastRaw(raw, allowedCitationUrls, p.briefDate)
-      const parsed = validatingSchema.parse(normalized)
-
-      const { sanitized, count: forbiddenCount } = sanitizePodcastForbidden(parsed)
-      const reChecked = recomputeTotalChars(sanitized)
-      // sanitizePodcastForbidden 只改 hook/act/takeaway 的 string body、不動 citationUrls
-      // 所以 validatingSchema.parse(normalized) 已經保證的 citation subset 不變、PodcastSchema 即可重 validate
-      // 若未來擴展 sanitize 觸及 URL 欄位、需要回頭用 validatingSchema.parse 重新檢查 subset
-      const final = PodcastSchema.parse(reChecked)
+      const counter = { count: 0 }
+      const normalized = preNormalizePodcastRaw(raw, allowedCitationUrls, p.briefDate, counter)
+      const final = validatingSchema.parse(normalized)
+      const forbiddenCount = counter.count
 
       // 硬 gate：掃 sanitize 後仍殘留的硬禁用詞（rewrite-map 外、如「建議買」）。
       // violation → throw → 走既有 catch → retry → 第二次仍違規 degrade 成 null（比照 narrative-writer 的既有作法）。
@@ -106,38 +100,6 @@ export async function callPodcastWriter(
   return {
     podcast: null,
     audit: { failed: true, retryReason: 'zod-parse', fabricationStripped: 0, forbiddenSanitized: 0 },
-  }
-}
-
-function sanitizePodcastForbidden(p: Podcast): { sanitized: Podcast, count: number } {
-  const counter = { count: 0 }
-  const sanitized: Podcast = {
-    ...p,
-    hook: {
-      headline: rewriteText(p.hook.headline, counter),
-      body: rewriteText(p.hook.body, counter),
-    },
-    acts: p.acts.map(a => ({
-      ...a,
-      body: rewriteText(a.body, counter),
-      actTitle: rewriteText(a.actTitle, counter),
-    })),
-    takeaway: { body: rewriteText(p.takeaway.body, counter) },
-  }
-  return { sanitized, count: counter.count }
-}
-
-function recomputeTotalChars(p: Podcast): Podcast {
-  const total
-    = p.hook.body.length
-      + p.acts.reduce((sum, a) => sum + a.body.length, 0)
-      + p.takeaway.body.length
-  return {
-    ...p,
-    meta: {
-      ...p.meta,
-      totalChars: total,
-    },
   }
 }
 
