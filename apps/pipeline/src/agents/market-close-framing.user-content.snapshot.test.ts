@@ -27,4 +27,8 @@ describe('market-close-framing user content snapshot', () => {
   it('收盤日晚於報告日（防禦）→ 空字串', () => {
     expect(buildMarketCloseFraming('2026-06-28', '2026-06-27')).toMatchSnapshot()
   })
+
+  it('前一交易日收盤缺資料 → 加註', () => {
+    expect(buildMarketCloseFraming('2026-11-24', '2026-11-26')).toMatchSnapshot()
+  })
 })
