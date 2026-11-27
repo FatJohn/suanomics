@@ -56,6 +56,8 @@ const BLS_EMPLOYMENT_MONTHLY: FreshnessRule = { cadence: 'monthly', releaseDaysA
 const M2_MONTHLY: FreshnessRule = { cadence: 'monthly', releaseDaysAfterMonthEnd: 29 }
 // Fed funds 月均值（H.15）實測 06 月數據於 07-01 發（月底後 1 天）、取 3 讓開週末。
 const FED_FUNDS_MONTHLY: FreshnessRule = { cadence: 'monthly', releaseDaysAfterMonthEnd: 3 }
+// PCE（BEA Personal Income and Outlays）2026-05～10 月實測發布日為月底後 25～30 天、取 31。
+const PCE_MONTHLY: FreshnessRule = { cadence: 'monthly', releaseDaysAfterMonthEnd: 31 }
 
 export const SERIES_SPECS: SeriesSpec[] = [
   { seriesId: 'us-cpi-yoy', source: 'fred', sourceCode: 'CPIAUCSL', displayName: 'CPI 年增率', unit: '%', frequency: 'monthly', transform: 'yoy', section: 'us-macro', kind: 'level', freshness: CPI_MONTHLY },
@@ -64,6 +66,8 @@ export const SERIES_SPECS: SeriesSpec[] = [
   { seriesId: 'us-cpi-food-yoy', source: 'fred', sourceCode: 'CPIUFDSL', displayName: 'CPI 食物年增率', unit: '%', frequency: 'monthly', transform: 'yoy', section: 'us-macro', kind: 'level', freshness: CPI_MONTHLY },
   { seriesId: 'us-cpi-shelter-yoy', source: 'fred', sourceCode: 'CUSR0000SAH1', displayName: 'CPI 房租年增率', unit: '%', frequency: 'monthly', transform: 'yoy', section: 'us-macro', kind: 'level', freshness: CPI_MONTHLY },
   { seriesId: 'us-cpi-supercore-yoy', source: 'fred', sourceCode: 'CUSR0000SASL2RS', displayName: 'CPI 核心服務年增率', unit: '%', frequency: 'monthly', transform: 'yoy', section: 'us-macro', kind: 'level', freshness: CPI_MONTHLY },
+  { seriesId: 'us-pce-yoy', source: 'fred', sourceCode: 'PCEPI', displayName: 'PCE 年增率', unit: '%', frequency: 'monthly', transform: 'yoy', section: 'us-macro', kind: 'level', freshness: PCE_MONTHLY },
+  { seriesId: 'us-core-pce-yoy', source: 'fred', sourceCode: 'PCEPILFE', displayName: '核心 PCE 年增率', unit: '%', frequency: 'monthly', transform: 'yoy', section: 'us-macro', kind: 'level', freshness: PCE_MONTHLY },
   { seriesId: 'us-nonfarm-payrolls', source: 'fred', sourceCode: 'PAYEMS', displayName: '非農就業月變動', unit: '千人', frequency: 'monthly', transform: 'mom-diff', section: 'us-macro', kind: 'flow', freshness: BLS_EMPLOYMENT_MONTHLY },
   { seriesId: 'us-unemployment', source: 'fred', sourceCode: 'UNRATE', displayName: '失業率', unit: '%', frequency: 'monthly', transform: 'level', section: 'us-macro', kind: 'level', freshness: BLS_EMPLOYMENT_MONTHLY },
   { seriesId: 'us-m2-yoy', source: 'fred', sourceCode: 'M2SL', displayName: 'M2 年增率', unit: '%', frequency: 'monthly', transform: 'yoy', section: 'us-macro', kind: 'level', freshness: M2_MONTHLY },

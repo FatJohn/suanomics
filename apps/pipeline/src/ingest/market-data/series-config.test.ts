@@ -4,9 +4,9 @@ import { SERIES_SPECS } from './series-config.js'
 import { FLOW_PHRASES } from './snapshot.js'
 
 describe('series config', () => {
-  it('has 29 series with unique ids', () => {
-    expect(SERIES_SPECS).toHaveLength(29)
-    expect(new Set(SERIES_SPECS.map(s => s.seriesId)).size).toBe(29)
+  it('has 31 series with unique ids', () => {
+    expect(SERIES_SPECS).toHaveLength(31)
+    expect(new Set(SERIES_SPECS.map(s => s.seriesId)).size).toBe(31)
   })
   it('carries the two Nasdaq index series (美股股價指數)', () => {
     const byId = new Map(SERIES_SPECS.map(s => [s.seriesId, s]))
@@ -28,6 +28,24 @@ describe('series config', () => {
     for (const id of ['us-10y-breakeven', 'us-10y-real-rate']) {
       expect(byId.get(id)?.source).toBe('fred')
       expect(byId.get(id)?.section).toBe('rates-markets')
+    }
+  })
+  // 發布日實測（FRED release 54 Personal Income and Outlays，各參考月首版 realtime_start）：
+  // 5 月→06-25、6 月→07-30、7 月→08-26、8 月→09-30、9 月→10-29、10 月→11-25，月底後最多 30 天。
+  it('carries headline + core PCE yoy from FRED', () => {
+    const byId = new Map(SERIES_SPECS.map(s => [s.seriesId, s]))
+    expect(byId.get('us-pce-yoy')?.sourceCode).toBe('PCEPI')
+    expect(byId.get('us-core-pce-yoy')?.sourceCode).toBe('PCEPILFE')
+    for (const id of ['us-pce-yoy', 'us-core-pce-yoy']) {
+      expect(byId.get(id)).toMatchObject({
+        source: 'fred',
+        unit: '%',
+        frequency: 'monthly',
+        transform: 'yoy',
+        section: 'us-macro',
+        kind: 'level',
+        freshness: { cadence: 'monthly', releaseDaysAfterMonthEnd: 31 },
+      })
     }
   })
   it('spread series reference existing legs', () => {
