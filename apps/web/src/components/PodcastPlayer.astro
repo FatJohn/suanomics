@@ -1,31 +1,53 @@
 ---
 // 原生 <audio controls>：不載 JS 就能播，Tab 移到播放器、空白鍵播放暫停，鍵盤操作交給瀏覽器。
+// preload="metadata"：只抓檔頭，播放器一進頁就顯示總長，讀者看得出要聽多久。
 interface Props { url: string }
 const { url } = Astro.props
 ---
 
-<section class="podcast" aria-labelledby="podcast-title">
-  <h2 id="podcast-title">收聽本講義</h2>
-  <audio controls preload="none" src={url}>
+<section class="podcast" id="podcast" aria-labelledby="podcast-title">
+  <h2 id="podcast-title">
+    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M2 8.5V6.5a4 4 0 0 1 8 0v2" fill="none" stroke="currentColor" stroke-width="1.6" /><path d="M1.5 7.5h2v3h-2zM8.5 7.5h2v3h-2z" fill="currentColor" /></svg>
+    收聽今日講義
+  </h2>
+  <audio controls preload="metadata" src={url}>
     你的瀏覽器無法播放，可以<a href={url}>下載 MP3</a>。
   </audio>
-  <p class="note">掐指連總經：賽博半仙以 AI 語音把本講義講一遍，內容僅供參考。</p>
+  <p class="note">賽博半仙以 AI 語音把本講義講一遍，內容僅供參考。</p>
 </section>
 
 <style>
   .podcast {
-    margin: 18px 0 0;
+    margin: 28px 0 0;
     padding: 10px 0;
+    border-top: 2px solid var(--ink);
     border-bottom: 1px solid var(--rule);
   }
   h2 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     margin: 0 0 8px;
-    font-size: 14px;
-    font-weight: 700;
+    font-size: 15px;
+    font-weight: 900;
+    line-height: 1.6;
+  }
+  h2 svg {
+    color: var(--blue);
   }
   audio {
     display: block;
     width: 100%;
+    border: 1px solid var(--blue);
+    border-radius: 0;
+    background: var(--sheet);
+  }
+  audio::-webkit-media-controls-enclosure {
+    border-radius: 0;
+    background: var(--sheet);
+  }
+  audio::-webkit-media-controls-panel {
+    background: var(--sheet);
   }
   .note {
     margin: 6px 0 0;

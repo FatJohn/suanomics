@@ -52,12 +52,13 @@ const toc = [
   <article class="brief">
     <p class="fields">
       <span>第 {lectureNo} 回</span><span>閱讀 {minutes} 分鐘</span><span>來源 {brief.citations.length} 則</span>
+      {brief.audioUrl && <a class="listen" href="#podcast"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 2v8l7-4z" fill="currentColor" /></svg>收聽語音版</a>}
     </p>
     <h1>{brief.headline}</h1>
 
-    {brief.audioUrl && <PodcastPlayer url={brief.audioUrl} />}
-
     <KeyPoints thesisHtml={thesisHtml} industries={industries} />
+
+    {brief.audioUrl && <PodcastPlayer url={brief.audioUrl} />}
 
     {narrative
       ? (
@@ -132,6 +133,22 @@ const toc = [
     border-bottom: 1px solid var(--ink-2);
     padding: 0 4px;
     line-height: 1.6;
+  }
+  .fields .listen {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 6px;
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    font-weight: 700;
+    /* 上下各 1px 框線，比其他格的 1px 底線多 1px；行高少 1px 讓整列和沒有音檔時一樣高（#96 首屏）。 */
+    line-height: 19px;
+    text-decoration: none;
+  }
+  .fields .listen:hover {
+    background: var(--blue);
+    color: #fff;
   }
   h1 {
     margin: 14px 0 0;
