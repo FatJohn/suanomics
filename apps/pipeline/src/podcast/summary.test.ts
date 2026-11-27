@@ -41,10 +41,22 @@ describe('renderPodcastSummary', () => {
     }
   })
 
-  it('失敗時仍寫出已花的 LLM 費用', () => {
-    const text = renderPodcastSummary({ llm: LLM, result: undefined })
+  it('失敗時仍寫出日期與已花的 LLM 費用', () => {
+    const text = renderPodcastSummary({ date: DATE, llm: LLM, result: undefined })
     expect(text).toContain('失敗')
+    expect(text).toContain(DATE)
     expect(text).toContain('$0.1444')
+  })
+
+  it('tTS 已開始才失敗時寫出 Azure 計費字元', () => {
+    const text = renderPodcastSummary({ date: DATE, llm: LLM, result: undefined, ttsChars: 4504 })
+    expect(text).toContain('4504')
+  })
+
+  it('參數或設定錯誤時沒有日期與花費閘，仍寫失敗列', () => {
+    const text = renderPodcastSummary({ llm: { usd: 0, calls: 0 }, result: undefined })
+    expect(text).toContain('## Podcast')
+    expect(text).toContain('失敗')
   })
 })
 
