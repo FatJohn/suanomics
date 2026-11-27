@@ -1,6 +1,6 @@
 ---
 // 原生 <audio controls>：不載 JS 就能播，Tab 移到播放器、空白鍵播放暫停，鍵盤操作交給瀏覽器。
-// preload="metadata"：只抓檔頭，播放器一進頁就顯示總長，讀者看得出要聽多久。
+// preload="metadata"：請瀏覽器先抓檔頭，播放器一進頁就顯示總長；這只是提示，iOS Safari 與省流量模式可能不抓。
 interface Props { url: string }
 const { url } = Astro.props
 ---
@@ -23,7 +23,8 @@ const { url } = Astro.props
     border-top: 2px solid var(--ink);
     border-bottom: 1px solid var(--rule);
   }
-  h2 {
+  /* 用 .podcast > h2 提高權重，蓋過 global.css 的 .brief h2 節標題樣式。 */
+  .podcast > h2 {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -32,7 +33,7 @@ const { url } = Astro.props
     font-weight: 900;
     line-height: 1.6;
   }
-  h2 svg {
+  .podcast > h2 svg {
     color: var(--blue);
   }
   audio {
