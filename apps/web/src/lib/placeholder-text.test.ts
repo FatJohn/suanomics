@@ -29,7 +29,34 @@ describe('isPlaceholderText 判為 placeholder', () => {
     ['（略）'],
     ['無'],
     ['理由'],
+    ['NA'],
+    ['n.a.'],
+    ['nil'],
+    ['TBA'],
+    ['string'],
+    ['xxx'],
+    ['placeholder text'],
+    ['Lorem ipsum dolor sit amet'],
+    ['暫無'],
+    ['尚無'],
+    ['無資料'],
+    ['待確認'],
+    ['未提供'],
+    ['同上'],
+    ['空'],
+    ['缺'],
   ])('%s', (s) => {
+    expect(isPlaceholderText(s)).toBe(true)
+  })
+
+  it.each([
+    ['ｐｌａｃｅｈｏｌｄｅｒ'],
+    ['N／A'],
+    ['Ｎ/Ａ'],
+    ['lorem  ipsum'],
+    ['​'],
+    ['​placeholder⁠'],
+  ])('全形、內部多餘空白或不可見字元的寫法：%j', (s) => {
     expect(isPlaceholderText(s)).toBe(true)
   })
 
@@ -61,6 +88,17 @@ describe('isPlaceholderText 正向語料不誤擋', () => {
     ['N/A 系列指數今日未公布，改以前一交易日收盤估算。'],
     ['這不是 placeholder，而是電機機械因自動化需求上修的說明。'],
     ['None of the above applies.'],
+    ['無影響。'],
+    ['無明顯影響。'],
+    ['略升。'],
+    ['暫無明確利多，但評價已反映。'],
+    ['空頭回補帶動反彈。'],
+    ['缺料緩解，出貨回升。'],
+    ['同上游報價走揚，成本轉嫁順利。'],
+    ['AI'],
+    ['5G'],
+    ['承壓'],
+    ['null pointer 事件衝擊資安股'],
   ])('%s', (s) => {
     expect(isPlaceholderText(s)).toBe(false)
   })
