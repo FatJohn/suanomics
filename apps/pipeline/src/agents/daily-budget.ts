@@ -25,7 +25,7 @@ export async function createSharedDailyCostGate(p: {
   const spentTodayUsd = await p.getSpentTodayUsd()
   const limitUsd = sharedCostLimit({ stepLimitUsd: p.stepLimitUsd, dailyTotalUsd, spentTodayUsd })
   p.log?.({ event: 'shared_cost_limit', stepLimitUsd: p.stepLimitUsd, dailyTotalUsd, spentTodayUsd, limitUsd })
-  return new DailyCostGate(limitUsd, p.gateOptions)
+  return new DailyCostGate(limitUsd, { ...p.gateOptions, limitIsDailyTotal: limitUsd < p.stepLimitUsd })
 }
 
 /** 每日路徑的 CLI（corpus、daily、podcast）在第一次 LLM 呼叫前呼叫，裝成 process 共用的閘。 */
@@ -41,13 +41,14 @@ export async function installSharedDailyCostGate(): Promise<DailyCostGate> {
   return gate
 }
 
-/** 不在每日路徑上的工作（judge）遇到總額用完時記成略過、不讓 workflow 失敗；其他錯誤照丟。 */
+/** 不在每日路徑上的工作（judge）遇到每日總額用完時記成略過、不讓 workflow 失敗；其他錯誤照丟。 */
 export async function skipWhenBudgetExhausted<T>(fn: () => Promise<T>): Promise<{ value: T } | undefined> {
   try {
     return { value: await fn() }
   }
   catch (error) {
-    if (error instanceof DailyCostLimitExceededError)
+    // 撞到本步自己的上限（例如 judge 的 --max-usd）是失控，照丟讓 workflow 變紅。
+    if (error instanceof DailyCostLimitExceededError && error.byDailyTotal)
       return undefined
     throw error
   }

@@ -74,13 +74,13 @@ async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { 
     }
     else {
       const ran = await skipWhenBudgetExhausted(async () => runQualityJudge(input, call))
-      if (!ran) {
-        runner.skipped.push(`${date} 的 quality 因每日總額用完未評`)
-        return
+      if (ran) {
+        writeFileSync(join(args.out, `${date}-quality${args.shadow ? `-${NO_CORPUS_VARIANT}` : ''}.json`), JSON.stringify(ran.value, null, 2))
+        rows.quality.push({ date, score: ran.value.score, costUsd: runner.lastCostUsd })
       }
-      const result = ran.value
-      writeFileSync(join(args.out, `${date}-quality${args.shadow ? `-${NO_CORPUS_VARIANT}` : ''}.json`), JSON.stringify(result, null, 2))
-      rows.quality.push({ date, score: result.score, costUsd: runner.lastCostUsd })
+      else {
+        runner.skipped.push(`${date} 的 quality 因每日總額用完未評`)
+      }
     }
   }
   if (judges.includes('continuity')) {
@@ -93,13 +93,13 @@ async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { 
     }
     else {
       const ran = await skipWhenBudgetExhausted(async () => runContinuityJudge(input, call))
-      if (!ran) {
-        runner.skipped.push(`${date} 的 continuity 因每日總額用完未評`)
-        return
+      if (ran) {
+        writeFileSync(join(args.out, `${date}-continuity.json`), JSON.stringify(ran.value, null, 2))
+        rows.continuity.push({ date, score: ran.value.score, costUsd: runner.lastCostUsd })
       }
-      const result = ran.value
-      writeFileSync(join(args.out, `${date}-continuity.json`), JSON.stringify(result, null, 2))
-      rows.continuity.push({ date, score: result.score, costUsd: runner.lastCostUsd })
+      else {
+        runner.skipped.push(`${date} 的 continuity 因每日總額用完未評`)
+      }
     }
   }
 }

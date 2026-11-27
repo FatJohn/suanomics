@@ -8,7 +8,8 @@ import { dbLedger } from '../db/repos/llm-calls-repo.js'
 export class CostGateError extends Error {}
 
 export class DailyCostLimitExceededError extends CostGateError {
-  constructor(readonly limitUsd: number, readonly spentUsd: number) {
+  /** byDailyTotal：上限是共用每日總額剩下的部分，而不是本步自己的上限（daily-budget.ts）。 */
+  constructor(readonly limitUsd: number, readonly spentUsd: number, readonly byDailyTotal = false) {
     super(limitUsd <= 0
       ? '每日總額已用完，本步不能再呼叫 LLM'
       : `每日花費已超過上限：累計 $${spentUsd.toFixed(4)}，上限 $${limitUsd.toFixed(4)}`)
@@ -57,6 +58,8 @@ export interface DailyCostGateOptions {
   ledger?: LlmLedger
   runId?: string
   retryDelayMs?: number
+  /** 上限取自每日總額剩下的部分；超限錯誤據此帶 byDailyTotal。 */
+  limitIsDailyTotal?: boolean
 }
 
 const LEDGER_WRITE_ATTEMPTS = 3
@@ -87,8 +90,10 @@ export class DailyCostGate {
   private readonly ledger: LlmLedger | undefined
   private readonly runId: string
   private readonly retryDelayMs: number
+  private readonly limitIsDailyTotal: boolean
 
   constructor(private readonly limitUsd: number, options: DailyCostGateOptions = {}) {
+    this.limitIsDailyTotal = options.limitIsDailyTotal ?? false
     this.ledger = options.ledger
     this.runId = options.runId ?? currentRunId()
     this.retryDelayMs = options.retryDelayMs ?? DEFAULT_LEDGER_RETRY_DELAY_MS
@@ -110,7 +115,7 @@ export class DailyCostGate {
   assertWithinLimit(): void {
     // 共用每日總額用完時上限是 0 或負數（daily-budget.ts），一次都不能呼叫。
     if (this.spentUsd > this.limitUsd || this.limitUsd <= 0)
-      throw new DailyCostLimitExceededError(this.limitUsd, this.spentUsd)
+      throw new DailyCostLimitExceededError(this.limitUsd, this.spentUsd, this.limitIsDailyTotal)
   }
 
   record(costUsd: number): void {

@@ -64,7 +64,7 @@ describe('createSharedDailyCostGate', () => {
 describe('skipWhenBudgetExhausted', () => {
   it('額度用完時回 undefined，讓呼叫端記成略過', async () => {
     const result = await skipWhenBudgetExhausted(async () => {
-      throw new DailyCostLimitExceededError(0, 0)
+      throw new DailyCostLimitExceededError(0, 0, true)
     })
     expect(result).toBeUndefined()
   })
@@ -85,5 +85,21 @@ describe('dailyCostLimitExceededError 的訊息', () => {
     const message = new DailyCostLimitExceededError(-0.2, 0).message
     expect(message).toContain('每日總額已用完')
     expect(message).not.toContain('-0.2')
+  })
+})
+
+describe('skipWhenBudgetExhausted 分辨超限原因', () => {
+  async function exceed(spentTodayUsd: number): Promise<{ value: void } | undefined> {
+    const gate = await createSharedDailyCostGate({ stepLimitUsd: 1, totalLimitRaw: '3', getSpentTodayUsd: async () => spentTodayUsd })
+    gate.record(1.5)
+    return skipWhenBudgetExhausted(async () => gate.assertWithinLimit())
+  }
+
+  it('上限來自每日總額剩下的部分時，超限記成略過', async () => {
+    expect(await exceed(2.5)).toBeUndefined()
+  })
+
+  it('上限是本步自己的上限（總額還有剩）時，超限照樣往外丟', async () => {
+    await expect(exceed(0)).rejects.toThrow(DailyCostLimitExceededError)
   })
 })
