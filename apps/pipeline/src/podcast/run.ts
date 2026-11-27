@@ -26,11 +26,12 @@ export interface PodcastDeps {
   loadRow: (date: string) => Promise<PodcastRow | null>
   /** runInputs 是 daily 存下的 generateBrief 輸入，寫稿用它的市場與敘事線素材，與 brief 同一份。 */
   writeScript: (date: string, brief: MarketBrief, runInputs: unknown) => Promise<Podcast | null>
-  savePodcast: (date: string, podcast: Podcast) => Promise<void>
+  /** briefJson 是寫稿時讀到的那份；brief 在這之後被重跑時要拒寫，不把舊稿寫到新 brief 上。 */
+  savePodcast: (date: string, briefJson: unknown, podcast: Podcast) => Promise<void>
   synthesize: (ssml: string) => Promise<Buffer>
   /** 上傳後回傳公開網址。 */
   upload: (key: string, mp3: Buffer) => Promise<string>
-  saveAudio: (date: string, url: string) => Promise<void>
+  saveAudio: (date: string, briefJson: unknown, url: string) => Promise<void>
   log: (event: PodcastLogEvent) => void
   maxBillableChars?: number
 }
@@ -50,7 +51,7 @@ async function resolveScript(date: string, row: PodcastRow, force: boolean, deps
   const podcast = await deps.writeScript(date, brief, row.runInputs)
   if (!podcast)
     throw new Error(`${date} 的 podcast-writer 兩次嘗試都失敗`)
-  await deps.savePodcast(date, podcast)
+  await deps.savePodcast(date, row.briefJson, podcast)
   return { podcast, reused: false }
 }
 
@@ -79,6 +80,6 @@ export async function runPodcast(options: { date: string, force: boolean }, deps
     parts.push(await deps.synthesize(ssml))
   const mp3 = Buffer.concat(parts)
   const url = await deps.upload(`podcasts/${date}.mp3`, mp3)
-  await deps.saveAudio(date, url)
+  await deps.saveAudio(date, row.briefJson, url)
   return { status: 'complete', date, url, segments: ssmls.length, billableChars, bytes: mp3.length, reusedScript: reused }
 }

@@ -18,9 +18,11 @@ export function createPodcastDeps(env: PodcastEnv): PodcastDeps {
     savePodcast: savePodcastJson,
     synthesize: ssml => synthesizeAzure({ ssml, ...env.azure }),
     upload: async (key, mp3) => {
-      await putR2Object(env.r2, { key, body: mp3, contentType: 'audio/mpeg' })
-      // 同一天 --force 重產會覆寫同一個 key，網址帶版本才不會被 CDN 快取播到舊檔。
-      return `${env.publicBaseUrl}/${key}?v=${Date.now().toString(36)}`
+      // 版本放進物件 key 而不是 query string：寫稿期間 brief 被重跑時，舊 run 晚到的上傳蓋不到新音檔（#132）；
+      // 每個版本網址不同，CDN 也不會播到舊檔。代價是同一天 --force 重產會在 R2 留下舊物件。
+      const versionedKey = key.replace(/\.mp3$/, `-${Date.now().toString(36)}.mp3`)
+      await putR2Object(env.r2, { key: versionedKey, body: mp3, contentType: 'audio/mpeg' })
+      return `${env.publicBaseUrl}/${versionedKey}`
     },
     saveAudio: savePodcastAudio,
     log: event => console.warn(JSON.stringify(event)),

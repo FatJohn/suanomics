@@ -32,3 +32,35 @@ describe('preNormalizePodcastRaw citation hygiene', () => {
     expect(out.acts.map(a => a.citationUrls)).toEqual([['https://x/a'], ['https://x/a']])
   })
 })
+
+describe('preNormalizePodcastRaw 截長內文停在句尾（#132）', () => {
+  it('hook、act、takeaway 的 body 超長時截到上限內最後一個句尾，不補「…」', () => {
+    const raw = {
+      hook: { headline: 'h', body: '開場說明一下今天的重點。'.repeat(40) },
+      acts: [{ actTitle: 't', storyline: 'other', body: '這段在講算力需求與供應鏈。'.repeat(80), citationUrls: ['https://x/a'], relatedNewsIds: ['n1'] }],
+      takeaway: { body: '最後想想看這些訊號代表什麼？'.repeat(40) },
+    }
+    const out = preNormalizePodcastRaw(raw, ['https://x/a'], '2026-06-16') as {
+      hook: { body: string }
+      acts: Array<{ body: string }>
+      takeaway: { body: string }
+    }
+    const bodies: Array<[string, number]> = [[out.hook.body, 400], [out.acts[0]?.body ?? '', 800], [out.takeaway.body, 400]]
+    for (const [body, max] of bodies) {
+      expect(body.length).toBeLessThanOrEqual(max)
+      expect(body).not.toContain('…')
+      expect(body.at(-1)).toMatch(/[。？]/)
+    }
+  })
+})
+
+describe('preNormalizePodcastRaw 句尾太早時不砍掉大半段（#132）', () => {
+  it('上限內唯一的句尾太早時硬切，不退到 schema 下限而讓總字數不足', () => {
+    // 句尾在第 350 字，之後是一個很長的句子：退到句尾會砍掉一半，總字數可能跌破 1800
+    const body = `${'甲'.repeat(349)}。${'乙'.repeat(500)}`
+    const raw = { acts: [{ actTitle: 't', storyline: 'other', body, citationUrls: ['https://x/a'], relatedNewsIds: ['n1'] }] }
+    const out = preNormalizePodcastRaw(raw, ['https://x/a'], '2026-06-16') as { acts: Array<{ body: string }> }
+    expect(out.acts[0]?.body.length).toBeGreaterThanOrEqual(600)
+    expect(out.acts[0]?.body.length).toBeLessThanOrEqual(800)
+  })
+})

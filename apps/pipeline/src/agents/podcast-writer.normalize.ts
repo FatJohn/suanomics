@@ -1,28 +1,41 @@
-import { clampString, stripControlChars } from './narrative-shared.js'
+import { truncateAtSentence } from './_truncate.js'
+import { clampString, rewriteText, stripControlChars } from './narrative-shared.js'
 
-// parse 前的整理：截斷過長內文、濾掉不在 brief 引用裡的網址，
+// parse 前的整理：改寫禁用語、截斷過長內文、濾掉不在 brief 引用裡的網址，
 // 補 briefDate，meta（字數、persona、generatedAt）一律由程式填。
+// 改寫要在截斷之前：改寫後的詞可能比原詞長，先截再改會超過 schema 上限（#132）。
 // 原 72 行單函式拆成 section-level helpers（< 50 行紀律）、行為等價。
 
-function normalizeHook(hook: unknown): unknown {
+interface Counter { count: number }
+
+// 句尾截斷最多退到上限的 75%，再早就硬切：退到 schema 下限的話，幾段一起被砍會讓 totalChars 跌破 1800、整份失敗（#132）。
+const HOOK_MIN_KEEP = 300
+const ACT_MIN_KEEP = 600
+const TAKEAWAY_MIN_KEEP = 300
+
+function clean(s: string, counter: Counter): string {
+  return rewriteText(stripControlChars(s), counter)
+}
+
+function normalizeHook(hook: unknown, counter: Counter): unknown {
   if (!hook || typeof hook !== 'object')
     return hook
   const h = { ...(hook as Record<string, unknown>) }
   if (typeof h.body === 'string')
-    h.body = clampString(stripControlChars(h.body), 400)
+    h.body = truncateAtSentence(clean(h.body, counter), 400, HOOK_MIN_KEEP)
   if (typeof h.headline === 'string')
-    h.headline = clampString(stripControlChars(h.headline), 80)
+    h.headline = clampString(clean(h.headline, counter), 80)
   return h
 }
 
-function normalizeAct(a: unknown, allowed: ReadonlySet<string>): unknown {
+function normalizeAct(a: unknown, allowed: ReadonlySet<string>, counter: Counter): unknown {
   if (!a || typeof a !== 'object')
     return a
   const node = { ...(a as Record<string, unknown>) }
   if (typeof node.body === 'string')
-    node.body = clampString(stripControlChars(node.body), 800)
+    node.body = truncateAtSentence(clean(node.body, counter), 800, ACT_MIN_KEEP)
   if (typeof node.actTitle === 'string')
-    node.actTitle = clampString(stripControlChars(node.actTitle), 40)
+    node.actTitle = clampString(clean(node.actTitle, counter), 40)
   if (Array.isArray(node.citationUrls)) {
     const filtered = (node.citationUrls as unknown[]).filter(
       u => typeof u === 'string' && allowed.has(u),
@@ -40,12 +53,12 @@ function hasCitation(a: unknown): boolean {
   return !Array.isArray(urls) || urls.length > 0
 }
 
-function normalizeTakeaway(takeaway: unknown): unknown {
+function normalizeTakeaway(takeaway: unknown, counter: Counter): unknown {
   if (!takeaway || typeof takeaway !== 'object')
     return takeaway
   const t = { ...(takeaway as Record<string, unknown>) }
   if (typeof t.body === 'string')
-    t.body = clampString(stripControlChars(t.body), 400)
+    t.body = truncateAtSentence(clean(t.body, counter), 400, TAKEAWAY_MIN_KEEP)
   return t
 }
 
@@ -65,6 +78,7 @@ export function preNormalizePodcastRaw(
   raw: unknown,
   allowedUrls: readonly string[],
   briefDate: string,
+  counter: Counter = { count: 0 },
 ): unknown {
   if (!raw || typeof raw !== 'object')
     return raw
@@ -74,11 +88,11 @@ export function preNormalizePodcastRaw(
   if (!out.briefDate)
     out.briefDate = briefDate
   if (out.hook)
-    out.hook = normalizeHook(out.hook)
+    out.hook = normalizeHook(out.hook, counter)
   if (Array.isArray(out.acts))
-    out.acts = out.acts.slice(0, 5).map(a => normalizeAct(a, allowed)).filter(hasCitation)
+    out.acts = out.acts.slice(0, 5).map(a => normalizeAct(a, allowed, counter)).filter(hasCitation)
   if (out.takeaway)
-    out.takeaway = normalizeTakeaway(out.takeaway)
+    out.takeaway = normalizeTakeaway(out.takeaway, counter)
   out.meta = buildMeta(out)
 
   return out
