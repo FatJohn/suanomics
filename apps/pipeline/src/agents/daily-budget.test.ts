@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { DailyCostLimitExceededError } from './cost-gate.js'
-import { createSharedDailyCostGate, sharedCostLimit } from './daily-budget.js'
+import { DailyCostLimitExceededError, LlmAccountError } from './cost-gate.js'
+import { createSharedDailyCostGate, sharedCostLimit, skipWhenBudgetExhausted } from './daily-budget.js'
 
 describe('sharedCostLimit', () => {
   it('今天還剩的額度比本步上限多時，用本步上限', () => {
@@ -58,5 +58,32 @@ describe('createSharedDailyCostGate', () => {
     for (const raw of [undefined, '', '0', 'abc'])
       await expect(createSharedDailyCostGate({ stepLimitUsd: 1, totalLimitRaw: raw, getSpentTodayUsd })).rejects.toThrow(/DAILY_TOTAL_COST_LIMIT_USD/)
     expect(getSpentTodayUsd).not.toHaveBeenCalled()
+  })
+})
+
+describe('skipWhenBudgetExhausted', () => {
+  it('額度用完時回 undefined，讓呼叫端記成略過', async () => {
+    const result = await skipWhenBudgetExhausted(async () => {
+      throw new DailyCostLimitExceededError(0, 0)
+    })
+    expect(result).toBeUndefined()
+  })
+
+  it('其他錯誤照樣往外丟（帳務錯誤也不吞）', async () => {
+    await expect(skipWhenBudgetExhausted(async () => {
+      throw new LlmAccountError('credits')
+    })).rejects.toThrow(LlmAccountError)
+  })
+
+  it('沒出錯時回傳結果', async () => {
+    expect(await skipWhenBudgetExhausted(async () => 1)).toEqual({ value: 1 })
+  })
+})
+
+describe('dailyCostLimitExceededError 的訊息', () => {
+  it('總額用完（上限 0 或負數）時不印負數上限', () => {
+    const message = new DailyCostLimitExceededError(-0.2, 0).message
+    expect(message).toContain('每日總額已用完')
+    expect(message).not.toContain('-0.2')
   })
 })

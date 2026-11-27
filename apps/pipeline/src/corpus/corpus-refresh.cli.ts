@@ -8,7 +8,7 @@ import { runCorpusRefresh } from './corpus-worker.js'
 
 async function main(): Promise<void> {
   const payload = parseCorpusRefreshArgs(process.argv.slice(2))
-  // 先建閘：沒設 DAILY_COST_LIMIT_USD 時在抓任何東西之前就失敗，而不是跑完才在印摘要時炸掉。
+  // 先建閘：沒設 DAILY_COST_LIMIT_USD 或 DAILY_TOTAL_COST_LIMIT_USD 時在抓任何東西之前就失敗，而不是跑完才在印摘要時炸掉。
   const gate = await installSharedDailyCostGate()
   const result = await runCorpusRefresh({ payload })
   for (const slug of result.failedSources)

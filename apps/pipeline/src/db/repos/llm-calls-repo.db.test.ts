@@ -104,9 +104,7 @@ describe('llm_calls（real DB）', () => {
     const rows = await getDb().select({ usd: sql<string>`sum(${llmCalls.costUsd})` }).from(llmCalls).where(sql`${llmCalls.createdAt} >= ${start.toISOString()} AND ${llmCalls.createdAt} < ${end.toISOString()}`)
     expect(days[0]?.totalUsd).toBeCloseTo(Number(rows[0]?.usd), 10)
   })
-})
 
-describe('taipeiDayRange', () => {
   it('getSpentTodayUsd 加總今天所有 run 的花費，不含昨天', async () => {
     await getDb().insert(llmCalls).values([
       row({ runId: `${PREFIX}corpus`, costUsd: '0.5000000000' }),
@@ -117,7 +115,9 @@ describe('taipeiDayRange', () => {
     expect(await getSpentTodayUsd(NOW)).toBeCloseTo(2.75)
     expect(await getSpentTodayUsd(new Date('2001-03-11T12:00:00+08:00'))).toBe(0)
   })
+})
 
+describe('taipeiDayRange', () => {
   it('台北 00:30 仍屬當天，範圍是台北日的 UTC 起訖', () => {
     const { start, end } = taipeiDayRange(new Date('2026-11-09T16:30:00Z'))
     expect(start.toISOString()).toBe('2026-11-09T16:00:00.000Z')

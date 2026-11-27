@@ -11,7 +11,6 @@
 // 換 model 用 AGENT_MODELS，例如 AGENT_MODELS=brief-quality-judge:anthropic/claude-opus-5-5。
 
 import type { AgentInput } from '../../src/agents/call-agent.js'
-import type { DailyCostGate } from '../../src/agents/cost-gate.js'
 import type { AgentName } from '../../src/agents/models.js'
 import type { ContinuityScore } from './continuity-judge.js'
 import type { JudgeArgs } from './judge-args.js'
@@ -23,7 +22,8 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import process from 'node:process'
 import { callAgent } from '../../src/agents/call-agent.js'
-import { createSharedDailyCostGate } from '../../src/agents/daily-budget.js'
+import { DailyCostGate } from '../../src/agents/cost-gate.js'
+import { createSharedDailyCostGate, skipWhenBudgetExhausted } from '../../src/agents/daily-budget.js'
 import { resolveAgentModel } from '../../src/agents/models.js'
 import { closeDb } from '../../src/db/client.js'
 import { dbLedger, getSpentTodayUsd } from '../../src/db/repos/llm-calls-repo.js'
@@ -73,7 +73,12 @@ async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { 
       logDryRun(date, 'quality', QUALITY_JUDGE_SYSTEM_PROMPT, buildQualityUserContent(input))
     }
     else {
-      const result = await runQualityJudge(input, call)
+      const ran = await skipWhenBudgetExhausted(async () => runQualityJudge(input, call))
+      if (!ran) {
+        runner.skipped.push(`${date} 的 quality 因每日總額用完未評`)
+        return
+      }
+      const result = ran.value
       writeFileSync(join(args.out, `${date}-quality${args.shadow ? `-${NO_CORPUS_VARIANT}` : ''}.json`), JSON.stringify(result, null, 2))
       rows.quality.push({ date, score: result.score, costUsd: runner.lastCostUsd })
     }
@@ -87,7 +92,12 @@ async function judgeDate(date: string, args: JudgeArgs, runner: Runner, rows: { 
       logDryRun(date, 'continuity', CONTINUITY_JUDGE_SYSTEM_PROMPT, buildContinuityUserContent(input))
     }
     else {
-      const result = await runContinuityJudge(input, call)
+      const ran = await skipWhenBudgetExhausted(async () => runContinuityJudge(input, call))
+      if (!ran) {
+        runner.skipped.push(`${date} 的 continuity 因每日總額用完未評`)
+        return
+      }
+      const result = ran.value
       writeFileSync(join(args.out, `${date}-continuity.json`), JSON.stringify(result, null, 2))
       rows.continuity.push({ date, score: result.score, costUsd: runner.lastCostUsd })
     }
@@ -109,13 +119,16 @@ function summary(args: JudgeArgs, runner: Runner, rows: { quality: JudgeRow<Qual
 async function main(): Promise<void> {
   const args = parseJudgeArgs(process.argv.slice(2))
   mkdirSync(args.out, { recursive: true })
-  const gate = await createSharedDailyCostGate({
-    stepLimitUsd: args.maxUsd,
-    totalLimitRaw: process.env.DAILY_TOTAL_COST_LIMIT_USD,
-    getSpentTodayUsd,
-    gateOptions: { ledger: dbLedger, ...(args.shadow ? { runId: `${SHADOW_RUN_ID_PREFIX}judge-${randomUUID()}` } : {}) },
-    log: event => console.warn(JSON.stringify(event)),
-  })
+  // --dry-run 不呼叫 LLM，不必讀帳本也不必設每日總額。
+  const gate = args.dryRun
+    ? new DailyCostGate(args.maxUsd)
+    : await createSharedDailyCostGate({
+        stepLimitUsd: args.maxUsd,
+        totalLimitRaw: process.env.DAILY_TOTAL_COST_LIMIT_USD,
+        getSpentTodayUsd,
+        gateOptions: { ledger: dbLedger, ...(args.shadow ? { runId: `${SHADOW_RUN_ID_PREFIX}judge-${randomUUID()}` } : {}) },
+        log: event => console.warn(JSON.stringify(event)),
+      })
   const runner: Runner = { gate, lastCostUsd: 0, skipped: [] }
   const rows = { quality: [] as JudgeRow<QualityScore>[], continuity: [] as JudgeRow<ContinuityScore>[] }
   for (const date of args.dates)

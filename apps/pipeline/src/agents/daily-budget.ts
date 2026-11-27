@@ -1,7 +1,7 @@
 import type { DailyCostGateOptions } from './cost-gate.js'
 import process from 'node:process'
 import { dbLedger, getSpentTodayUsd } from '../db/repos/llm-calls-repo.js'
-import { DailyCostGate, installDailyCostGate, parseDailyCostLimit } from './cost-gate.js'
+import { DailyCostGate, DailyCostLimitExceededError, installDailyCostGate, parseDailyCostLimit } from './cost-gate.js'
 
 // 每個步驟各自一個 process，閘只看得到自己的花費；每日總上限要從帳本讀今天已花多少（#131）。
 // 帳本寫不進去的呼叫不會被算到（cost-gate 會印 ::error），真正的硬上限仍是 Console 的 spend limit。
@@ -39,4 +39,16 @@ export async function installSharedDailyCostGate(): Promise<DailyCostGate> {
   })
   installDailyCostGate(gate)
   return gate
+}
+
+/** 不在每日路徑上的工作（judge）遇到總額用完時記成略過、不讓 workflow 失敗；其他錯誤照丟。 */
+export async function skipWhenBudgetExhausted<T>(fn: () => Promise<T>): Promise<{ value: T } | undefined> {
+  try {
+    return { value: await fn() }
+  }
+  catch (error) {
+    if (error instanceof DailyCostLimitExceededError)
+      return undefined
+    throw error
+  }
 }

@@ -20,7 +20,7 @@ async function main(): Promise<void> {
     const args = parseDailyArgs(process.argv.slice(2))
     date = args.date
     const env = readPodcastEnv(process.env)
-    // 先建閘：沒設 DAILY_COST_LIMIT_USD 時在寫稿之前就失敗。
+    // 先建閘：沒設 DAILY_COST_LIMIT_USD 或 DAILY_TOTAL_COST_LIMIT_USD 時在寫稿之前就失敗。
     gate = await installSharedDailyCostGate()
     gate.setReportDate(args.date)
     const deps = createPodcastDeps(env)

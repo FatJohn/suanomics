@@ -9,7 +9,9 @@ export class CostGateError extends Error {}
 
 export class DailyCostLimitExceededError extends CostGateError {
   constructor(readonly limitUsd: number, readonly spentUsd: number) {
-    super(`每日花費已超過上限：累計 $${spentUsd.toFixed(4)}，上限 $${limitUsd.toFixed(4)}`)
+    super(limitUsd <= 0
+      ? '每日總額已用完，本步不能再呼叫 LLM'
+      : `每日花費已超過上限：累計 $${spentUsd.toFixed(4)}，上限 $${limitUsd.toFixed(4)}`)
     this.name = 'DailyCostLimitExceededError'
   }
 }
@@ -119,7 +121,7 @@ export class DailyCostGate {
   /**
    * 累計並寫帳本，寫進去才返回。
    * 重試用同一個 id：連線在 commit 後才斷時，第二次寫入由 DB 去重。
-   * 重試用盡不擋 run：閘不讀帳本，帳本是事後查帳用，為它丟掉已付費的報告不划算。
+   * 重試用盡不擋 run：為帳本丟掉已付費的報告不划算；代價是這筆不會算進之後步驟建閘時讀到的當日已花金額。
    * 但不能默默漏：整列印到 stderr 可手動補回，annotation 會顯示在 run 的 Summary 頁。
    */
   async recordCall(entry: LlmCallEntry): Promise<void> {
