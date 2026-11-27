@@ -33,6 +33,10 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     timeout-minutes: 60
+    # 每日 LLM 總額（#131）：各步驟建閘時扣掉 llm_calls 今天已花的金額（含 judge、備援與重跑），
+    # 各步的 DAILY_COST_LIMIT_USD 是子上限。judge.yml 用同一個值，要改兩邊一起改。
+    env:
+      DAILY_TOTAL_COST_LIMIT_USD: '3.00'
 
     steps:
       - name: Checkout
@@ -56,7 +60,7 @@ jobs:
         run: pnpm -r build
 
       # corpus 背景庫：新文章 enrich 後寫進 external_articles，供連動鏈的 cascade 檢索讀回（#34）。
-      # 放在報告之前，當天抓到的文章趕得上當天的檢索。獨立 process，花費閘與報告的 US$3 分開算；
+      # 放在報告之前，當天抓到的文章趕得上當天的檢索。子上限 0.50，花掉的額度從當日總額扣；
       # 失敗不擋報告，沒寫進去的文章下一輪會再抓到。
       - name: Refresh corpus
         continue-on-error: true
@@ -74,7 +78,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
-          DAILY_COST_LIMIT_USD: '3.00'
+          # corpus 花不到 0.10 時，報告跑滿 2.60 後 podcast 仍有完整的 0.40。
+          DAILY_COST_LIMIT_USD: '2.60'
           ANALYST_CLAIMS_ENABLED: 'true'
           NARRATIVE_LEDGER_ENABLED: 'true'
         run: |

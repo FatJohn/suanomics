@@ -1,6 +1,7 @@
 // 每日 pipeline 的進入點：`pnpm --filter pipeline run daily --date YYYY-MM-DD [--force]`。
 import process from 'node:process'
 import { currentRunId } from '../agents/cost-gate.js'
+import { installSharedDailyCostGate } from '../agents/daily-budget.js'
 import { closeDb } from '../db/client.js'
 import { getRunUsage } from '../db/repos/llm-calls-repo.js'
 import { exitCodeFor, parseDailyArgs } from './daily.cli-args.js'
@@ -10,6 +11,7 @@ import { appendRunSummary } from './run-summary.js'
 
 async function main(): Promise<void> {
   const args = parseDailyArgs(process.argv.slice(2))
+  await installSharedDailyCostGate()
   const result = await runDaily(args, createDailyDeps())
   console.warn(JSON.stringify({ event: 'result', ...result }))
   process.exitCode = exitCodeFor(result)

@@ -2,7 +2,7 @@ import { getTableColumns, like, sql } from 'drizzle-orm'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { closeDb, getDb } from '../client.js'
 import { llmCalls } from '../schema.js'
-import { dbLedger, getDailyUsage, getRunUsage, taipeiDayRange } from './llm-calls-repo.js'
+import { dbLedger, getDailyUsage, getRunUsage, getSpentTodayUsd, taipeiDayRange } from './llm-calls-repo.js'
 
 const PREFIX = 'ledgertest-'
 const NOW = new Date('2001-03-10T12:00:00+08:00')
@@ -103,6 +103,17 @@ describe('llm_calls（real DB）', () => {
     const { start, end } = taipeiDayRange(NOW)
     const rows = await getDb().select({ usd: sql<string>`sum(${llmCalls.costUsd})` }).from(llmCalls).where(sql`${llmCalls.createdAt} >= ${start.toISOString()} AND ${llmCalls.createdAt} < ${end.toISOString()}`)
     expect(days[0]?.totalUsd).toBeCloseTo(Number(rows[0]?.usd), 10)
+  })
+
+  it('getSpentTodayUsd 加總今天所有 run 的花費，不含昨天', async () => {
+    await getDb().insert(llmCalls).values([
+      row({ runId: `${PREFIX}corpus`, costUsd: '0.5000000000' }),
+      row({ runId: `${PREFIX}daily`, costUsd: '2.2500000000' }),
+      row({ runId: `${PREFIX}daily`, costUsd: null, status: 'failed' }),
+      row({ runId: `${PREFIX}old`, costUsd: '9.0000000000', createdAt: new Date('2001-03-09T23:59:00+08:00') }),
+    ])
+    expect(await getSpentTodayUsd(NOW)).toBeCloseTo(2.75)
+    expect(await getSpentTodayUsd(new Date('2001-03-11T12:00:00+08:00'))).toBe(0)
   })
 })
 

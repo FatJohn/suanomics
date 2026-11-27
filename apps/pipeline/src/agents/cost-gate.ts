@@ -8,8 +8,11 @@ import { dbLedger } from '../db/repos/llm-calls-repo.js'
 export class CostGateError extends Error {}
 
 export class DailyCostLimitExceededError extends CostGateError {
-  constructor(readonly limitUsd: number, readonly spentUsd: number) {
-    super(`每日花費已超過上限：累計 $${spentUsd.toFixed(4)}，上限 $${limitUsd.toFixed(4)}`)
+  /** byDailyTotal：上限是共用每日總額剩下的部分，而不是本步自己的上限（daily-budget.ts）。 */
+  constructor(readonly limitUsd: number, readonly spentUsd: number, readonly byDailyTotal = false) {
+    super(limitUsd <= 0
+      ? '每日總額已用完，本步不能再呼叫 LLM'
+      : `每日花費已超過上限：累計 $${spentUsd.toFixed(4)}，上限 $${limitUsd.toFixed(4)}`)
     this.name = 'DailyCostLimitExceededError'
   }
 }
@@ -51,10 +54,12 @@ export interface LlmLedger {
   insert: (row: LlmLedgerRow) => Promise<void>
 }
 
-interface DailyCostGateOptions {
+export interface DailyCostGateOptions {
   ledger?: LlmLedger
   runId?: string
   retryDelayMs?: number
+  /** 上限取自每日總額剩下的部分；超限錯誤據此帶 byDailyTotal。 */
+  limitIsDailyTotal?: boolean
 }
 
 const LEDGER_WRITE_ATTEMPTS = 3
@@ -85,8 +90,10 @@ export class DailyCostGate {
   private readonly ledger: LlmLedger | undefined
   private readonly runId: string
   private readonly retryDelayMs: number
+  private readonly limitIsDailyTotal: boolean
 
   constructor(private readonly limitUsd: number, options: DailyCostGateOptions = {}) {
+    this.limitIsDailyTotal = options.limitIsDailyTotal ?? false
     this.ledger = options.ledger
     this.runId = options.runId ?? currentRunId()
     this.retryDelayMs = options.retryDelayMs ?? DEFAULT_LEDGER_RETRY_DELAY_MS
@@ -106,8 +113,9 @@ export class DailyCostGate {
   }
 
   assertWithinLimit(): void {
-    if (this.spentUsd > this.limitUsd)
-      throw new DailyCostLimitExceededError(this.limitUsd, this.spentUsd)
+    // 共用每日總額用完時上限是 0 或負數（daily-budget.ts），一次都不能呼叫。
+    if (this.spentUsd > this.limitUsd || this.limitUsd <= 0)
+      throw new DailyCostLimitExceededError(this.limitUsd, this.spentUsd, this.limitIsDailyTotal)
   }
 
   record(costUsd: number): void {
@@ -118,7 +126,7 @@ export class DailyCostGate {
   /**
    * 累計並寫帳本，寫進去才返回。
    * 重試用同一個 id：連線在 commit 後才斷時，第二次寫入由 DB 去重。
-   * 重試用盡不擋 run：閘不讀帳本，帳本是事後查帳用，為它丟掉已付費的報告不划算。
+   * 重試用盡不擋 run：為帳本丟掉已付費的報告不划算；代價是這筆不會算進之後步驟建閘時讀到的當日已花金額。
    * 但不能默默漏：整列印到 stderr 可手動補回，annotation 會顯示在 run 的 Summary 頁。
    */
   async recordCall(entry: LlmCallEntry): Promise<void> {
@@ -143,10 +151,10 @@ export class DailyCostGate {
   }
 }
 
-export function parseDailyCostLimit(raw: string | undefined): number {
+export function parseDailyCostLimit(raw: string | undefined, name = 'DAILY_COST_LIMIT_USD'): number {
   const limit = Number(raw)
   if (raw === undefined || raw === '' || !Number.isFinite(limit) || limit <= 0)
-    throw new CostGateError(`DAILY_COST_LIMIT_USD 必須是正數，收到 ${raw ?? '（未設定）'}`)
+    throw new CostGateError(`${name} 必須是正數，收到 ${raw ?? '（未設定）'}`)
   return limit
 }
 

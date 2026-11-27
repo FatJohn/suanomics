@@ -43,7 +43,7 @@ function parseJudges(raw: string | undefined): JudgeKind[] {
   return [judge]
 }
 
-// 上限另設、不吃 DAILY_COST_LIMIT_USD：judge 不在每日路徑，與當天的報告花費分開算（#33 的決定）。
+// judge 自己的上限，不吃 DAILY_COST_LIMIT_USD；但與每日路徑共用 DAILY_TOTAL_COST_LIMIT_USD 的當日總額（#131 的決定，取代 #33 的分開算）。
 function parseMaxUsd(raw: string | undefined): number {
   if (raw === undefined)
     return 3
