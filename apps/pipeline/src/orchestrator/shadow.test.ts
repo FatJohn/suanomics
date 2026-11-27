@@ -109,6 +109,7 @@ describe('requireDailyFeatureFlags', () => {
     ['NARRATIVE_LEDGER_ENABLED 不是 true', { ...ON, NARRATIVE_LEDGER_ENABLED: '1' }, /NARRATIVE_LEDGER_ENABLED/],
     ['兩個都缺', {}, /ANALYST_CLAIMS_ENABLED、NARRATIVE_LEDGER_ENABLED/],
     ['AGENT_MODELS 有值（daily.yml 沒設，正式報告用預設 model）', { ...ON, AGENT_MODELS: 'analyst-tier1:anthropic/x' }, /AGENT_MODELS/],
+    ['NARRATIVE_REVIEW_ENABLED 是 true（daily.yml 沒開審稿）', { ...ON, NARRATIVE_REVIEW_ENABLED: 'true' }, /NARRATIVE_REVIEW_ENABLED/],
   ])('%s 時在呼叫 LLM 前就失敗', (_label, env, message) => {
     expect(() => requireDailyFeatureFlags(env)).toThrow(message)
   })

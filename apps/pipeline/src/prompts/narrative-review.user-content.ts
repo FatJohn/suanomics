@@ -39,6 +39,9 @@ export function formatReviewMaterial(m: NarrativeReviewMaterial): string {
   const tail: [string, string | null | undefined][] = [
     ['行事曆（只可引用列出的事件與日期）', m.calendarBlock],
     ['主管機關公告（只可引用列出的內容）', m.officialBlock],
+    ['敘事線（先前報告寫過的進展，撰稿者可據此回顧）', m.storylineBlock],
+    ['休市統整（休市期間的範圍）', m.closureBlock],
+    ['週回顧', m.weeklyRecapBlock],
   ]
   for (const [heading, block] of tail) {
     if (block)

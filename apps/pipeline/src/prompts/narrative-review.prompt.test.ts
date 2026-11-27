@@ -33,6 +33,9 @@ const MATERIAL: NarrativeReviewMaterial = {
   marketSnapshot: '美債 10Y 5.1%（2026-11-26）',
   calendarBlock: null,
   officialBlock: '央行理監事會 12/18',
+  storylineBlock: '## 開放敘事線\nFed 上週按兵不動',
+  closureBlock: '休市統整：上一個交易日 11/21',
+  weeklyRecapBlock: '本週回顧：費半週跌 3%',
 }
 
 const NOTES: ReviewNote[] = [{ kind: 'unsupported', quote: '晶圓代工評價承壓', note: '底本沒有評價數字，刪除或改寫' }]
@@ -66,6 +69,11 @@ describe('reviewer system prompt', () => {
   it('要求 quote 逐字抄草稿', () => {
     expect(NARRATIVE_REVIEWER_SYSTEM_PROMPT).toContain('逐字複製')
   })
+
+  // 修訂者必須逐字保留小標與重點行，點名它們的意見無法落實。
+  it('quote 只取自開場、段落內文與收尾', () => {
+    expect(NARRATIVE_REVIEWER_SYSTEM_PROMPT).toContain('只能取自開場、段落內文與收尾')
+  })
 })
 
 describe('reviser system prompt', () => {
@@ -96,6 +104,10 @@ describe('formatReviewMaterial', () => {
     ['引用來源', 'https://example.com/fed'],
     ['claim ledger', '[c1]'],
     ['官方公告', '央行理監事會 12/18'],
+    // 撰稿者照規定寫的跨日回顧與休市統整，底本沒有就會被誤判 unsupported（#125 code-review）。
+    ['敘事線', 'Fed 上週按兵不動'],
+    ['休市統整', '休市統整：上一個交易日 11/21'],
+    ['週回顧', '本週回顧：費半週跌 3%'],
   ])('含%s', (_label, expected) => {
     expect(text).toContain(expected)
   })

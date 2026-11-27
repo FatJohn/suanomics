@@ -7,9 +7,11 @@
 //     op run --account johnnyhtw.1password.com -- pnpm --filter @suanomics/pipeline run eval:review-ab \
 //     --dates 2026-11-25,2026-11-26,2026-11-27 [--max-usd 1.2] [--dry-run] [--out .eval-out/review-ab]
 
+import type { Narrative } from '@suanomics/shared'
 import type { AgentInput } from '../../src/agents/call-agent.js'
 import type { AgentName } from '../../src/agents/models.js'
-import type { NarrativeReview } from '../../src/agents/narrative-review.js'
+import type { NarrativeReview, NarrativeReviewMaterial } from '../../src/agents/narrative-review.js'
+import type { StoredBrief } from './load-inputs.js'
 import type { QualityJudgeResult } from './quality-judge.js'
 import { randomUUID } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -57,7 +59,10 @@ function parseArgs(argv: readonly string[]): Args {
 
 const judgeCall = <T>(name: AgentName, input: AgentInput, schema: Parameters<typeof callAgent<T>>[2]): Promise<T> => callAgent(name, input, schema)
 
-async function compareDate(date: string, args: Args, gate: DailyCostGate): Promise<Row | null> {
+interface Loaded { date: string, stored: StoredBrief, draft: Narrative, material: NarrativeReviewMaterial }
+
+// 先把所有日期讀齊再花錢：中途才發現某天缺資料，前面付過的呼叫就白跑、summary 也寫不出來。
+async function loadDate(date: string): Promise<Loaded | null> {
   const stored = await loadStoredBrief(date)
   const source = await getShadowSource(date)
   if (stored === null || source === null)
@@ -67,11 +72,10 @@ async function compareDate(date: string, args: Args, gate: DailyCostGate): Promi
     console.warn(`[eval:review-ab] ${date} 的報告沒有 narrative，略過`)
     return null
   }
-  const material = reviewMaterialFromStored(date, stored.brief, parseRunInputs(date, source.runInputs))
-  if (args.dryRun) {
-    console.warn(JSON.stringify({ date, reviewerUserChars: formatReviewerUserContent(material, draft).length }))
-    return null
-  }
+  return { date, stored, draft, material: reviewMaterialFromStored(date, stored.brief, parseRunInputs(date, source.runInputs)) }
+}
+
+async function compareDate({ date, stored, draft, material }: Loaded, args: Args, gate: DailyCostGate): Promise<Row> {
   gate.setReportDate(date)
   const before = gate.totalUsd
   const review = await reviewNarrative(material, draft)
@@ -115,14 +119,20 @@ async function main(): Promise<void> {
         log: event => console.warn(JSON.stringify(event)),
       })
   installDailyCostGate(gate)
-  const rows: Row[] = []
+  const loaded: Loaded[] = []
   for (const date of args.dates) {
-    const row = await compareDate(date, args, gate)
-    if (row)
-      rows.push(row)
+    const item = await loadDate(date)
+    if (item)
+      loaded.push(item)
   }
-  if (args.dryRun)
+  if (args.dryRun) {
+    for (const { date, material, draft } of loaded)
+      console.warn(JSON.stringify({ date, reviewerUserChars: formatReviewerUserContent(material, draft).length }))
     return
+  }
+  const rows: Row[] = []
+  for (const item of loaded)
+    rows.push(await compareDate(item, args, gate))
   const text = summary(rows)
   writeFileSync(join(args.out, 'summary.md'), text)
   console.warn(text)

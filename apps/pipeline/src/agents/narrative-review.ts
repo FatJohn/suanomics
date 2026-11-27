@@ -25,6 +25,9 @@ export interface NarrativeReviewMaterial {
   marketSnapshot?: string | null
   calendarBlock?: string | null
   officialBlock?: string | null
+  storylineBlock?: string | null
+  closureBlock?: string | null
+  weeklyRecapBlock?: string | null
 }
 
 export interface ReviewNote { kind: (typeof REVIEW_NOTE_KINDS)[number], quote: string, note: string }
@@ -47,18 +50,23 @@ export function reviewMaterialFromParams(p: CallNarrativeWriterParams): Narrativ
     marketSnapshot: p.marketSnapshot ?? null,
     calendarBlock: p.calendarBlock ?? null,
     officialBlock: p.officialBlock ?? null,
+    storylineBlock: p.storylineBlock ?? null,
+    closureBlock: p.closureBlock ?? null,
+    weeklyRecapBlock: p.weeklyRecapBlock ?? null,
   }
 }
 
-// 太短的引文幾乎對得上任何草稿，等於沒定位；與 judge 的 MIN_QUOTE_CHARS 同值。
+// 太短的引文幾乎對得上任何草稿，等於沒定位；太長的引文等於點名整段，修訂者會整段重寫。區間同 prompt。
 const MIN_QUOTE_CHARS = 5
+const MAX_QUOTE_CHARS = 60
 
 function normalizeQuote(s: string): string {
   return s.normalize('NFKC').replace(/\s+/g, '')
 }
 
+// 小標與重點行修訂者必須逐字保留，點名它們的意見無法落實，不列入可比對範圍。
 function draftTexts(draft: Narrative): string[] {
-  return [draft.intro, ...draft.sections.flatMap(s => [s.heading, s.takeaway ?? '', s.body]), draft.outro].map(normalizeQuote)
+  return [draft.intro, ...draft.sections.map(s => s.body), draft.outro].map(normalizeQuote)
 }
 
 // 引文對不回草稿的意見無法定位要改哪一句，交給修訂者等於讓它自由改寫。
@@ -67,7 +75,7 @@ function locatableNotes(notes: readonly ReviewNote[], draft: Narrative): ReviewN
   const seen = new Set<string>()
   return notes.filter((n) => {
     const q = normalizeQuote(n.quote)
-    if (q.length < MIN_QUOTE_CHARS || seen.has(q) || !texts.some(t => t.includes(q)))
+    if (q.length < MIN_QUOTE_CHARS || q.length > MAX_QUOTE_CHARS || seen.has(q) || !texts.some(t => t.includes(q)))
       return false
     seen.add(q)
     return true
@@ -100,6 +108,12 @@ export async function reviseNarrative(m: NarrativeReviewMaterial, draft: Narrati
   )
 }
 
+// prompt 要求其餘部分逐字保留，這裡只機械地擋得住結構層的越權改寫：段落數、小標、重點行。
+function keepsStructure(draft: Narrative, revised: Narrative): boolean {
+  return revised.sections.length === draft.sections.length
+    && revised.sections.every((s, i) => s.heading === draft.sections[i]?.heading && s.takeaway === draft.sections[i]?.takeaway)
+}
+
 export async function reviewAndRevise(m: NarrativeReviewMaterial, first: CallNarrativeWriterResult): Promise<CallNarrativeWriterResult> {
   if (!narrativeReviewEnabled() || first.narrative === null)
     return first
@@ -110,6 +124,7 @@ export async function reviewAndRevise(m: NarrativeReviewMaterial, first: CallNar
     return first
   }
   const revised = await reviseNarrative(m, draft, review.notes)
-  console.warn(JSON.stringify({ event: 'narrative_review', notes: review.notes.length, kinds: review.notes.map(n => n.kind), revised: revised.narrative !== null }))
-  return revised.narrative === null ? first : revised
+  const accepted = revised.narrative !== null && keepsStructure(draft, revised.narrative)
+  console.warn(JSON.stringify({ event: 'narrative_review', notes: review.notes.length, kinds: review.notes.map(n => n.kind), revised: accepted, revisionFailed: revised.narrative === null }))
+  return accepted ? revised : first
 }

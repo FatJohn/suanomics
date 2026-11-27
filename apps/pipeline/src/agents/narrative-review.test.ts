@@ -113,6 +113,16 @@ describe('reviewNarrative', () => {
     expect(await reviewNarrative(MATERIAL, DRAFT)).toEqual({ ok: true, notes: [] })
   })
 
+  it('quote 超過 60 字不算可定位', async () => {
+    vi.mocked(callAgent).mockResolvedValueOnce({ notes: [{ ...NOTE, quote: DRAFT.sections[0]?.body.slice(0, 70) ?? '' }] })
+    expect(await reviewNarrative(MATERIAL, DRAFT)).toEqual({ ok: true, notes: [] })
+  })
+
+  it('點名小標或重點行的意見丟掉', async () => {
+    vi.mocked(callAgent).mockResolvedValueOnce({ notes: [{ ...NOTE, quote: '折現率上行' }] })
+    expect(await reviewNarrative(MATERIAL, DRAFT)).toEqual({ ok: true, notes: [] })
+  })
+
   it('同一段引文只留一筆', async () => {
     vi.mocked(callAgent).mockResolvedValueOnce({ notes: [NOTE, { ...NOTE, note: '重複' }] })
     expect(await reviewNarrative(MATERIAL, DRAFT)).toEqual({ ok: false, notes: [NOTE] })
@@ -176,6 +186,16 @@ describe('reviewAndRevise', () => {
     expect(await reviewAndRevise(MATERIAL, FIRST)).toBe(FIRST)
   })
 
+  // 修訂者只該改被點名的句子；段落數、小標或重點行變了就是越權改寫。
+  it.each([
+    ['少了段落', { ...REVISED_RAW, sections: [] }],
+    ['小標被改', { ...REVISED_RAW, sections: [{ ...REVISED_RAW.sections[0], heading: '新小標' }] }],
+    ['重點行被改', { ...REVISED_RAW, sections: [{ ...REVISED_RAW.sections[0], takeaway: '新重點' }] }],
+  ])('修訂稿%s時回原稿', async (_label, revised) => {
+    vi.mocked(callAgent).mockResolvedValueOnce({ notes: [NOTE] }).mockResolvedValueOnce(revised)
+    expect(await reviewAndRevise(MATERIAL, FIRST)).toBe(FIRST)
+  })
+
   it('修訂時撞到花費閘往外丟', async () => {
     vi.mocked(callAgent).mockResolvedValueOnce({ notes: [NOTE] }).mockRejectedValueOnce(new DailyCostLimitExceededError(1, 2))
     await expect(reviewAndRevise(MATERIAL, FIRST)).rejects.toBeInstanceOf(DailyCostLimitExceededError)
@@ -194,6 +214,8 @@ describe('reviewMaterialFromParams', () => {
       marketSnapshot: 'snap',
       officialBlock: null,
       mainThemes: ['利率路徑'],
+      storylineBlock: 'story',
+      closureBlock: null,
     })
     expect(material).toEqual({
       briefDate: '2026-11-27',
@@ -205,6 +227,9 @@ describe('reviewMaterialFromParams', () => {
       marketSnapshot: 'snap',
       calendarBlock: null,
       officialBlock: null,
+      storylineBlock: 'story',
+      closureBlock: null,
+      weeklyRecapBlock: null,
     })
   })
 })

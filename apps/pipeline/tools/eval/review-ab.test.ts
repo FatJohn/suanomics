@@ -1,6 +1,7 @@
 import type { BriefRunInputs } from '../../src/orchestrator/daily.js'
 import { describe, expect, it } from 'vitest'
 import { buildMarketCloseFraming } from '../../src/agents/market-close-framing.js'
+import { buildMarketClosureBlock } from '../../src/agents/market-closure.js'
 import { EMPTY_MARKET_CONTEXT } from '../../src/ingest/market-data/context.js'
 import { reviewMaterialFromStored } from './review-ab.js'
 import { makeBrief } from './test-brief.js'
@@ -15,7 +16,7 @@ const RUN_INPUTS: BriefRunInputs = {
   editor: {
     news: NEWS,
     selection: { mainThemes: ['利率路徑'], dailyThesis: '利率上行壓抑成長股評價' } as never,
-    storylineBlock: null,
+    storylineBlock: '## 開放敘事線',
     continuityHint: null,
   },
   market: { ...EMPTY_MARKET_CONTEXT, snapshotBlock: 'snap', calendarBlock: 'cal', officialBlock: 'off', taiexCloseDate: '2026-11-26' },
@@ -39,6 +40,8 @@ describe('reviewMaterialFromStored', () => {
       marketSnapshot: 'snap',
       calendarBlock: 'cal',
       officialBlock: 'off',
+      storylineBlock: '## 開放敘事線',
+      closureBlock: buildMarketClosureBlock('2026-11-27'),
     })
   })
 

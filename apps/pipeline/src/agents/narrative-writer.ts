@@ -212,7 +212,7 @@ export async function runNarrativeAttempts(
         claimCheckedNumbers: binding.total,
         claimIdsTruncated,
       }
-      emitAudit(p.onCallRecord, audit)
+      emitAudit(agent, p.onCallRecord, audit)
 
       return {
         narrative: reParsed.narrative ?? null,
@@ -243,7 +243,7 @@ export async function runNarrativeAttempts(
           claimCheckedNumbers: 0,
           claimIdsTruncated: 0,
         }
-        emitAudit(p.onCallRecord, audit)
+        emitAudit(agent, p.onCallRecord, audit)
         return { narrative: null, audit }
       }
     }
@@ -256,6 +256,7 @@ export async function runNarrativeAttempts(
 }
 
 function emitAudit(
+  agent: NarrativeAttemptCall['agent'],
   onCall: ((r: LlmCallRecord) => void) | undefined,
   audit: CallNarrativeWriterResult['audit'],
 ) {
@@ -264,7 +265,7 @@ function emitAudit(
   onCall({
     // 這一筆是純 audit signal、不是真的 LLM 呼叫，成本與 token 一律 0（真實用量由
     // callAgent 自己那筆 record 記）。
-    agentName: 'narrative-writer',
+    agentName: agent,
     tokensIn: 0,
     tokensOut: 0,
     costUsd: 0,

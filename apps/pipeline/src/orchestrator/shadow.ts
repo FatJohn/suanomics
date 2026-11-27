@@ -44,6 +44,9 @@ export function requireDailyFeatureFlags(env: Record<string, string | undefined>
   // daily.yml 沒設 AGENT_MODELS，正式報告用預設 model；本機 .env 留著舊實驗的覆寫會讓兩臂差在 model。
   if (env.AGENT_MODELS)
     throw new Error('影子報告要與 daily.yml 同設定，AGENT_MODELS 須未設定')
+  // daily.yml 還沒開 narrative 審稿；開了之後這條改成要求 true。
+  if (env.NARRATIVE_REVIEW_ENABLED === 'true')
+    throw new Error('影子報告要與 daily.yml 同設定，NARRATIVE_REVIEW_ENABLED 須未設為 true')
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
