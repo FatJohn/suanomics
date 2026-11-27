@@ -1,5 +1,6 @@
 <!doctype html>
-<!-- favicon 與 apple-touch-icon 的原稿：直接放刊頭 logo（public/logo-mark.svg），兩者共用同一張圖。
+<!-- favicon 與 apple-touch-icon 的原稿：刊頭 logo（public/logo-mark.png）放在 paper 色底上，兩者共用同一張圖。
+     logo 是透明底，iOS 會把 apple-touch-icon 的透明處填黑，所以這裡鋪底色。
      畫布邊長由 brand/render.sh 用視窗大小決定，圖片用 vw 跟著縮放。 -->
 <html lang="zh-Hant-TW">
   <head>
@@ -11,6 +12,7 @@
         width: 100vw;
         height: 100vh;
         overflow: hidden;
+        background: #f4f6f8;
       }
       img {
         display: block;
@@ -20,6 +22,6 @@
     </style>
   </head>
   <body>
-    <img src="../public/logo-mark.svg" alt="" />
+    <img src="../public/logo-mark.png" alt="" />
   </body>
 </html>

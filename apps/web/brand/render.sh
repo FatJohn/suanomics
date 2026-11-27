@@ -15,13 +15,13 @@ shot() { # <html> <out.png> <width> <height>
 shot og-image.html public/og-image.png 1200 630
 # headless Chrome 的視窗有最小寬度，小圖直接截會被裁，先截 512 再用 macOS 內建的 sips 縮。
 shot icon.html "$tmp/icon-512.png" 512 512
-for size in 180 48 32; do
+for size in 180 48 32 16; do
   sips -z "$size" "$size" "$tmp/icon-512.png" --out "$tmp/icon-$size.png" >/dev/null
 done
 cp "$tmp/icon-180.png" public/apple-touch-icon.png
 
 # ICO 容器可以直接包 PNG（Vista 之後的格式），用 Python 標準庫寫檔頭即可。
-python3 - "$tmp/icon-32.png" "$tmp/icon-48.png" public/favicon.ico <<'PY'
+python3 - "$tmp/icon-16.png" "$tmp/icon-32.png" "$tmp/icon-48.png" public/favicon.ico <<'PY'
 import struct, sys
 *pngs, out = sys.argv[1:]
 datas = [open(p, 'rb').read() for p in pngs]
