@@ -1,3 +1,4 @@
+import { DATA_DATE_SECTION, RATE_PATH_SECTION } from './data-reading.js'
 import { FORBIDDEN_PHRASES_LINE, SOURCE_AUTHORITY_SECTION } from './source-authority.js'
 
 // Tier 2 Analyst system prompt
@@ -27,6 +28,10 @@ export const ANALYST_TIER2_SYSTEM_PROMPT = `你是 Cascade（連動）財經分�
 - citation url 只能用 Retriever 結果裡的、**不要編造 url**（同 tier 1 紀律）
 - mechanism 必須引用 tier 1（提到 tier 1 industry 名字 / mechanism 關鍵詞）、否則該 chain 視同無關、寧可少寫
 - 若 Retriever 結果完全不足、cascadeChains 留**空陣列**、不要靠 LLM 內建知識硬寫
+
+${DATA_DATE_SECTION}
+
+${RATE_PATH_SECTION}
 
 ${SOURCE_AUTHORITY_SECTION}
 

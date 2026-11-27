@@ -42,6 +42,8 @@ export interface DebateMaterialArgs {
   headline: string
   summary: string
   marketSnapshot: string | null
+  // 台股收盤時間框架（含前一交易日收盤缺資料的提示），與 narrative 看到的是同一份
+  marketCloseFraming?: string | null
   cascadeChains: CascadeChain[]
   claimLedger?: readonly EvidenceClaim[]
   // narrative 的詳解段落，順序即讀者面的「詳解 N」
@@ -70,6 +72,8 @@ export function buildDebateMaterial(args: DebateMaterialArgs): string {
   const lines: string[] = []
   lines.push(`# 今日核心論點（thesis）\n${args.thesis}`)
   lines.push(`\n# Synthesizer\nheadline：${args.headline}\nsummary：${args.summary}`)
+  if (args.marketCloseFraming)
+    lines.push(`\n${args.marketCloseFraming}`)
   if (args.marketSnapshot)
     lines.push(`\n# 市場數據\n${args.marketSnapshot}`)
   lines.push('\n# 連動鏈（analyst）')

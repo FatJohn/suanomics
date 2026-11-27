@@ -46,4 +46,8 @@ describe('buildMarketCloseFraming', () => {
     expect(buildMarketCloseFraming('2026-06-22', '2026-06-27')).not.toContain('缺資料')
     expect(buildMarketCloseFraming('2027-12-29', '2028-01-04')).not.toContain('缺資料')
   })
+
+  it('前一交易日落在休市表涵蓋起點之前 → 不判定缺資料', () => {
+    expect(buildMarketCloseFraming('2026-07-17', '2026-07-21')).not.toContain('缺資料')
+  })
 })

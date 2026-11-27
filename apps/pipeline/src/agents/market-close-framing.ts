@@ -10,9 +10,11 @@ function monthDay(date: string): string {
 // 休市表涵蓋窗外交易日曆不可信，寧可不判定（同 market-closure.ts 的取捨）。
 // 不假設 #123 的加權指數備援已上線：只比對實際資料日與前一交易日。
 function missingPreviousClose(taiexCloseDate: string, briefDate: string): string | null {
-  if (briefDate < HOLIDAY_COVERAGE_START || briefDate > HOLIDAY_COVERAGE_END)
+  if (briefDate > HOLIDAY_COVERAGE_END)
     return null
   const previous = previousTradingDay(briefDate, 'tw')
+  if (previous < HOLIDAY_COVERAGE_START)
+    return null
   return taiexCloseDate < previous ? previous : null
 }
 

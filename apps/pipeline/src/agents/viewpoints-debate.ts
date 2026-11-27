@@ -21,6 +21,7 @@ export interface RunViewpointsDebateParams {
   headline: string
   summary: string
   marketSnapshot: string | null
+  marketCloseFraming?: string | null
   cascadeChains: CascadeChain[]
   // analyst 已核對過的證據；缺席時辯論只剩 headline/summary/snapshot/chains，
   // 反向數字會兩個讀者面欄位都到不了
@@ -69,6 +70,7 @@ export async function runViewpointsDebate(
       headline: p.headline,
       summary: p.summary,
       marketSnapshot: p.marketSnapshot,
+      ...(p.marketCloseFraming ? { marketCloseFraming: p.marketCloseFraming } : {}),
       cascadeChains: p.cascadeChains,
       ...(p.claimLedger ? { claimLedger: p.claimLedger } : {}),
     }
