@@ -78,9 +78,9 @@ describe('runPodcast', () => {
     // hook、三個 act、takeaway 各一段（act 400 字，不超過單段上限）
     expect(d.synthesize).toHaveBeenCalledTimes(5)
     expect(d.writeScript).toHaveBeenCalledWith(DATE, expect.objectContaining({ headline: 'h' }), RUN_INPUTS)
-    expect(d.savePodcast).toHaveBeenCalledWith(DATE, podcast())
+    expect(d.savePodcast).toHaveBeenCalledWith(DATE, BRIEF, podcast())
     expect(d.upload).toHaveBeenCalledWith(`podcasts/${DATE}.mp3`, Buffer.from([0, 1, 2, 3, 4]))
-    expect(d.saveAudio).toHaveBeenCalledWith(DATE, `https://audio.example.com/podcasts/${DATE}.mp3`)
+    expect(d.saveAudio).toHaveBeenCalledWith(DATE, BRIEF, `https://audio.example.com/podcasts/${DATE}.mp3`)
     expect(result).toMatchObject({ status: 'complete', date: DATE, segments: 5, bytes: 5, reusedScript: false })
   })
 
