@@ -1,6 +1,7 @@
 import type { MarketBrief } from '@suanomics/shared'
 import { MarketBriefSchema } from '@suanomics/shared'
 import { redactBlockedMarkdown, redactBlockedSentences } from './compliance'
+import { isPlaceholderText } from './placeholder-text'
 
 export interface CitationLink { title: string, url: string }
 export interface NewsLink { id: number, title: string }
@@ -122,12 +123,14 @@ function industryCitations(brief: MarketBrief, name: string, byUrl: Map<string, 
 }
 
 // 產業名被攔截就整筆不顯示：只剩方向沒有對象，讀者無從判斷。
+// 理由是佔位字或空白時只清掉理由（頁面改顯示「沒有附理由」），產業名與方向仍有資訊量。
 function presentIndustries(brief: MarketBrief, citations: CitationLink[]): IndustryView[] {
   const byUrl = new Map(citations.map(c => [c.url, c]))
   return brief.affectedIndustries.flatMap((i) => {
     const name = redactBlockedSentences(i.name)
+    const reasoning = redactBlockedSentences(i.reasoning)
     return name
-      ? [{ name, direction: i.direction, confidence: i.confidence, reasoning: redactBlockedSentences(i.reasoning), citations: industryCitations(brief, i.name, byUrl) }]
+      ? [{ name, direction: i.direction, confidence: i.confidence, reasoning: isPlaceholderText(reasoning) ? '' : reasoning, citations: industryCitations(brief, i.name, byUrl) }]
       : []
   })
 }
