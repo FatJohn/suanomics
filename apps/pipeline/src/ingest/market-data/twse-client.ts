@@ -1,5 +1,6 @@
 import type { SeriesSpec } from './series-config.js'
 import type { RawPoint } from './transform.js'
+import { taipeiDateOf } from '@suanomics/shared'
 import { fetchSource, SOURCE_TIMEOUT_MS } from './fetch-source.js'
 
 const TWSE_OPENAPI_BASE = 'https://openapi.twse.com.tw'
@@ -203,6 +204,64 @@ export function parseSblBalance(body: unknown): RawPoint[] {
   })
 }
 
+/**
+ * FMTQIK（傳統 JSON API、當月逐日一列）→ 加權指數收盤點數。
+ * `data` 每列第 0 欄是民國斜線日期、指數欄以 fields 的「發行量加權股價指數」定位（有千分位）。
+ * 月初第一個交易日收盤前當月沒有資料、stat 非 OK，屬預期狀況，安靜回空（由呼叫端改抓上個月）。
+ */
+export function parseTaiexCloseLegacy(body: unknown): RawPoint[] {
+  const b = body as LegacyBody
+  if (b?.stat !== 'OK')
+    return []
+  const fields = Array.isArray(b.fields) ? b.fields : []
+  const col = fields.indexOf('發行量加權股價指數')
+  if (col < 0) {
+    console.warn('twse-client: FMTQIK(legacy) 找不到「發行量加權股價指數」欄 — skip')
+    return []
+  }
+  const data = Array.isArray(b.data) ? b.data : []
+  return data.flatMap((r) => {
+    if (!Array.isArray(r) || typeof r[0] !== 'string')
+      return []
+    const value = toNumber(r[col])
+    return Number.isFinite(value) ? [{ date: parseRocDate(r[0]), value }] : []
+  })
+}
+
+// 分項的 row 名稱逐字取自 BFI82U。外資自營商已計入自營商（官方 notes），不另加進外資，
+// 三個分項相加才會回到合計。
+function legacyRowSum(b: LegacyBody, rowLabels: string[]): number | undefined {
+  let sum = 0
+  for (const label of rowLabels) {
+    const cell = pickLegacyCell(b, label, '買賣差額')
+    if (cell === undefined && Array.isArray(b.data) && b.data.length > 0) {
+      console.warn(`twse-client: BFI82U 找不到「${label}」row 的買賣差額 — skip`)
+      return undefined
+    }
+    const value = toNumber(cell)
+    if (!Number.isFinite(value))
+      return undefined
+    sum += value
+  }
+  // 元 → 億元
+  return sum / 1e8
+}
+
+/** BFI82U → 外資及陸資（不含外資自營商）買賣超（億元）。 */
+export function parseForeignNet(body: unknown): RawPoint[] {
+  return parseLegacyPoint(body, 'BFI82U(外資)', b => legacyRowSum(b, ['外資及陸資(不含外資自營商)']))
+}
+
+/** BFI82U → 投信買賣超（億元）。 */
+export function parseTrustNet(body: unknown): RawPoint[] {
+  return parseLegacyPoint(body, 'BFI82U(投信)', b => legacyRowSum(b, ['投信']))
+}
+
+/** BFI82U → 自營商買賣超（億元）＝自行買賣＋避險；缺任一 row 就不給數字。 */
+export function parseDealerNet(body: unknown): RawPoint[] {
+  return parseLegacyPoint(body, 'BFI82U(自營商)', b => legacyRowSum(b, ['自營商(自行買賣)', '自營商(避險)']))
+}
+
 // seriesId → parser 對應表（以 seriesId 派 parser、不靠 URL 字串判斷、避免 endpoint 變動時誤判）。
 const TWSE_PARSERS: Record<string, (body: unknown) => RawPoint[]> = {
   'taiex-close': (body) => {
@@ -214,20 +273,79 @@ const TWSE_PARSERS: Record<string, (body: unknown) => RawPoint[]> = {
     return parseTaiexClose(body)
   },
   'taiex-institutional-net': parseInstitutionalNet,
+  'taiex-foreign-net': parseForeignNet,
+  'taiex-trust-net': parseTrustNet,
+  'taiex-dealer-net': parseDealerNet,
   'taiex-margin-balance': parseMarginBalance,
   'taiex-sbl-balance': parseSblBalance,
   'taiex-margin-short-balance': parseMarginShortBalance,
 }
 
+// 加權指數的 OpenAPI FMTQIK 在台北 05:20 前後才更新（2026-11-27 實測 Last-Modified 05:22），
+// 05:00 起跑時只到前前一交易日；傳統 JSON 版當日盤後就有，兩份取聯集。
+const TAIEX_CLOSE_LEGACY_URL = 'https://www.twse.com.tw/rwd/zh/afterTrading/FMTQIK?response=json'
+
+// 不帶 date 只回當月。月初第一個交易日 05:00 當月還沒有收盤、OpenAPI 也還沒更新，
+// 前一交易日只在上個月那份裡，所以當月為空時改抓上個月（2026-11-28 實測 date=20261101 回 11 月整月）。
+async function fetchTaiexCloseLegacy(fetchBody: (url: string) => Promise<unknown>, now: Date): Promise<RawPoint[]> {
+  const current = parseTaiexCloseLegacy(await fetchBody(TAIEX_CLOSE_LEGACY_URL))
+  if (current.length > 0)
+    return current
+  const [year, month] = taipeiDateOf(now).split('-').map(Number) as [number, number]
+  const prev = month === 1 ? `${year - 1}12` : `${year}${String(month - 1).padStart(2, '0')}`
+  return parseTaiexCloseLegacy(await fetchBody(`${TAIEX_CLOSE_LEGACY_URL}&date=${prev}01`))
+}
+
+async function fetchTaiexClose(
+  spec: SeriesSpec,
+  fetchBody: (url: string) => Promise<unknown>,
+  parseOpenApi: (body: unknown) => RawPoint[],
+  now: Date,
+): Promise<RawPoint[]> {
+  const [openApi, legacy] = await Promise.allSettled([
+    fetchBody(spec.sourceCode).then(parseOpenApi),
+    fetchTaiexCloseLegacy(fetchBody, now),
+  ])
+  if (openApi.status === 'rejected' && legacy.status === 'rejected')
+    throw openApi.reason
+  const byDate = new Map<string, number>()
+  for (const [label, result] of [['openapi', openApi], ['legacy', legacy]] as const) {
+    if (result.status === 'rejected') {
+      console.warn(`twse-client: taiex-close ${label} failed, using the other source:`, String(result.reason))
+      continue
+    }
+    for (const p of result.value)
+      byDate.set(p.date, p.value)
+  }
+  return [...byDate].map(([date, value]) => ({ date, value })).sort((a, b) => a.date.localeCompare(b.date))
+}
+
 /**
- * 依 SeriesSpec 拉單一 TWSE 序列、回 RawPoint[]。
- * fetch（`fetchTwseDataset(spec.sourceCode)`）後依 seriesId 派對應 parser。
+ * 建一個依 SeriesSpec 拉 TWSE 序列的 fetcher：fetch 後依 seriesId 派對應 parser，
  * 無對應 parser 時 throw（caller 將其計入 failures）。
+ *
+ * 同一個 fetcher 內同一個 URL 只打一次：三大法人四條序列共用 BFI82U、融資融券共用
+ * MI_MARGN，逐條各打一次會讓對 www.twse.com.tw 的請求數隨分項序列倍增。
+ * 每次 refresh 建一個新的，快取不跨 refresh；失敗的請求不留在快取，下一條序列會重打。
+ * `now` 只用來決定月初回頭抓哪個月（測試接縫）。
  */
-export async function fetchTwseSeries(spec: SeriesSpec): Promise<RawPoint[]> {
-  const parser = TWSE_PARSERS[spec.seriesId]
-  if (!parser)
-    throw new Error(`twse-client: no parser for ${spec.seriesId}`)
-  const body = await fetchTwseDataset(spec.sourceCode)
-  return parser(body)
+export function createTwseSeriesFetcher(now = new Date()): (spec: SeriesSpec) => Promise<RawPoint[]> {
+  const bodies = new Map<string, Promise<unknown>>()
+  const fetchBody = (url: string): Promise<unknown> => {
+    let body = bodies.get(url)
+    if (!body) {
+      body = fetchTwseDataset(url)
+      bodies.set(url, body)
+      body.catch(() => bodies.delete(url))
+    }
+    return body
+  }
+  return async (spec) => {
+    const parser = TWSE_PARSERS[spec.seriesId]
+    if (!parser)
+      throw new Error(`twse-client: no parser for ${spec.seriesId}`)
+    if (spec.seriesId === 'taiex-close')
+      return fetchTaiexClose(spec, fetchBody, parser, now)
+    return parser(await fetchBody(spec.sourceCode))
+  }
 }

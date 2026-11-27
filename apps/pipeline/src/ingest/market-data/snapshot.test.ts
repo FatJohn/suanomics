@@ -349,6 +349,39 @@ describe('buildSnapshotBlock', () => {
   })
 })
 
+describe('#123 新序列進快照並帶資料日', () => {
+  // 2026-11-26 報告的真實輸入：BFI82U 11/25、PCE 10 月（11/25 發布）。
+  const REPORT = '2026-11-26'
+  const RUN_AT = new Date('2026-11-26T05:00:00+08:00')
+
+  it('三大法人分項各自一行、帶正負號與資料日', () => {
+    const out = buildSnapshotBlock([
+      { spec: spec('taiex-foreign-net'), points: [{ date: '2026-11-25', value: -1236.55 }] },
+      { spec: spec('taiex-trust-net'), points: [{ date: '2026-11-25', value: 550.35 }] },
+      { spec: spec('taiex-dealer-net'), points: [{ date: '2026-11-25', value: -128.33 }] },
+    ], RUN_AT, REPORT)
+    expect(out).toContain('- 外資買賣超：-1,237 億元（2026-11-25）')
+    expect(out).toContain('- 投信買賣超：+550 億元（2026-11-25）')
+    expect(out).toContain('- 自營商買賣超：-128 億元（2026-11-25）')
+  })
+
+  it('櫃買指數帶資料日與前值變化', () => {
+    const out = buildSnapshotBlock([
+      { spec: spec('tpex-close'), points: [{ date: '2026-11-25', value: 275.97 }, { date: '2026-11-24', value: 293.23 }] },
+    ], RUN_AT, REPORT)
+    expect(out).toContain('- 櫃買指數：276 點（2026-11-25、前值 293 點、-17 點 / -5.89%）')
+  })
+
+  it('pce 年增率以參考月標日期', () => {
+    const out = buildSnapshotBlock([
+      { spec: spec('us-pce-yoy'), points: [{ date: '2026-10-01', value: 2.84 }, { date: '2026-09-01', value: 2.79 }] },
+      { spec: spec('us-core-pce-yoy'), points: [{ date: '2026-10-01', value: 2.91 }] },
+    ], RUN_AT, REPORT)
+    expect(out).toContain('- PCE 年增率：2.84%（2026-10、前月 2.79%、較前月 +0.05 個百分點）')
+    expect(out).toContain('- 核心 PCE 年增率：2.91%（2026-10）')
+  })
+})
+
 describe('變化描述（delta）', () => {
   const now = new Date('2026-06-12T00:00:00Z')
 
@@ -519,6 +552,8 @@ describe('q3b 回歸：準時發布的序列不再被誤判為過舊', () => {
     'us-unemployment': '2026-06-01',
     'us-m2-yoy': '2026-06-01',
     'us-fed-funds': '2026-06-01',
+    'us-pce-yoy': '2026-06-01',
+    'us-core-pce-yoy': '2026-06-01',
     'us-10y-yield': '2026-07-29',
     'us-2y-yield': '2026-07-29',
     'us-10y-real-rate': '2026-07-29',
@@ -558,7 +593,7 @@ describe('q3b 回歸：準時發布的序列不再被誤判為過舊', () => {
     expect(block.split('\n').filter(l => l.includes('資料未更新'))).toEqual([])
   })
 
-  it('每條序列都在區塊裡出現（26 條、無漏排）', () => {
+  it('每條序列都在區塊裡出現（SERIES_SPECS 全部、無漏排）', () => {
     const block = realWorldBlock('2026-07-31')
     for (const s of SERIES_SPECS)
       expect(block).toContain(`- ${s.displayName}：`)
