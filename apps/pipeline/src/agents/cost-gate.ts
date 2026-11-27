@@ -51,7 +51,7 @@ export interface LlmLedger {
   insert: (row: LlmLedgerRow) => Promise<void>
 }
 
-interface DailyCostGateOptions {
+export interface DailyCostGateOptions {
   ledger?: LlmLedger
   runId?: string
   retryDelayMs?: number
@@ -143,10 +143,10 @@ export class DailyCostGate {
   }
 }
 
-export function parseDailyCostLimit(raw: string | undefined): number {
+export function parseDailyCostLimit(raw: string | undefined, name = 'DAILY_COST_LIMIT_USD'): number {
   const limit = Number(raw)
   if (raw === undefined || raw === '' || !Number.isFinite(limit) || limit <= 0)
-    throw new CostGateError(`DAILY_COST_LIMIT_USD 必須是正數，收到 ${raw ?? '（未設定）'}`)
+    throw new CostGateError(`${name} 必須是正數，收到 ${raw ?? '（未設定）'}`)
   return limit
 }
 
