@@ -23,6 +23,7 @@ describe('parseDailyArgs', () => {
 describe('exitCodeFor', () => {
   it('skipped 與 complete 是 0，incomplete 非 0', () => {
     expect(exitCodeFor({ status: 'skipped', reason: 'already-exists', date: 'd' })).toBe(0)
+    expect(exitCodeFor({ status: 'skipped', reason: 'incomplete-exists', date: 'd', failedStage: 'analyst' })).toBe(0)
     expect(exitCodeFor({ status: 'complete', date: 'd', briefId: 1 })).toBe(0)
     expect(exitCodeFor({ status: 'incomplete', date: 'd', failedStage: 'editor' })).toBe(1)
   })
