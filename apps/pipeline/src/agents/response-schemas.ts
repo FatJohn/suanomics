@@ -124,6 +124,12 @@ export const NarrativeWriterResponse = z.object({
   outro: z.string(),
 })
 
+export const REVIEW_NOTE_KINDS = ['unsupported', 'mixed-date', 'off-thesis'] as const
+
+export const NarrativeReviewResponse = z.object({
+  notes: z.array(z.object({ kind: z.enum(REVIEW_NOTE_KINDS), quote: z.string(), note: z.string() })),
+})
+
 export const PodcastWriterResponse = z.object({
   briefDate: z.string(),
   hook: z.object({ headline: z.string(), body: z.string() }),

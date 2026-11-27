@@ -17,6 +17,8 @@ describe('resolveAgentModel 預設值', () => {
     ['editor', SONNET],
     ['viewpoints-debate', SONNET],
     ['narrative-writer', SONNET],
+    ['narrative-reviewer', SONNET],
+    ['narrative-reviser', SONNET],
     ['podcast-writer', SONNET],
     ['brief-quality-judge', SONNET],
     ['brief-continuity-judge', SONNET],
@@ -24,8 +26,8 @@ describe('resolveAgentModel 預設值', () => {
     expect(resolveAgentModel(agent, {})).toEqual(expected)
   })
 
-  it('14 個 agent 全部列在表上', () => {
-    expect(AGENT_NAMES).toHaveLength(14)
+  it('16 個 agent 全部列在表上', () => {
+    expect(AGENT_NAMES).toHaveLength(16)
   })
 })
 

@@ -5,6 +5,7 @@ import { callAnalystTier1 } from '../agents/analyst.js'
 import { tagChainForceGroups } from '../agents/chain-grouper.js'
 import { DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gate.js'
 import { callDecomposer } from '../agents/decomposer.js'
+import { reviewAndRevise } from '../agents/narrative-review.js'
 import { callNarrativeWriter } from '../agents/narrative-writer.js'
 import { retrieveForDecomposed } from '../agents/retrieve-for-decomposed.js'
 import { callSynthesizer } from '../agents/synthesizer.js'
@@ -20,6 +21,10 @@ vi.mock('../agents/synthesizer.js')
 vi.mock('../agents/retrieve-for-decomposed.js')
 vi.mock('../agents/chain-grouper.js')
 vi.mock('../agents/narrative-writer.js')
+vi.mock('../agents/narrative-review.js', async () => {
+  const actual = await vi.importActual<typeof import('../agents/narrative-review.js')>('../agents/narrative-review.js')
+  return { ...actual, reviewAndRevise: vi.fn(async (_m: unknown, first: unknown) => first) }
+})
 vi.mock('../agents/viewpoints-debate.js')
 vi.mock('../brief/assemble.js')
 vi.mock('../agents/tier2-fanout.js', () => ({ stampTier1: (c: unknown) => c, runTier2Fanout: vi.fn() }))
@@ -132,6 +137,22 @@ describe('generateBrief', () => {
     vi.mocked(runViewpointsDebate).mockResolvedValue(null)
     await generateBrief(params().p)
     expect(vi.mocked(runViewpointsDebate).mock.calls[0]?.[0].sections).toEqual([{ heading: '小標', takeaway: '結論', body: '內文' }])
+  })
+
+  // 審稿修訂要在辯論之前：論點標的是讀者最後看到的段落。
+  it('narrative 經審稿修訂後，正反觀點與報告都用修訂稿', async () => {
+    const section = { heading: '小標', takeaway: '結論', body: '內文', relatedNewsIds: [], claimIds: [], citationUrls: ['https://e.com/1'] }
+    const revised = { intro: 'i', sections: [{ ...section, body: '修訂後內文' }], outro: 'o' }
+    vi.mocked(callSynthesizer).mockResolvedValue({} as never)
+    vi.mocked(assembleDailyBrief).mockReturnValue({ headline: 'h', summary: 's', dailyThesis: '主軸', citations: [], affectedIndustries: [], cascadeChains: [] } as never)
+    vi.mocked(tagChainForceGroups).mockResolvedValue([])
+    vi.mocked(callNarrativeWriter).mockResolvedValue({ narrative: { intro: 'i', sections: [section], outro: 'o' } } as never)
+    vi.mocked(reviewAndRevise).mockResolvedValueOnce({ narrative: revised } as never)
+    vi.mocked(runViewpointsDebate).mockResolvedValue(null)
+    const brief = await generateBrief(params().p)
+    expect(vi.mocked(reviewAndRevise).mock.calls[0]?.[0]).toMatchObject({ briefDate: expect.any(String), claimLedger: expect.any(Array) })
+    expect(vi.mocked(runViewpointsDebate).mock.calls[0]?.[0].sections).toEqual([{ heading: '小標', takeaway: '結論', body: '修訂後內文' }])
+    expect(brief.narrative).toEqual(revised)
   })
 
   it('narrative 降級時正反觀點照跑、不帶段落', async () => {

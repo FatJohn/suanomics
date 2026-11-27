@@ -150,7 +150,7 @@ export async function callNarrativeWriter(
 
 export type NarrativeAttemptContext = Pick<CallNarrativeWriterParams, 'brief' | 'news' | 'citations' | 'claimLedger' | 'onCallRecord'>
 
-interface NarrativeAttemptCall { agent: 'narrative-writer', systemPrompt: string, userContent: string, maxAttempts: number }
+interface NarrativeAttemptCall { agent: 'narrative-writer' | 'narrative-reviser', systemPrompt: string, userContent: string, maxAttempts: number }
 
 /** 呼叫、正規化、sanitize、compliance 硬擋與 claim binding 軟警告；失敗重試到 maxAttempts 後回 narrative null。 */
 export async function runNarrativeAttempts(

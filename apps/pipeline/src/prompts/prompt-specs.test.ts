@@ -18,6 +18,7 @@ import { ANALYST_TIER2_SYSTEM_PROMPT } from './analyst-tier2.prompt.js'
 import { CHAIN_GROUPER_SYSTEM_PROMPT } from './chain-grouper.prompt.js'
 import { DECOMPOSER_SYSTEM_PROMPT } from './decomposer.prompt.js'
 import { EDITOR_SYSTEM_PROMPT } from './editor.prompt.js'
+import { NARRATIVE_REVIEWER_SYSTEM_PROMPT, NARRATIVE_REVISER_SYSTEM_PROMPT } from './narrative-review.prompt.js'
 import { NARRATIVE_CLAIM_LEDGER_INSTRUCTION, NARRATIVE_WRITER_SYSTEM_PROMPT, NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT } from './narrative-writer.prompt.js'
 import { NEWS_CATEGORIZER_SYSTEM_PROMPT } from './news-categorizer.prompt.js'
 import { NEWS_TAGGER_SYSTEM_PROMPT } from './news-tagger.prompt.js'
@@ -82,6 +83,8 @@ const SPECS: Record<AgentName, AgentSpec> = {
     appendices: { NARRATIVE_CLAIM_LEDGER_INSTRUCTION },
     schemas: { NarrativeWriterResponse: schemas.NarrativeWriterResponse },
   },
+  'narrative-reviewer': { frameStyle: 'none', prompts: { NARRATIVE_REVIEWER_SYSTEM_PROMPT }, schemas: { NarrativeReviewResponse: schemas.NarrativeReviewResponse } },
+  'narrative-reviser': { frameStyle: 'none', prompts: { NARRATIVE_REVISER_SYSTEM_PROMPT }, schemas: { NarrativeWriterResponse: schemas.NarrativeWriterResponse } },
   'podcast-writer': {
     frameStyle: 'none',
     prompts: {},

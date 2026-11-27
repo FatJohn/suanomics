@@ -1,4 +1,5 @@
 import type { MarketBrief, Viewpoints } from '@suanomics/shared'
+import type { CallNarrativeWriterParams } from '../agents/narrative-writer.js'
 import type { AnalystOutput, DecomposerOutput, NewsItem } from '../agents/types.js'
 import type { RunViewpointsDebateParams } from '../agents/viewpoints-debate.js'
 import type { MarketContext } from '../ingest/market-data/context.js'
@@ -12,6 +13,7 @@ import { DailyCostLimitExceededError, LlmAccountError } from '../agents/cost-gat
 import { callDecomposer } from '../agents/decomposer.js'
 import { buildMarketCloseFraming } from '../agents/market-close-framing.js'
 import { buildMarketClosureBlock } from '../agents/market-closure.js'
+import { reviewAndRevise, reviewMaterialFromParams } from '../agents/narrative-review.js'
 import { callNarrativeWriter } from '../agents/narrative-writer.js'
 import { retrieveForDecomposed } from '../agents/retrieve-for-decomposed.js'
 import { callSynthesizer } from '../agents/synthesizer.js'
@@ -119,6 +121,11 @@ async function settleFinalize<A, B, C>(calls: [Promise<A>, Promise<B>, Promise<C
   return Promise.all(calls)
 }
 
+// 審稿修訂接在 narrative 之後、辯論之前：論點標的是讀者最後看到的段落。
+function writeReviewedNarrative(p: CallNarrativeWriterParams): Promise<Awaited<ReturnType<typeof callNarrativeWriter>>> {
+  return callNarrativeWriter(p).then(r => reviewAndRevise(reviewMaterialFromParams(p), r))
+}
+
 // 論點要標出依據的詳解段落，所以辯論要等 narrative 產出段落後才能跑。
 function debateAfterNarrative(
   narrativeCall: Promise<Awaited<ReturnType<typeof callNarrativeWriter>>>,
@@ -168,7 +175,7 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
   const finalized: NonNullable<DailyProgress['finalize']> = {}
   progress.finalize = finalized
   const [viewpoints, narrative, groupedChains] = await stage('finalize', () => {
-    const narrativeCall = callNarrativeWriter({
+    const narrativeCall = writeReviewedNarrative({
       brief: assembled,
       analystOutputs,
       news: survived.map(s => s.news),
