@@ -11,6 +11,7 @@
 //   - yt-finance-live                          (run 2026-04-25T13-08-55-570Z)
 //   - yt-finance-live                          (run 2026-06-13T02-17-09-428Z)
 
+import { DATA_DATE_SECTION, RATE_PATH_SECTION } from './data-reading.js'
 import { renderMacroFramesSection } from './macro-frames.js'
 import { FORBIDDEN_PHRASES_LINE, SOURCE_AUTHORITY_SECTION } from './source-authority.js'
 
@@ -207,6 +208,8 @@ const TEMPORAL_FRAMING_SECTION = `# 時間框架（事實正確、重要）
 export const ANALYST_TIER1_SYSTEM_PROMPT = [
   TIER1_DISTILLED_PROMPT,
   TEMPORAL_FRAMING_SECTION,
+  DATA_DATE_SECTION,
+  RATE_PATH_SECTION,
   SOURCE_AUTHORITY_SECTION,
   renderMacroFramesSection(),
 ].join('\n\n')

@@ -2,6 +2,13 @@
 
 exports[`market-close-framing user content snapshot > taiexCloseDate 為 null → 空字串（degrade） 1`] = `""`;
 
+exports[`market-close-framing user content snapshot > 前一交易日收盤缺資料 → 加註 1`] = `
+"# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
+- 台股（加權指數）最近收盤：前日（資料日 11/24）
+- 注意：前一交易日（11/25）的台股收盤缺資料。11/24 的加權指數不是最新行情：引用時寫明資料日 11/24，不得寫成前一交易日或最新收盤、不得放進標題或摘要開頭；也不要自行補寫 11/25 的漲跌。
+- 其他市場（美股、原物料等）：依各則新聞標注的「發布時間」判斷；境外市場新聞多於盤後當下發布、標籤可靠。"
+`;
+
 exports[`market-close-framing user content snapshot > 前一台北日 → 昨日、資料日去除前導 0 1`] = `
 "# 市場收盤時間框架（描述行情漲跌/收盤的今日或昨日、以此為準）
 - 台股（加權指數）最近收盤：昨日（資料日 1/5）

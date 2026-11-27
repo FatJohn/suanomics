@@ -1,3 +1,4 @@
+import { DATA_DATE_SECTION, RATE_PATH_SECTION } from './data-reading.js'
 import { FORBIDDEN_PHRASES_LINE, SOURCE_AUTHORITY_SECTION } from './source-authority.js'
 
 // NarrativeWriter system prompt — 主題式連續文章（取代舊版 per-news 漏斗）
@@ -67,6 +68,10 @@ narrative 總字數 1500-2500 字。intro ~200、outro ~180、其餘字數分給
 - 絕對不可用「## 2.」的 news url、絕對不可捏造 url
 - 同一 citation url 可重複用在多段
 - body 引述用「根據 [來源名]」自然語句、不寫 [1][2]
+
+${DATA_DATE_SECTION}
+
+${RATE_PATH_SECTION}
 
 ${SOURCE_AUTHORITY_SECTION}
 
@@ -196,6 +201,10 @@ export const NARRATIVE_WRITER_WEEKEND_SYSTEM_PROMPT = `你是台灣財經週報�
 
 # 引用紀律（合規硬規則）
 - citationUrls 只能用輸入「## 3.」的 url、每段 1-3 個、不可用 news url、不可捏造。
+
+${DATA_DATE_SECTION}
+
+${RATE_PATH_SECTION}
 
 ${SOURCE_AUTHORITY_SECTION}
 

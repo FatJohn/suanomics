@@ -41,6 +41,13 @@ describe('buildDebateMaterial', () => {
       { industry: '半導體', mechanism: 'CoWoS 滿載', affectedTickers: ['2330'], direction: 'positive' as const, citations: [] },
     ],
   }
+  it('收盤時間框架放在市場數據之前，沒給就不出現', () => {
+    const out = buildDebateMaterial({ ...base, marketCloseFraming: '# 市場收盤時間框架\n- 缺資料提示' })
+    expect(out).toContain('缺資料提示')
+    expect(out.indexOf('# 市場收盤時間框架')).toBeLessThan(out.indexOf('# 市場數據'))
+    expect(buildDebateMaterial(base)).not.toContain('# 市場收盤時間框架')
+  })
+
   it('includes thesis, headline, summary', () => {
     const out = buildDebateMaterial(base)
     expect(out).toContain('今日主線由 AI 算力與利率拉鋸主導')

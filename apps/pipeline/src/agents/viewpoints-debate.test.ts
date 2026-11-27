@@ -66,6 +66,15 @@ describe('runViewpointsDebate', () => {
     expect(risk?.[1]?.userContent).toContain('12,098')
   })
 
+  // #122：narrative 被告知前一交易日收盤缺資料時，辯論三方也要看到同一則提示，
+  // 否則讀者面觀點會把舊行情當最新走勢、與詳解矛盾。
+  it('passes market close framing into support, risk and net-read material', async () => {
+    mockDebate(['支持一', '支持二'], ['風險一', '風險二'], 'a'.repeat(130))
+    await runViewpointsDebate({ ...PARAMS, marketCloseFraming: '前一交易日（11/25）的台股收盤缺資料' })
+    for (const call of llm.mock.calls)
+      expect(call[1]?.userContent).toContain('前一交易日（11/25）的台股收盤缺資料')
+  })
+
   // 亂碼防線（2026-08-12 A/B 觀察到的真實產出、當時通過了 compliance gate 與 schema）
   const GARBLED = '成由攥䍕挧攥萱刑甘成甥、嘐瀕外資售日買超台股達903.08億元。'
 

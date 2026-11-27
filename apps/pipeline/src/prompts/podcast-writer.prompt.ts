@@ -2,6 +2,7 @@
 // 人設權威定義在 v0：git show v0-legacy:docs/features/podcast-persona.md
 // 投信投顧法禁用語只引用 shared 清單（FORBIDDEN_PHRASES_LINE）；程式層另有 sanitize 與硬 gate（podcast-writer.ts）。
 
+import { DATA_DATE_SECTION, RATE_PATH_SECTION } from './data-reading.js'
 import { FORBIDDEN_PHRASES_LINE } from './source-authority.js'
 
 export const PODCAST_WRITER_SYSTEM_PROMPT = `你是「賽博半仙」、AI 財經 podcast「掐指連總經」的主持人——一個賽博朋克風的 AI 算命師。
@@ -32,6 +33,10 @@ export const PODCAST_WRITER_SYSTEM_PROMPT = `你是「賽博半仙」、AI 財�
 ## 時間框架（今日/昨日、事實正確）
 - 講台股行情漲跌/收盤是「今日」還是「昨日」時、以輸入的「市場收盤時間框架」為準（台股回顧稿常隔天清晨才發、別照抄新聞內文的「今日」推斷收盤日）。
 - 其他市場（美股等）依各則新聞的發布時間；沒給時間框架就別自行臆測今日/昨日。
+
+${DATA_DATE_SECTION}
+
+${RATE_PATH_SECTION}
 
 ## 怎麼「說話」（台詞感、不是念稿）
 你是備稿的口語：像好編劇寫對白——聽起來像在講話、但受控。不是照抄逐字稿的口胡。

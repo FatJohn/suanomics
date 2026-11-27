@@ -188,7 +188,7 @@ export async function generateBrief(p: GenerateBriefParams): Promise<MarketBrief
       return r
     })
     const viewpointsCall = thesis
-      ? debateAfterNarrative(narrativeCall, { thesis, headline: assembled.headline, summary: assembled.summary, marketSnapshot: market.snapshotBlock, cascadeChains: mergedChains, claimLedger: claimLedger.claims }).then((r) => {
+      ? debateAfterNarrative(narrativeCall, { thesis, headline: assembled.headline, summary: assembled.summary, marketSnapshot: market.snapshotBlock, marketCloseFraming, cascadeChains: mergedChains, claimLedger: claimLedger.claims }).then((r) => {
           finalized.viewpoints = r
           return r
         })
