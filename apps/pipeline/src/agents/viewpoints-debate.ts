@@ -30,6 +30,7 @@ export interface RunViewpointsDebateParams {
   onCallRecord?: (r: LlmCallRecord) => void
 }
 
+const POINTS_MAX = 4
 const NET_READ_MIN = 120
 const NET_READ_MAX = 360
 const ENDS_AT_SENTENCE = /[。！？][」』）"]*$/
@@ -41,6 +42,15 @@ function fitNetRead(s: string): string {
     return s
   const cut = truncateAtSentence(s, NET_READ_MAX, NET_READ_MIN)
   return typeof cut === 'string' && ENDS_AT_SENTENCE.test(cut) ? cut : s
+}
+
+// 模型偶爾多給（2026-11-27 risk 給 5 條，#133），多一條就讓整包過不了 schema。
+// 保留前 4 條：prompt 沒要求依強弱排序，程式無從判斷哪條最弱；為少見的超量丟掉整包更糟。
+function capPoints<T>(side: 'support' | 'risk', points: T[]): T[] {
+  if (points.length <= POINTS_MAX)
+    return points
+  console.warn(`[viewpoints-debate] points.truncated side=${side} kept=${POINTS_MAX} dropped=${points.length - POINTS_MAX}`)
+  return points.slice(0, POINTS_MAX)
 }
 
 // 所有 reader-facing viewpoints 文字拼成一字串、供 checkCompliance 掃描
@@ -77,10 +87,6 @@ export async function runViewpointsDebate(
       }),
     ])
 
-    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(netReadMaterial, support.points.map(x => x.text), risk.points.map(x => x.text)) }, ViewpointsNetReadResponse, {
-      ...opt,
-    })
-
     // 句級降級（取代整包 all-or-nothing）：逐點濾除違規 point、netRead 逐句 strip 違規句。
     // 一個方向詞不再讓整個 viewpoints 消失；清乾淨後才驗 schema。
     //
@@ -93,8 +99,14 @@ export async function runViewpointsDebate(
     const keep = (points: { text: string, section: number | null }[]) => points
       .map(x => ({ text: x.text.trim(), section: resolveSectionRef(x.section, sectionCount) }))
       .filter(x => x.text && clean(x.text))
-    const supportKept = keep(support.points)
-    const riskKept = keep(risk.points)
+    // 先濾後截：被濾掉的違規點不該佔名額。
+    const supportKept = capPoints('support', keep(support.points))
+    const riskKept = capPoints('risk', keep(risk.points))
+    // net-read 只看濾過、截過的論點，netRead 才不會引用讀者看不到的那條。
+    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(netReadMaterial, supportKept.map(x => x.text), riskKept.map(x => x.text)) }, ViewpointsNetReadResponse, {
+      ...opt,
+    })
+
     const candidate = {
       supportPoints: supportKept.map(x => x.text),
       riskPoints: riskKept.map(x => x.text),

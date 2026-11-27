@@ -1,5 +1,5 @@
 import type { EvidenceClaim } from '@suanomics/shared'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as wrapper from './call-agent.js'
 import { DailyCostLimitExceededError, LlmAccountError } from './cost-gate.js'
 import { runViewpointsDebate } from './viewpoints-debate.js'
@@ -163,6 +163,53 @@ describe('runViewpointsDebate', () => {
   it('degrades to null when fewer than 2 points (schema invalid)', async () => {
     mockDebate(['只有一點'], ['風險一', '風險二'], 'a'.repeat(130))
     expect(await runViewpointsDebate(PARAMS)).toBeNull()
+  })
+
+  // #133：2026-11-27 risk 給了 5 條，schema max 4 讓整包 viewpoints 消失。
+  describe('論點超過 4 條', () => {
+    afterEach(() => vi.restoreAllMocks())
+    const five = (prefix: string) => [1, 2, 3, 4, 5].map(i => ({ text: `${prefix}${i}`, section: (i % 2) + 1 }))
+
+    it('support 與 risk 各給 5 條時保留前 4 條，參照一起截', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDebate(five('支持'), five('風險'), 'a'.repeat(130))
+      const out = await runViewpointsDebate({ ...PARAMS, sections: SECTIONS })
+      expect(out).not.toBeNull()
+      expect(out?.supportPoints).toEqual(['支持1', '支持2', '支持3', '支持4'])
+      expect(out?.riskPoints).toEqual(['風險1', '風險2', '風險3', '風險4'])
+      expect(out?.supportRefs).toEqual([2, 1, 2, 1])
+      expect(out?.riskRefs).toEqual([2, 1, 2, 1])
+      expect(warn).toHaveBeenCalledWith('[viewpoints-debate] points.truncated side=support kept=4 dropped=1')
+      expect(warn).toHaveBeenCalledWith('[viewpoints-debate] points.truncated side=risk kept=4 dropped=1')
+    })
+
+    // netRead 不能引用讀者看不到的論點
+    it('net-read 只拿到截斷後的論點', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDebate(five('支持'), five('風險'), 'a'.repeat(130))
+      await runViewpointsDebate(PARAMS)
+      const netReadInput = llm.mock.calls[2]?.[1]?.userContent
+      expect(netReadInput).toContain('風險4')
+      expect(netReadInput).not.toContain('支持5')
+      expect(netReadInput).not.toContain('風險5')
+    })
+
+    it('只有 risk 超過時只截 risk，沒有詳解段落也照截', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDebate(['支持一', '支持二'], five('風險'), 'a'.repeat(130))
+      const out = await runViewpointsDebate(PARAMS)
+      expect(out?.supportPoints).toEqual(['支持一', '支持二'])
+      expect(out?.riskPoints).toEqual(['風險1', '風險2', '風險3', '風險4'])
+      expect(warn).toHaveBeenCalledTimes(1)
+    })
+
+    it('先濾掉違規點再截：濾完剩 4 條就不截', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDebate(['支持一', '佈局科技股', '支持三', '支持四', '支持五'], ['風險一', '風險二'], 'a'.repeat(130))
+      const out = await runViewpointsDebate(PARAMS)
+      expect(out?.supportPoints).toEqual(['支持一', '支持三', '支持四', '支持五'])
+      expect(warn).not.toHaveBeenCalled()
+    })
   })
 
   it('degrades to null when an LLM call throws', async () => {
