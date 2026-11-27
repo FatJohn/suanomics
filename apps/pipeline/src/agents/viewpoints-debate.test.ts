@@ -183,6 +183,17 @@ describe('runViewpointsDebate', () => {
       expect(warn).toHaveBeenCalledWith('[viewpoints-debate] points.truncated side=risk kept=4 dropped=1')
     })
 
+    // netRead 不能引用讀者看不到的論點
+    it('net-read 只拿到截斷後的論點', async () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockDebate(five('支持'), five('風險'), 'a'.repeat(130))
+      await runViewpointsDebate(PARAMS)
+      const netReadInput = llm.mock.calls[2]?.[1]?.userContent
+      expect(netReadInput).toContain('風險4')
+      expect(netReadInput).not.toContain('支持5')
+      expect(netReadInput).not.toContain('風險5')
+    })
+
     it('只有 risk 超過時只截 risk，沒有詳解段落也照截', async () => {
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       mockDebate(['支持一', '支持二'], five('風險'), 'a'.repeat(130))

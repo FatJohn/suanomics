@@ -87,10 +87,6 @@ export async function runViewpointsDebate(
       }),
     ])
 
-    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(netReadMaterial, support.points.map(x => x.text), risk.points.map(x => x.text)) }, ViewpointsNetReadResponse, {
-      ...opt,
-    })
-
     // 句級降級（取代整包 all-or-nothing）：逐點濾除違規 point、netRead 逐句 strip 違規句。
     // 一個方向詞不再讓整個 viewpoints 消失；清乾淨後才驗 schema。
     //
@@ -106,6 +102,11 @@ export async function runViewpointsDebate(
     // 先濾後截：被濾掉的違規點不該佔名額。
     const supportKept = capPoints('support', keep(support.points))
     const riskKept = capPoints('risk', keep(risk.points))
+    // net-read 只看濾過、截過的論點，netRead 才不會引用讀者看不到的那條。
+    const netReadOut = await callAgent('viewpoints-debate', { systemPrompt: NET_READ_PROMPT, userContent: VIEWPOINTS_DEBATE_USER_TEXT.netReadUserContent(netReadMaterial, supportKept.map(x => x.text), riskKept.map(x => x.text)) }, ViewpointsNetReadResponse, {
+      ...opt,
+    })
+
     const candidate = {
       supportPoints: supportKept.map(x => x.text),
       riskPoints: riskKept.map(x => x.text),
