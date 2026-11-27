@@ -1,3 +1,4 @@
+import { truncateAtSentence } from './_truncate.js'
 import { clampString, stripControlChars } from './narrative-shared.js'
 
 // parse 前的整理：截斷過長內文、濾掉不在 brief 引用裡的網址，
@@ -9,7 +10,7 @@ function normalizeHook(hook: unknown): unknown {
     return hook
   const h = { ...(hook as Record<string, unknown>) }
   if (typeof h.body === 'string')
-    h.body = clampString(stripControlChars(h.body), 400)
+    h.body = truncateAtSentence(stripControlChars(h.body), 400, 150)
   if (typeof h.headline === 'string')
     h.headline = clampString(stripControlChars(h.headline), 80)
   return h
@@ -20,7 +21,7 @@ function normalizeAct(a: unknown, allowed: ReadonlySet<string>): unknown {
     return a
   const node = { ...(a as Record<string, unknown>) }
   if (typeof node.body === 'string')
-    node.body = clampString(stripControlChars(node.body), 800)
+    node.body = truncateAtSentence(stripControlChars(node.body), 800, 300)
   if (typeof node.actTitle === 'string')
     node.actTitle = clampString(stripControlChars(node.actTitle), 40)
   if (Array.isArray(node.citationUrls)) {
@@ -45,7 +46,7 @@ function normalizeTakeaway(takeaway: unknown): unknown {
     return takeaway
   const t = { ...(takeaway as Record<string, unknown>) }
   if (typeof t.body === 'string')
-    t.body = clampString(stripControlChars(t.body), 400)
+    t.body = truncateAtSentence(stripControlChars(t.body), 400, 150)
   return t
 }
 
