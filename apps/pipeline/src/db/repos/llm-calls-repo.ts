@@ -94,3 +94,8 @@ export async function getDailyUsage(days: number, now: Date = new Date()): Promi
   }
   return [...byDay.values()].sort((a, b) => b.day.localeCompare(a.day))
 }
+
+/** 今天（台北日期、依花錢當下）全部 run 的花費，含 judge 與影子報告。 */
+export async function getSpentTodayUsd(now: Date = new Date()): Promise<number> {
+  return (await getDailyUsage(1, now)).find(d => d.day === taipeiDateOf(now))?.totalUsd ?? 0
+}

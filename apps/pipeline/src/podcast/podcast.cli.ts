@@ -3,7 +3,7 @@
 import type { DailyCostGate } from '../agents/cost-gate.js'
 import type { PodcastResult } from './run.js'
 import process from 'node:process'
-import { getDailyCostGate } from '../agents/cost-gate.js'
+import { installSharedDailyCostGate } from '../agents/daily-budget.js'
 import { closeDb } from '../db/client.js'
 import { parseDailyArgs } from '../orchestrator/daily.cli-args.js'
 import { readPodcastEnv } from './env.js'
@@ -21,7 +21,7 @@ async function main(): Promise<void> {
     date = args.date
     const env = readPodcastEnv(process.env)
     // 先建閘：沒設 DAILY_COST_LIMIT_USD 時在寫稿之前就失敗。
-    gate = getDailyCostGate()
+    gate = await installSharedDailyCostGate()
     gate.setReportDate(args.date)
     const deps = createPodcastDeps(env)
     const log = deps.log

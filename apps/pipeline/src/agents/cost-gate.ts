@@ -106,7 +106,8 @@ export class DailyCostGate {
   }
 
   assertWithinLimit(): void {
-    if (this.spentUsd > this.limitUsd)
+    // 共用每日總額用完時上限是 0 或負數（daily-budget.ts），一次都不能呼叫。
+    if (this.spentUsd > this.limitUsd || this.limitUsd <= 0)
       throw new DailyCostLimitExceededError(this.limitUsd, this.spentUsd)
   }
 
