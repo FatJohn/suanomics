@@ -203,6 +203,32 @@ export function parseSblBalance(body: unknown): RawPoint[] {
   })
 }
 
+/**
+ * FMTQIK（傳統 JSON API、當月逐日一列）→ 加權指數收盤點數。
+ * `data` 每列第 0 欄是民國斜線日期、指數欄以 fields 的「發行量加權股價指數」定位（有千分位）。
+ * 月初第一個交易日收盤前，當月沒有資料、stat 非 OK，回空由 OpenAPI 那份補。
+ */
+export function parseTaiexCloseLegacy(body: unknown): RawPoint[] {
+  const b = body as LegacyBody
+  if (b?.stat !== 'OK') {
+    console.warn(`twse-client: FMTQIK(legacy) stat=${String(b?.stat)} — skip`)
+    return []
+  }
+  const fields = Array.isArray(b.fields) ? b.fields : []
+  const col = fields.indexOf('發行量加權股價指數')
+  if (col < 0) {
+    console.warn('twse-client: FMTQIK(legacy) 找不到「發行量加權股價指數」欄 — skip')
+    return []
+  }
+  const data = Array.isArray(b.data) ? b.data : []
+  return data.flatMap((r) => {
+    if (!Array.isArray(r) || typeof r[0] !== 'string')
+      return []
+    const value = toNumber(r[col])
+    return Number.isFinite(value) ? [{ date: parseRocDate(r[0]), value }] : []
+  })
+}
+
 // 分項的 row 名稱逐字取自 BFI82U。外資自營商已計入自營商（官方 notes），不另加進外資，
 // 三個分項相加才會回到合計。
 function legacyRowSum(b: LegacyBody, rowLabels: string[]): number | undefined {
@@ -251,6 +277,33 @@ const TWSE_PARSERS: Record<string, (body: unknown) => RawPoint[]> = {
   'taiex-margin-short-balance': parseMarginShortBalance,
 }
 
+// 加權指數的 OpenAPI FMTQIK 在台北 05:20 前後才更新（2026-11-27 實測 Last-Modified 05:22），
+// 05:00 起跑時只到前前一交易日；傳統 JSON 版當日盤後就有，兩份取聯集。
+const TAIEX_CLOSE_LEGACY_URL = 'https://www.twse.com.tw/rwd/zh/afterTrading/FMTQIK?response=json'
+
+async function fetchTaiexClose(
+  spec: SeriesSpec,
+  fetchBody: (url: string) => Promise<unknown>,
+  parseOpenApi: (body: unknown) => RawPoint[],
+): Promise<RawPoint[]> {
+  const [openApi, legacy] = await Promise.allSettled([
+    fetchBody(spec.sourceCode).then(parseOpenApi),
+    fetchBody(TAIEX_CLOSE_LEGACY_URL).then(parseTaiexCloseLegacy),
+  ])
+  if (openApi.status === 'rejected' && legacy.status === 'rejected')
+    throw openApi.reason
+  const byDate = new Map<string, number>()
+  for (const [label, result] of [['openapi', openApi], ['legacy', legacy]] as const) {
+    if (result.status === 'rejected') {
+      console.warn(`twse-client: taiex-close ${label} failed, using the other source:`, String(result.reason))
+      continue
+    }
+    for (const p of result.value)
+      byDate.set(p.date, p.value)
+  }
+  return [...byDate].map(([date, value]) => ({ date, value })).sort((a, b) => a.date.localeCompare(b.date))
+}
+
 /**
  * 建一個依 SeriesSpec 拉 TWSE 序列的 fetcher：fetch 後依 seriesId 派對應 parser，
  * 無對應 parser 時 throw（caller 將其計入 failures）。
@@ -261,15 +314,20 @@ const TWSE_PARSERS: Record<string, (body: unknown) => RawPoint[]> = {
  */
 export function createTwseSeriesFetcher(): (spec: SeriesSpec) => Promise<RawPoint[]> {
   const bodies = new Map<string, Promise<unknown>>()
+  const fetchBody = (url: string): Promise<unknown> => {
+    let body = bodies.get(url)
+    if (!body) {
+      body = fetchTwseDataset(url)
+      bodies.set(url, body)
+    }
+    return body
+  }
   return async (spec) => {
     const parser = TWSE_PARSERS[spec.seriesId]
     if (!parser)
       throw new Error(`twse-client: no parser for ${spec.seriesId}`)
-    let body = bodies.get(spec.sourceCode)
-    if (!body) {
-      body = fetchTwseDataset(spec.sourceCode)
-      bodies.set(spec.sourceCode, body)
-    }
-    return parser(await body)
+    if (spec.seriesId === 'taiex-close')
+      return fetchTaiexClose(spec, fetchBody, parser)
+    return parser(await fetchBody(spec.sourceCode))
   }
 }

@@ -1,6 +1,7 @@
 import type { SeriesSpec } from './series-config.js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import bfi82u from './__fixtures__/twse-bfi82u-legacy.json' with { type: 'json' }
+import fmtqikLegacy from './__fixtures__/twse-fmtqik-legacy.json' with { type: 'json' }
 import fmtqik from './__fixtures__/twse-fmtqik.json' with { type: 'json' }
 import miMargn from './__fixtures__/twse-mi-margn-legacy.json' with { type: 'json' }
 import twt93u from './__fixtures__/twse-twt93u-legacy.json' with { type: 'json' }
@@ -16,6 +17,7 @@ import {
   parseRocDate,
   parseSblBalance,
   parseTaiexClose,
+  parseTaiexCloseLegacy,
   parseTrustNet,
 } from './twse-client.js'
 
@@ -222,5 +224,78 @@ describe('fetchTwseDataset', () => {
       throw e
     }))
     await expect(fetchTwseDataset('/v1/exchangeReport/FMTQIK', 5)).rejects.toThrow(/timeout after 5ms/)
+  })
+})
+
+describe('parseTaiexCloseLegacy（傳統 JSON FMTQIK）', () => {
+  it('取「發行量加權股價指數」欄、民國斜線日期、去千分位', () => {
+    expect(parseTaiexCloseLegacy(fmtqikLegacy)).toEqual([
+      { date: '2026-11-25', value: 38195.43 },
+      { date: '2026-11-26', value: 39151.81 },
+      { date: '2026-11-27', value: 39308.08 },
+    ])
+  })
+
+  it('欄位找不到時回空並 warn（欄名變動不靜默給錯數）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(parseTaiexCloseLegacy({ ...fmtqikLegacy, fields: ['日期', '收盤'] })).toEqual([])
+    expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('stat 非 OK（月初尚無資料）時回空', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    expect(parseTaiexCloseLegacy({ stat: '很抱歉，沒有符合條件的資料!' })).toEqual([])
+    warn.mockRestore()
+  })
+})
+
+// 2026-11-26 05:00 的報告只拿到 11/24 的加權指數：OpenAPI FMTQIK 的 Last-Modified 是
+// 台北 05:22（2026-11-27 實測），05:00 起跑時還停在前前一交易日；傳統 JSON 當日盤後就有。
+describe('taiex-close 雙來源', () => {
+  const OPENAPI = 'https://openapi.twse.com.tw/v1/exchangeReport/FMTQIK'
+  const LEGACY = 'https://www.twse.com.tw/rwd/zh/afterTrading/FMTQIK?response=json'
+  const staleOpenApi = [
+    { Date: '1151124', TAIEX: '40122.35' },
+    { Date: '1151125', TAIEX: '38195.43' },
+  ]
+  const taiexSpec = SERIES_SPECS.find(s => s.seriesId === 'taiex-close') as SeriesSpec
+
+  function stubByUrl(responses: Record<string, Response | Error>) {
+    const fetchMock = vi.fn(async (url: string) => {
+      const r = responses[url]
+      if (!r || r instanceof Error)
+        throw r ?? new Error(`unexpected ${url}`)
+      return r
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('openAPI 落後時以傳統 JSON 補上最新交易日', async () => {
+    const fetchMock = stubByUrl({ [OPENAPI]: okJson(staleOpenApi), [LEGACY]: okJson(fmtqikLegacy) })
+    const pts = await createTwseSeriesFetcher()(taiexSpec)
+    expect(fetchMock.mock.calls.map(c => c[0]).sort()).toEqual([OPENAPI, LEGACY].sort())
+    expect(pts).toEqual([
+      { date: '2026-11-24', value: 40122.35 },
+      { date: '2026-11-25', value: 38195.43 },
+      { date: '2026-11-26', value: 39151.81 },
+      { date: '2026-11-27', value: 39308.08 },
+    ])
+  })
+
+  it('一邊失敗時用另一邊、warn 出聲', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    stubByUrl({ [OPENAPI]: new Response('', { status: 503 }), [LEGACY]: okJson(fmtqikLegacy) })
+    expect((await createTwseSeriesFetcher()(taiexSpec)).at(-1)).toEqual({ date: '2026-11-27', value: 39308.08 })
+    stubByUrl({ [OPENAPI]: okJson(staleOpenApi), [LEGACY]: new Error('blocked') })
+    expect((await createTwseSeriesFetcher()(taiexSpec)).at(-1)).toEqual({ date: '2026-11-25', value: 38195.43 })
+    expect(warn).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+
+  it('兩邊都失敗時 throw（由 refresh 計入 failures）', async () => {
+    stubByUrl({ [OPENAPI]: new Error('down'), [LEGACY]: new Error('blocked') })
+    await expect(createTwseSeriesFetcher()(taiexSpec)).rejects.toThrow()
   })
 })

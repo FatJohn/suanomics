@@ -15,6 +15,15 @@ export const marketDataFixtures: FixtureManifest = {
       note: 'series taiex-close。內容看起來是真實擷取（民國日期、實際成交金額量級），但無抓取紀錄。2026-08-22 的 fixtures:check 形狀對得上——那證明的是形狀有現實依據，不是這份檔案當初真的抓自那裡，所以 origin 仍是 unverified。',
     },
     {
+      file: 'twse-fmtqik-legacy.json',
+      kind: 'json',
+      origin: 'captured',
+      url: 'https://www.twse.com.tw/rwd/zh/afterTrading/FMTQIK?response=json',
+      capturedAt: '2026-11-28',
+      transform: 'truncated',
+      note: 'series taiex-close 的備援（OpenAPI FMTQIK 05:20 才更新）。data 只留 2026-11-25～27 三列；日期是民國斜線、數字有千分位。',
+    },
+    {
       file: 'twse-bfi82u-legacy.json',
       kind: 'json',
       origin: 'unverified',
