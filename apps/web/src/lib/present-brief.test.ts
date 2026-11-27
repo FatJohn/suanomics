@@ -110,6 +110,12 @@ describe('presentBrief 牽動產業', () => {
     expect(view.industries[0]?.reasoning).toBe('費半重挫。')
   })
 
+  it('理由是 placeholder 類字串或空白時降級成沒有理由，產業本身照列（#124）', () => {
+    const industries = [{ ...INDUSTRY, name: '電機機械', reasoning: 'placeholder' }, { ...INDUSTRY, name: '航運業', reasoning: '  \n' }, INDUSTRY]
+    const view = presentBrief('2095-01-01', { ...BASE, affectedIndustries: industries }, [])
+    expect(view.industries.map(i => [i.name, i.reasoning])).toEqual([['電機機械', ''], ['航運業', ''], ['半導體', '費半重挫。']])
+  })
+
   it('產業名被攔截時整筆不輸出', () => {
     const view = presentBrief('2095-01-01', { ...BASE, affectedIndustries: [{ ...INDUSTRY, name: '建議買進' }, INDUSTRY] }, [])
     expect(view.industries.map(i => i.name)).toEqual(['半導體'])
