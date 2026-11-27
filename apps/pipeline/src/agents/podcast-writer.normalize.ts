@@ -8,6 +8,11 @@ import { clampString, rewriteText, stripControlChars } from './narrative-shared.
 
 interface Counter { count: number }
 
+// 句尾截斷最多退到上限的 75%，再早就硬切：退到 schema 下限的話，幾段一起被砍會讓 totalChars 跌破 1800、整份失敗（#132）。
+const HOOK_MIN_KEEP = 300
+const ACT_MIN_KEEP = 600
+const TAKEAWAY_MIN_KEEP = 300
+
 function clean(s: string, counter: Counter): string {
   return rewriteText(stripControlChars(s), counter)
 }
@@ -17,7 +22,7 @@ function normalizeHook(hook: unknown, counter: Counter): unknown {
     return hook
   const h = { ...(hook as Record<string, unknown>) }
   if (typeof h.body === 'string')
-    h.body = truncateAtSentence(clean(h.body, counter), 400, 150)
+    h.body = truncateAtSentence(clean(h.body, counter), 400, HOOK_MIN_KEEP)
   if (typeof h.headline === 'string')
     h.headline = clampString(clean(h.headline, counter), 80)
   return h
@@ -28,7 +33,7 @@ function normalizeAct(a: unknown, allowed: ReadonlySet<string>, counter: Counter
     return a
   const node = { ...(a as Record<string, unknown>) }
   if (typeof node.body === 'string')
-    node.body = truncateAtSentence(clean(node.body, counter), 800, 300)
+    node.body = truncateAtSentence(clean(node.body, counter), 800, ACT_MIN_KEEP)
   if (typeof node.actTitle === 'string')
     node.actTitle = clampString(clean(node.actTitle, counter), 40)
   if (Array.isArray(node.citationUrls)) {
@@ -53,7 +58,7 @@ function normalizeTakeaway(takeaway: unknown, counter: Counter): unknown {
     return takeaway
   const t = { ...(takeaway as Record<string, unknown>) }
   if (typeof t.body === 'string')
-    t.body = truncateAtSentence(clean(t.body, counter), 400, 150)
+    t.body = truncateAtSentence(clean(t.body, counter), 400, TAKEAWAY_MIN_KEEP)
   return t
 }
 

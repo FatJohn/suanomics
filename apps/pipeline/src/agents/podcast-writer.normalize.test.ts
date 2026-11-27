@@ -53,3 +53,14 @@ describe('preNormalizePodcastRaw 截長內文停在句尾（#132）', () => {
     }
   })
 })
+
+describe('preNormalizePodcastRaw 句尾太早時不砍掉大半段（#132）', () => {
+  it('上限內唯一的句尾太早時硬切，不退到 schema 下限而讓總字數不足', () => {
+    // 句尾在第 350 字，之後是一個很長的句子：退到句尾會砍掉一半，總字數可能跌破 1800
+    const body = `${'甲'.repeat(349)}。${'乙'.repeat(500)}`
+    const raw = { acts: [{ actTitle: 't', storyline: 'other', body, citationUrls: ['https://x/a'], relatedNewsIds: ['n1'] }] }
+    const out = preNormalizePodcastRaw(raw, ['https://x/a'], '2026-06-16') as { acts: Array<{ body: string }> }
+    expect(out.acts[0]?.body.length).toBeGreaterThanOrEqual(600)
+    expect(out.acts[0]?.body.length).toBeLessThanOrEqual(800)
+  })
+})
