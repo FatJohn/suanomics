@@ -93,8 +93,9 @@ describe('runDaily', () => {
     expect(deps.saveIncompleteBrief).not.toHaveBeenCalled()
   })
 
-  it('incomplete 的 progress 讀不出停下的 stage 時 failedStage 為 null', async () => {
-    const deps = fakeDeps({ findExistingBrief: vi.fn(async () => ({ status: 'incomplete', progress: null })) })
+  // failedStage 會進 workflow command，不是已知 stage 名的字串不能原樣帶出去。
+  it.each([null, {}, { failedStage: 3 }, { failedStage: 'renamed-stage' }, { failedStage: 'analyst\n::error::x' }])('incomplete 的 progress 讀不出已知 stage（%j）時 failedStage 為 null', async (progress) => {
+    const deps = fakeDeps({ findExistingBrief: vi.fn(async () => ({ status: 'incomplete', progress })) })
     expect(await runDaily({ date: DATE, force: false }, deps)).toEqual({ status: 'skipped', reason: 'incomplete-exists', date: DATE, failedStage: null })
   })
 

@@ -7,7 +7,9 @@ import type { EditorStageResult } from './editor-stage.js'
 import type { GenerateBriefParams } from './run-brief.js'
 import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
 
-export type StageName = 'ingest' | 'market-context' | 'editor' | 'decompose' | 'retrieve' | 'analyst' | 'synthesize' | 'finalize' | 'persist'
+const STAGE_NAMES = ['ingest', 'market-context', 'editor', 'decompose', 'retrieve', 'analyst', 'synthesize', 'finalize', 'persist'] as const
+
+export type StageName = typeof STAGE_NAMES[number]
 
 export type RunStage = <T>(name: StageName, run: () => Promise<T>) => Promise<T>
 
@@ -41,7 +43,7 @@ export interface DailyProgress {
 
 export type DailyResult
   = | { status: 'skipped', reason: 'non-trading-day' | 'already-exists', date: string }
-    | { status: 'skipped', reason: 'incomplete-exists', date: string, failedStage: string | null }
+    | { status: 'skipped', reason: 'incomplete-exists', date: string, failedStage: StageName | null }
     | { status: 'complete', date: string, briefId: number }
     | { status: 'incomplete', date: string, failedStage: StageName }
 
@@ -125,10 +127,14 @@ async function runStages(date: string, isRerun: boolean, deps: DailyDeps, progre
   return briefId
 }
 
-function failedStageOf(progress: unknown): string | null {
+function isStageName(value: unknown): value is StageName {
+  return (STAGE_NAMES as readonly unknown[]).includes(value)
+}
+
+function failedStageOf(progress: unknown): StageName | null {
   if (typeof progress !== 'object' || progress === null || !('failedStage' in progress))
     return null
-  return typeof progress.failedStage === 'string' ? progress.failedStage : null
+  return isStageName(progress.failedStage) ? progress.failedStage : null
 }
 
 export async function runDaily(options: { date: string, force: boolean }, deps: DailyDeps): Promise<DailyResult> {

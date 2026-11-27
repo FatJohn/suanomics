@@ -71,7 +71,7 @@ async function hasLiveOrSucceededRun(env: Env, since: Date): Promise<boolean> {
 export default {
   async scheduled(controller: ScheduledController, env: Env): Promise<void> {
     if (controller.cron === BACKUP_CRON) {
-      // 查詢失敗也 dispatch：多跑一次會在 pipeline 的 already-exists 結束，漏掉則開盤前沒有報告。
+      // 查詢失敗也 dispatch：多跑一次會在 pipeline 的 already-exists 或 incomplete-exists 結束，漏掉則開盤前沒有報告。
       if (await hasLiveOrSucceededRun(env, new Date(controller.scheduledTime - LOOKBACK_MS)))
         return
     }
