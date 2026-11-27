@@ -1,16 +1,22 @@
+import type { SeriesSpec } from './series-config.js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import bfi82u from './__fixtures__/twse-bfi82u-legacy.json' with { type: 'json' }
 import fmtqik from './__fixtures__/twse-fmtqik.json' with { type: 'json' }
 import miMargn from './__fixtures__/twse-mi-margn-legacy.json' with { type: 'json' }
 import twt93u from './__fixtures__/twse-twt93u-legacy.json' with { type: 'json' }
+import { SERIES_SPECS } from './series-config.js'
 import {
+  createTwseSeriesFetcher,
   fetchTwseDataset,
+  parseDealerNet,
+  parseForeignNet,
   parseInstitutionalNet,
   parseMarginBalance,
   parseMarginShortBalance,
   parseRocDate,
   parseSblBalance,
   parseTaiexClose,
+  parseTrustNet,
 } from './twse-client.js'
 
 function okJson(body: unknown): Response {
@@ -106,6 +112,59 @@ describe('parseInstitutionalNet', () => {
     expect(parseInstitutionalNet({ stat: 'no data', data: [] })).toEqual([])
     expect(warn).toHaveBeenCalled()
     warn.mockRestore()
+  })
+})
+
+describe('三大法人分項（BFI82U）', () => {
+  it('外資取「外資及陸資(不含外資自營商)」row、元 → 億元', () => {
+    // fixture 28,690,268,352 元
+    expect(parseForeignNet(bfi82u)).toEqual([{ date: '2026-06-12', value: expect.closeTo(286.90268352, 6) }])
+  })
+
+  it('投信取「投信」row', () => {
+    // fixture 12,937,008,950 元
+    expect(parseTrustNet(bfi82u)).toEqual([{ date: '2026-06-12', value: expect.closeTo(129.3700895, 6) }])
+  })
+
+  it('自營商＝自行買賣＋避險兩 row 相加', () => {
+    // fixture 2,839,811,770 + 6,102,720,567 元
+    expect(parseDealerNet(bfi82u)).toEqual([{ date: '2026-06-12', value: expect.closeTo(89.42532337, 6) }])
+  })
+
+  // 外資自營商已計入自營商、不在合計內（BFI82U notes），三個分項相加必須回到合計。
+  it('三個分項相加等於合計', () => {
+    const sum = [parseForeignNet, parseTrustNet, parseDealerNet]
+      .map(parse => parse(bfi82u)[0]?.value ?? Number.NaN)
+      .reduce((a, b) => a + b, 0)
+    expect(sum).toBeCloseTo(parseInstitutionalNet(bfi82u)[0]?.value ?? Number.NaN, 6)
+  })
+
+  it('自營商缺任一 row 時不給數字（不把半個自營商當全部）', () => {
+    const body = { ...bfi82u, data: bfi82u.data.filter(r => r[0] !== '自營商(避險)') }
+    expect(parseDealerNet(body)).toEqual([])
+  })
+
+  it('stat 非 OK 時回空並 warn', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    for (const parse of [parseForeignNet, parseTrustNet, parseDealerNet])
+      expect(parse({ stat: 'no data', data: [] })).toEqual([])
+    expect(warn).toHaveBeenCalledTimes(3)
+    warn.mockRestore()
+  })
+})
+
+describe('createTwseSeriesFetcher', () => {
+  // 三大法人四條序列、融資融券兩條序列各自共用同一個 URL；同一次 refresh 只打一次。
+  it('同一個 URL 只發一次請求、各序列各用自己的 parser', async () => {
+    const fetchMock = vi.fn(async () => okJson(bfi82u))
+    vi.stubGlobal('fetch', fetchMock)
+    const fetchSeries = createTwseSeriesFetcher()
+    const byId = new Map(SERIES_SPECS.map(s => [s.seriesId, s]))
+    const total = await fetchSeries(byId.get('taiex-institutional-net') as SeriesSpec)
+    const trust = await fetchSeries(byId.get('taiex-trust-net') as SeriesSpec)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(total[0]?.value).toBeCloseTo(505.69809639, 6)
+    expect(trust[0]?.value).toBeCloseTo(129.3700895, 6)
   })
 })
 

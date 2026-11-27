@@ -143,6 +143,9 @@ function dateLabel(spec: SeriesSpec, isoDate: string): string {
 // 會退化成省略 delta 描述（既有 null 路徑），而不是被誤當水準值。一致性由守衛測試釘住。
 export const FLOW_PHRASES: Record<string, { posCont: string, negCont: string, toPos: string, toNeg: string }> = {
   'taiex-institutional-net': { posCont: '連續買超', negCont: '連續賣超', toPos: '由賣轉買', toNeg: '由買轉賣' },
+  'taiex-foreign-net': { posCont: '連續買超', negCont: '連續賣超', toPos: '由賣轉買', toNeg: '由買轉賣' },
+  'taiex-trust-net': { posCont: '連續買超', negCont: '連續賣超', toPos: '由賣轉買', toNeg: '由買轉賣' },
+  'taiex-dealer-net': { posCont: '連續買超', negCont: '連續賣超', toPos: '由賣轉買', toNeg: '由買轉賣' },
   'us-nonfarm-payrolls': { posCont: '連續增加', negCont: '連續減少', toPos: '由減轉增', toNeg: '由增轉減' },
   'foreign-taifex-net': { posCont: '持續淨多', negCont: '持續淨空', toPos: '由淨空轉淨多', toNeg: '由淨多轉淨空' },
 }

@@ -86,6 +86,10 @@ export const SERIES_SPECS: SeriesSpec[] = [
   // OpenAPI 的 BFI82U 已下架（404/302）。改用傳統 JSON API（legacy host www.twse.com.tw）、
   // 回傳含「合計」row 的官方買賣差額（單位：元）、parser 取合計 row 的「買賣差額」÷1e8 轉億元。
   { seriesId: 'taiex-institutional-net', source: 'twse', sourceCode: 'https://www.twse.com.tw/rwd/zh/fund/BFI82U?response=json', displayName: '三大法人買賣超', unit: '億元', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'flow', freshness: TW_TRADING_T1 },
+  // 三大法人分項：與合計同一份 BFI82U、取各自的 row（外資不含外資自營商、自營商＝自行買賣＋避險），三項相加＝合計。
+  { seriesId: 'taiex-foreign-net', source: 'twse', sourceCode: 'https://www.twse.com.tw/rwd/zh/fund/BFI82U?response=json', displayName: '外資買賣超', unit: '億元', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'flow', freshness: TW_TRADING_T1 },
+  { seriesId: 'taiex-trust-net', source: 'twse', sourceCode: 'https://www.twse.com.tw/rwd/zh/fund/BFI82U?response=json', displayName: '投信買賣超', unit: '億元', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'flow', freshness: TW_TRADING_T1 },
+  { seriesId: 'taiex-dealer-net', source: 'twse', sourceCode: 'https://www.twse.com.tw/rwd/zh/fund/BFI82U?response=json', displayName: '自營商買賣超', unit: '億元', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'flow', freshness: TW_TRADING_T1 },
   // OpenAPI 的 MI_MARGN 僅逐股張數（無全市場合計金額）。改用傳統 JSON API（legacy host）、
   // 取 tables[0] 信用交易統計「融資金額(仟元)」row 的「今日餘額」、×1000÷1e8（仟元→億元）。
   { seriesId: 'taiex-margin-balance', source: 'twse', sourceCode: 'https://www.twse.com.tw/rwd/zh/marginTrading/MI_MARGN?response=json', displayName: '融資餘額', unit: '億元', frequency: 'daily', transform: 'level', section: 'taiwan', kind: 'level', freshness: TW_TRADING_T1 },

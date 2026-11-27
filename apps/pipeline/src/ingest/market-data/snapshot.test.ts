@@ -558,7 +558,7 @@ describe('q3b 回歸：準時發布的序列不再被誤判為過舊', () => {
     expect(block.split('\n').filter(l => l.includes('資料未更新'))).toEqual([])
   })
 
-  it('每條序列都在區塊裡出現（26 條、無漏排）', () => {
+  it('每條序列都在區塊裡出現（SERIES_SPECS 全部、無漏排）', () => {
     const block = realWorldBlock('2026-07-31')
     for (const s of SERIES_SPECS)
       expect(block).toContain(`- ${s.displayName}：`)

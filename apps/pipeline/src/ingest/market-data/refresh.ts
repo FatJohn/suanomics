@@ -6,7 +6,7 @@ import { fetchNasdaqSeries } from './nasdaq-client.js'
 import { SERIES_SPECS } from './series-config.js'
 import { fetchTaifexSeries } from './taifex-client.js'
 import { applySpread, applyTransform } from './transform.js'
-import { fetchTwseSeries } from './twse-client.js'
+import { createTwseSeriesFetcher } from './twse-client.js'
 
 export interface RefreshDeps {
   fredApiKey: string
@@ -33,7 +33,7 @@ function errMessage(err: unknown): string {
 
 export async function refreshMarketData(deps: RefreshDeps): Promise<RefreshResult> {
   const fetchFred = deps.fetchFred ?? fetchFredObservations
-  const fetchTwse = deps.fetchTwseSeries ?? fetchTwseSeries
+  const fetchTwse = deps.fetchTwseSeries ?? createTwseSeriesFetcher()
   const fetchTaifex = deps.fetchTaifexSeries ?? fetchTaifexSeries
   const fetchNasdaq = deps.fetchNasdaqSeries ?? fetchNasdaqSeries
   const upsert = deps.upsert ?? upsertMarketDataPoints

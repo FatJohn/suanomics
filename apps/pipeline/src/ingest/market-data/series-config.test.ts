@@ -4,9 +4,9 @@ import { SERIES_SPECS } from './series-config.js'
 import { FLOW_PHRASES } from './snapshot.js'
 
 describe('series config', () => {
-  it('has 26 series with unique ids', () => {
-    expect(SERIES_SPECS).toHaveLength(26)
-    expect(new Set(SERIES_SPECS.map(s => s.seriesId)).size).toBe(26)
+  it('has 29 series with unique ids', () => {
+    expect(SERIES_SPECS).toHaveLength(29)
+    expect(new Set(SERIES_SPECS.map(s => s.seriesId)).size).toBe(29)
   })
   it('carries the two Nasdaq index series (美股股價指數)', () => {
     const byId = new Map(SERIES_SPECS.map(s => [s.seriesId, s]))
@@ -66,7 +66,10 @@ describe('series kind（flow/level 顯示語意）', () => {
       expect(['level', 'flow'], `${s.seriesId} kind`).toContain(s.kind)
     expect(SERIES_SPECS.filter(s => s.kind === 'flow').map(s => s.seriesId).sort()).toEqual([
       'foreign-taifex-net',
+      'taiex-dealer-net',
+      'taiex-foreign-net',
       'taiex-institutional-net',
+      'taiex-trust-net',
       'us-nonfarm-payrolls',
     ])
   })

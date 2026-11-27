@@ -203,6 +203,35 @@ export function parseSblBalance(body: unknown): RawPoint[] {
   })
 }
 
+// 分項的 row 名稱逐字取自 BFI82U。外資自營商已計入自營商（官方 notes），不另加進外資，
+// 三個分項相加才會回到合計。
+function legacyRowSum(b: LegacyBody, rowLabels: string[]): number | undefined {
+  let sum = 0
+  for (const label of rowLabels) {
+    const value = toNumber(pickLegacyCell(b, label, '買賣差額'))
+    if (!Number.isFinite(value))
+      return undefined
+    sum += value
+  }
+  // 元 → 億元
+  return sum / 1e8
+}
+
+/** BFI82U → 外資及陸資（不含外資自營商）買賣超（億元）。 */
+export function parseForeignNet(body: unknown): RawPoint[] {
+  return parseLegacyPoint(body, 'BFI82U(外資)', b => legacyRowSum(b, ['外資及陸資(不含外資自營商)']))
+}
+
+/** BFI82U → 投信買賣超（億元）。 */
+export function parseTrustNet(body: unknown): RawPoint[] {
+  return parseLegacyPoint(body, 'BFI82U(投信)', b => legacyRowSum(b, ['投信']))
+}
+
+/** BFI82U → 自營商買賣超（億元）＝自行買賣＋避險；缺任一 row 就不給數字。 */
+export function parseDealerNet(body: unknown): RawPoint[] {
+  return parseLegacyPoint(body, 'BFI82U(自營商)', b => legacyRowSum(b, ['自營商(自行買賣)', '自營商(避險)']))
+}
+
 // seriesId → parser 對應表（以 seriesId 派 parser、不靠 URL 字串判斷、避免 endpoint 變動時誤判）。
 const TWSE_PARSERS: Record<string, (body: unknown) => RawPoint[]> = {
   'taiex-close': (body) => {
@@ -214,20 +243,33 @@ const TWSE_PARSERS: Record<string, (body: unknown) => RawPoint[]> = {
     return parseTaiexClose(body)
   },
   'taiex-institutional-net': parseInstitutionalNet,
+  'taiex-foreign-net': parseForeignNet,
+  'taiex-trust-net': parseTrustNet,
+  'taiex-dealer-net': parseDealerNet,
   'taiex-margin-balance': parseMarginBalance,
   'taiex-sbl-balance': parseSblBalance,
   'taiex-margin-short-balance': parseMarginShortBalance,
 }
 
 /**
- * 依 SeriesSpec 拉單一 TWSE 序列、回 RawPoint[]。
- * fetch（`fetchTwseDataset(spec.sourceCode)`）後依 seriesId 派對應 parser。
+ * 建一個依 SeriesSpec 拉 TWSE 序列的 fetcher：fetch 後依 seriesId 派對應 parser，
  * 無對應 parser 時 throw（caller 將其計入 failures）。
+ *
+ * 同一個 fetcher 內同一個 URL 只打一次：三大法人四條序列共用 BFI82U、融資融券共用
+ * MI_MARGN，逐條各打一次會讓對 www.twse.com.tw 的請求數隨分項序列倍增。
+ * 每次 refresh 建一個新的，快取不跨 refresh。
  */
-export async function fetchTwseSeries(spec: SeriesSpec): Promise<RawPoint[]> {
-  const parser = TWSE_PARSERS[spec.seriesId]
-  if (!parser)
-    throw new Error(`twse-client: no parser for ${spec.seriesId}`)
-  const body = await fetchTwseDataset(spec.sourceCode)
-  return parser(body)
+export function createTwseSeriesFetcher(): (spec: SeriesSpec) => Promise<RawPoint[]> {
+  const bodies = new Map<string, Promise<unknown>>()
+  return async (spec) => {
+    const parser = TWSE_PARSERS[spec.seriesId]
+    if (!parser)
+      throw new Error(`twse-client: no parser for ${spec.seriesId}`)
+    let body = bodies.get(spec.sourceCode)
+    if (!body) {
+      body = fetchTwseDataset(spec.sourceCode)
+      bodies.set(spec.sourceCode, body)
+    }
+    return parser(await body)
+  }
 }
