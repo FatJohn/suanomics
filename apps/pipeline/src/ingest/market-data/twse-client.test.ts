@@ -141,6 +141,20 @@ describe('三大法人分項（BFI82U）', () => {
     expect(sum).toBeCloseTo(parseInstitutionalNet(bfi82u)[0]?.value ?? Number.NaN, 6)
   })
 
+  // 官方 notes：外資自營商已計入自營商、不納入合計。fixture 與實測該 row 都是 0，這條用非零值釘住不重複計。
+  it('外資不含「外資自營商」row（非零時也不加進來）', () => {
+    const body = { ...bfi82u, data: bfi82u.data.map(r => r[0] === '外資自營商' ? ['外資自營商', '0', '0', '500,000,000'] : r) }
+    expect(parseForeignNet(body)[0]?.value).toBeCloseTo(286.90268352, 6)
+  })
+
+  it('有資料但找不到 row 時 warn（列名變動不靜默停更）', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const body = { ...bfi82u, data: bfi82u.data.map(r => r[0] === '投信' ? ['投信基金', ...r.slice(1)] : r) }
+    expect(parseTrustNet(body)).toEqual([])
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('投信'))
+    warn.mockRestore()
+  })
+
   it('自營商缺任一 row 時不給數字（不把半個自營商當全部）', () => {
     const body = { ...bfi82u, data: bfi82u.data.filter(r => r[0] !== '自營商(避險)') }
     expect(parseDealerNet(body)).toEqual([])
@@ -227,6 +241,20 @@ describe('fetchTwseDataset', () => {
   })
 })
 
+describe('createTwseSeriesFetcher 失敗不進快取', () => {
+  it('同一個 URL 第一次失敗後，下一條序列會重打', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('', { status: 503 }))
+      .mockResolvedValueOnce(okJson(bfi82u))
+    vi.stubGlobal('fetch', fetchMock)
+    const fetchSeries = createTwseSeriesFetcher()
+    const byId = new Map(SERIES_SPECS.map(s => [s.seriesId, s]))
+    await expect(fetchSeries(byId.get('taiex-institutional-net') as SeriesSpec)).rejects.toThrow()
+    expect((await fetchSeries(byId.get('taiex-trust-net') as SeriesSpec))[0]?.value).toBeCloseTo(129.3700895, 6)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+})
+
 describe('parseTaiexCloseLegacy（傳統 JSON FMTQIK）', () => {
   it('取「發行量加權股價指數」欄、民國斜線日期、去千分位', () => {
     expect(parseTaiexCloseLegacy(fmtqikLegacy)).toEqual([
@@ -291,6 +319,23 @@ describe('taiex-close 雙來源', () => {
     stubByUrl({ [OPENAPI]: okJson(staleOpenApi), [LEGACY]: new Error('blocked') })
     expect((await createTwseSeriesFetcher()(taiexSpec)).at(-1)).toEqual({ date: '2026-11-25', value: 38195.43 })
     expect(warn).toHaveBeenCalledTimes(2)
+    warn.mockRestore()
+  })
+
+  // 月初第一個交易日 05:00：當月還沒有收盤、OpenAPI 也還沒更新，要回頭抓上個月才有前一交易日。
+  it('當月傳統 JSON 為空時改抓上個月（date=上月 1 日）', async () => {
+    const PREV_MONTH = `${LEGACY}&date=20261101`
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const fetchMock = stubByUrl({
+      [OPENAPI]: okJson(staleOpenApi),
+      [LEGACY]: okJson({ stat: '很抱歉，沒有符合條件的資料!' }),
+      [PREV_MONTH]: okJson(fmtqikLegacy),
+    })
+    const pts = await createTwseSeriesFetcher(new Date('2026-12-01T05:00:00+08:00'))(taiexSpec)
+    expect(fetchMock.mock.calls.map(c => c[0])).toContain(PREV_MONTH)
+    expect(pts.at(-1)).toEqual({ date: '2026-11-27', value: 39308.08 })
+    // 月初當月為空是預期狀況、不 warn
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
 

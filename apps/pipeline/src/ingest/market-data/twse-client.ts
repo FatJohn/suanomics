@@ -1,5 +1,6 @@
 import type { SeriesSpec } from './series-config.js'
 import type { RawPoint } from './transform.js'
+import { taipeiDateOf } from '@suanomics/shared'
 import { fetchSource, SOURCE_TIMEOUT_MS } from './fetch-source.js'
 
 const TWSE_OPENAPI_BASE = 'https://openapi.twse.com.tw'
@@ -206,14 +207,12 @@ export function parseSblBalance(body: unknown): RawPoint[] {
 /**
  * FMTQIK（傳統 JSON API、當月逐日一列）→ 加權指數收盤點數。
  * `data` 每列第 0 欄是民國斜線日期、指數欄以 fields 的「發行量加權股價指數」定位（有千分位）。
- * 月初第一個交易日收盤前，當月沒有資料、stat 非 OK，回空由 OpenAPI 那份補。
+ * 月初第一個交易日收盤前當月沒有資料、stat 非 OK，屬預期狀況，安靜回空（由呼叫端改抓上個月）。
  */
 export function parseTaiexCloseLegacy(body: unknown): RawPoint[] {
   const b = body as LegacyBody
-  if (b?.stat !== 'OK') {
-    console.warn(`twse-client: FMTQIK(legacy) stat=${String(b?.stat)} — skip`)
+  if (b?.stat !== 'OK')
     return []
-  }
   const fields = Array.isArray(b.fields) ? b.fields : []
   const col = fields.indexOf('發行量加權股價指數')
   if (col < 0) {
@@ -234,7 +233,12 @@ export function parseTaiexCloseLegacy(body: unknown): RawPoint[] {
 function legacyRowSum(b: LegacyBody, rowLabels: string[]): number | undefined {
   let sum = 0
   for (const label of rowLabels) {
-    const value = toNumber(pickLegacyCell(b, label, '買賣差額'))
+    const cell = pickLegacyCell(b, label, '買賣差額')
+    if (cell === undefined && Array.isArray(b.data) && b.data.length > 0) {
+      console.warn(`twse-client: BFI82U 找不到「${label}」row 的買賣差額 — skip`)
+      return undefined
+    }
+    const value = toNumber(cell)
     if (!Number.isFinite(value))
       return undefined
     sum += value
@@ -281,14 +285,26 @@ const TWSE_PARSERS: Record<string, (body: unknown) => RawPoint[]> = {
 // 05:00 起跑時只到前前一交易日；傳統 JSON 版當日盤後就有，兩份取聯集。
 const TAIEX_CLOSE_LEGACY_URL = 'https://www.twse.com.tw/rwd/zh/afterTrading/FMTQIK?response=json'
 
+// 不帶 date 只回當月。月初第一個交易日 05:00 當月還沒有收盤、OpenAPI 也還沒更新，
+// 前一交易日只在上個月那份裡，所以當月為空時改抓上個月（2026-11-28 實測 date=20261101 回 11 月整月）。
+async function fetchTaiexCloseLegacy(fetchBody: (url: string) => Promise<unknown>, now: Date): Promise<RawPoint[]> {
+  const current = parseTaiexCloseLegacy(await fetchBody(TAIEX_CLOSE_LEGACY_URL))
+  if (current.length > 0)
+    return current
+  const [year, month] = taipeiDateOf(now).split('-').map(Number) as [number, number]
+  const prev = month === 1 ? `${year - 1}12` : `${year}${String(month - 1).padStart(2, '0')}`
+  return parseTaiexCloseLegacy(await fetchBody(`${TAIEX_CLOSE_LEGACY_URL}&date=${prev}01`))
+}
+
 async function fetchTaiexClose(
   spec: SeriesSpec,
   fetchBody: (url: string) => Promise<unknown>,
   parseOpenApi: (body: unknown) => RawPoint[],
+  now: Date,
 ): Promise<RawPoint[]> {
   const [openApi, legacy] = await Promise.allSettled([
     fetchBody(spec.sourceCode).then(parseOpenApi),
-    fetchBody(TAIEX_CLOSE_LEGACY_URL).then(parseTaiexCloseLegacy),
+    fetchTaiexCloseLegacy(fetchBody, now),
   ])
   if (openApi.status === 'rejected' && legacy.status === 'rejected')
     throw openApi.reason
@@ -310,15 +326,17 @@ async function fetchTaiexClose(
  *
  * 同一個 fetcher 內同一個 URL 只打一次：三大法人四條序列共用 BFI82U、融資融券共用
  * MI_MARGN，逐條各打一次會讓對 www.twse.com.tw 的請求數隨分項序列倍增。
- * 每次 refresh 建一個新的，快取不跨 refresh。
+ * 每次 refresh 建一個新的，快取不跨 refresh；失敗的請求不留在快取，下一條序列會重打。
+ * `now` 只用來決定月初回頭抓哪個月（測試接縫）。
  */
-export function createTwseSeriesFetcher(): (spec: SeriesSpec) => Promise<RawPoint[]> {
+export function createTwseSeriesFetcher(now = new Date()): (spec: SeriesSpec) => Promise<RawPoint[]> {
   const bodies = new Map<string, Promise<unknown>>()
   const fetchBody = (url: string): Promise<unknown> => {
     let body = bodies.get(url)
     if (!body) {
       body = fetchTwseDataset(url)
       bodies.set(url, body)
+      body.catch(() => bodies.delete(url))
     }
     return body
   }
@@ -327,7 +345,7 @@ export function createTwseSeriesFetcher(): (spec: SeriesSpec) => Promise<RawPoin
     if (!parser)
       throw new Error(`twse-client: no parser for ${spec.seriesId}`)
     if (spec.seriesId === 'taiex-close')
-      return fetchTaiexClose(spec, fetchBody, parser)
+      return fetchTaiexClose(spec, fetchBody, parser, now)
     return parser(await fetchBody(spec.sourceCode))
   }
 }
