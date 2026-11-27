@@ -51,7 +51,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 }
 
 // 只擋得到「沒存或存的是別版」：內容是 daily 自己寫的，逐欄驗等於再寫一份 MarketContext 的 schema。
-function parseRunInputs(date: string, raw: unknown): BriefRunInputs {
+export function parseRunInputs(date: string, raw: unknown): BriefRunInputs {
   if (!isObject(raw) || raw.version !== 1 || !isObject(raw.editor) || !Array.isArray(raw.editor.news) || !isObject(raw.market))
     throw new Error(`${date} 的 run_inputs 缺少或格式不符（version 1），這天的正式報告早於 run_inputs 上線或不是 complete 重跑產生`)
   return raw as unknown as BriefRunInputs

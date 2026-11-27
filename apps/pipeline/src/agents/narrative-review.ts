@@ -92,6 +92,14 @@ export async function reviewNarrative(m: NarrativeReviewMaterial, draft: Narrati
   }
 }
 
+/** 修訂只試一次：失敗回 narrative null，由呼叫端保留原稿，不重試也不再審。 */
+export async function reviseNarrative(m: NarrativeReviewMaterial, draft: Narrative, notes: readonly ReviewNote[]): Promise<CallNarrativeWriterResult> {
+  return runNarrativeAttempts(
+    { brief: m.brief, news: m.news, citations: m.brief.citations, claimLedger: m.claimLedger },
+    { agent: 'narrative-reviser', systemPrompt: NARRATIVE_REVISER_SYSTEM_PROMPT, userContent: formatReviserUserContent(m, draft, notes), maxAttempts: 1 },
+  )
+}
+
 export async function reviewAndRevise(m: NarrativeReviewMaterial, first: CallNarrativeWriterResult): Promise<CallNarrativeWriterResult> {
   if (!narrativeReviewEnabled() || first.narrative === null)
     return first
@@ -101,11 +109,7 @@ export async function reviewAndRevise(m: NarrativeReviewMaterial, first: CallNar
     console.warn(JSON.stringify({ event: 'narrative_review', notes: 0, revised: false, reviewFailed: review === null }))
     return first
   }
-  // 修訂只試一次：失敗就保留原稿，不重試也不再審。
-  const revised = await runNarrativeAttempts(
-    { brief: m.brief, news: m.news, citations: m.brief.citations, claimLedger: m.claimLedger },
-    { agent: 'narrative-reviser', systemPrompt: NARRATIVE_REVISER_SYSTEM_PROMPT, userContent: formatReviserUserContent(m, draft, review.notes), maxAttempts: 1 },
-  )
+  const revised = await reviseNarrative(m, draft, review.notes)
   console.warn(JSON.stringify({ event: 'narrative_review', notes: review.notes.length, kinds: review.notes.map(n => n.kind), revised: revised.narrative !== null }))
   return revised.narrative === null ? first : revised
 }

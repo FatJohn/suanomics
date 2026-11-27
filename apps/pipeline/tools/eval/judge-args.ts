@@ -22,7 +22,7 @@ function isCalendarDate(value: string): boolean {
   return !Number.isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value)
 }
 
-function parseDates(raw: string | undefined): string[] {
+export function parseDates(raw: string | undefined): string[] {
   if (raw === undefined)
     throw new Error('--dates 必填，格式 YYYY-MM-DD,YYYY-MM-DD')
   const dates = raw.split(',').map(s => s.trim()).filter(Boolean)
@@ -44,7 +44,7 @@ function parseJudges(raw: string | undefined): JudgeKind[] {
 }
 
 // judge 自己的上限，不吃 DAILY_COST_LIMIT_USD；但與每日路徑共用 DAILY_TOTAL_COST_LIMIT_USD 的當日總額（#131 的決定，取代 #33 的分開算）。
-function parseMaxUsd(raw: string | undefined): number {
+export function parseMaxUsd(raw: string | undefined): number {
   if (raw === undefined)
     return 3
   const value = Number(raw)
