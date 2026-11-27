@@ -145,11 +145,22 @@ export async function callNarrativeWriter(
     : NARRATIVE_WRITER_SYSTEM_PROMPT
   // ledger 指示只在旗標開且有 claim 時 append（關閉時 base prompt 逐字不變）
   const systemPrompt = withLedger ? basePrompt + NARRATIVE_CLAIM_LEDGER_INSTRUCTION : basePrompt
+  return runNarrativeAttempts(p, { agent: 'narrative-writer', systemPrompt, userContent, maxAttempts: MAX_ATTEMPTS })
+}
 
+export type NarrativeAttemptContext = Pick<CallNarrativeWriterParams, 'brief' | 'news' | 'citations' | 'claimLedger' | 'onCallRecord'>
+
+interface NarrativeAttemptCall { agent: 'narrative-writer', systemPrompt: string, userContent: string, maxAttempts: number }
+
+/** 呼叫、正規化、sanitize、compliance 硬擋與 claim binding 軟警告；失敗重試到 maxAttempts 後回 narrative null。 */
+export async function runNarrativeAttempts(
+  p: NarrativeAttemptContext,
+  { agent, systemPrompt, userContent, maxAttempts }: NarrativeAttemptCall,
+): Promise<CallNarrativeWriterResult> {
   let firstFailReason: NarrativeRetryReason = null
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const raw = await callAgent('narrative-writer', { systemPrompt, userContent }, NarrativeWriterResponse, {
+      const raw = await callAgent(agent, { systemPrompt, userContent }, NarrativeWriterResponse, {
         // GOTCHA: exactOptionalPropertyTypes — conditional spread for optional fields
         ...(p.onCallRecord !== undefined ? { onCallRecord: p.onCallRecord } : {}),
       })
@@ -215,12 +226,12 @@ export async function callNarrativeWriter(
       const e = err as { message?: string, issues?: unknown }
       // log Zod issues 給 prod debug、攻擊面：narrative 字數 / citation subset / sections 數
       // 不 throw、graceful degrade 流程不變
-      console.warn(`[narrative-writer] attempt ${attempt} fail reason=${reason} message=${e.message ?? '(unknown)'}`)
+      console.warn(`[${agent}] attempt ${attempt} fail reason=${reason} message=${e.message ?? '(unknown)'}`)
       if (e.issues)
-        console.warn(`[narrative-writer] zod issues:`, JSON.stringify(e.issues).slice(0, 800))
+        console.warn(`[${agent}] zod issues:`, JSON.stringify(e.issues).slice(0, 800))
       if (attempt === 1)
         firstFailReason = reason
-      if (attempt >= MAX_ATTEMPTS) {
+      if (attempt >= maxAttempts) {
         const audit = {
           failed: true,
           retryReason: firstFailReason,
