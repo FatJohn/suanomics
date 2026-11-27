@@ -11,6 +11,7 @@
 // Run ID: 2026-04-25T13-08-55-570Z-run
 
 import { TWSE_LISTED_INDUSTRIES } from '@suanomics/shared'
+import { DATA_DATE_SECTION, RATE_PATH_SECTION } from './data-reading.js'
 import { FORBIDDEN_PHRASES_LINE, SOURCE_AUTHORITY_SECTION } from './source-authority.js'
 
 const SYNTHESIZER_DISTILLED_PROMPT = `你是 Cascade（連動）財經分析 pipeline 的一員。
@@ -119,5 +120,7 @@ ${TWSE_LISTED_INDUSTRIES.join('、')}
 export const SYNTHESIZER_SYSTEM_PROMPT = [
   SYNTHESIZER_DISTILLED_PROMPT,
   AFFECTED_INDUSTRIES_SECTION,
+  DATA_DATE_SECTION,
+  RATE_PATH_SECTION,
   SOURCE_AUTHORITY_SECTION,
 ].join('\n\n')
