@@ -63,9 +63,11 @@ jobs:
       - name: Build shared
         run: pnpm --filter @suanomics/shared run build
 
-      # 上限另設、不吃 DAILY_COST_LIMIT_USD：兩個 judge 一天約 US$0.22，1.00 留餘裕又擋得住失控。
+      # --max-usd 是 judge 自己的上限：兩個 judge 一天約 US$0.22，1.00 留餘裕又擋得住失控。
+      # 另與 daily.yml 共用當日總額（#131），先扣當天已花的金額，用完時記成略過；值與 daily.yml 一起改。
       - name: Run judge
         env:
+          DAILY_TOTAL_COST_LIMIT_USD: '3.00'
           EVENT_NAME: ${{ github.event_name }}
           RUN_STARTED_AT: ${{ github.event.workflow_run.run_started_at }}
           INPUT_DATE: ${{ inputs.date }}
