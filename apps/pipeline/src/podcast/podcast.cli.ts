@@ -1,3 +1,4 @@
+import type { PodcastResult } from './run.js'
 // 每日 podcast 的進入點：`pnpm --filter @suanomics/pipeline run podcast --date YYYY-MM-DD [--force]`。
 // 讀當日 complete 的 brief 寫稿，Azure TTS 轉 MP3 後上傳 R2，網址寫回 daily_briefs。
 import process from 'node:process'
@@ -7,6 +8,7 @@ import { parseDailyArgs } from '../orchestrator/daily.cli-args.js'
 import { readPodcastEnv } from './env.js'
 import { createPodcastDeps } from './podcast.deps.js'
 import { runPodcast } from './run.js'
+import { appendPodcastSummary, renderPodcastSummary } from './summary.js'
 
 async function main(): Promise<void> {
   const args = parseDailyArgs(process.argv.slice(2))
@@ -14,8 +16,14 @@ async function main(): Promise<void> {
   // 先建閘：沒設 DAILY_COST_LIMIT_USD 時在寫稿之前就失敗。
   const gate = getDailyCostGate()
   gate.setReportDate(args.date)
-  const result = await runPodcast(args, createPodcastDeps(env))
-  console.warn(JSON.stringify({ event: 'result', ...result, llmCostUsd: Number(gate.totalUsd.toFixed(4)) }))
+  let result: PodcastResult | undefined
+  try {
+    result = await runPodcast(args, createPodcastDeps(env))
+    console.warn(JSON.stringify({ event: 'result', ...result, llmCostUsd: Number(gate.totalUsd.toFixed(4)) }))
+  }
+  finally {
+    await appendPodcastSummary(process.env.GITHUB_STEP_SUMMARY, renderPodcastSummary({ llm: { usd: gate.totalUsd, calls: gate.callCount }, result }))
+  }
 }
 
 main()
