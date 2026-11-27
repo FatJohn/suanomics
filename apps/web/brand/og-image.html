@@ -1,6 +1,6 @@
 <!doctype html>
 <!-- 社群分享縮圖（public/og-image.png）的原稿，1200x630。改這裡後跑 brand/render.sh 重產 PNG。
-     色票與字體照 DESIGN.md：冷白紙、墨黑字、藍筆框、紅筆劃線、黃色螢光筆只劃品牌名。 -->
+     色票與字體照 DESIGN.md：冷白紙、墨黑字、藍筆框、紅筆劃線；左邊放橫式 logo（brand/lockup.png，含品牌名）。 -->
 <html lang="zh-Hant-TW">
   <head>
     <meta charset="utf-8" />
@@ -13,7 +13,6 @@
         --rule: #cfd6de;
         --blue: #1e4fd8;
         --red: #d7262e;
-        --hl: #ffe14d;
       }
       * {
         box-sizing: border-box;
@@ -63,20 +62,12 @@
         align-items: center;
         margin: auto 0;
       }
-      h1 {
-        margin: 0;
-        font-size: 116px;
-        font-weight: 900;
-        line-height: 1.2;
-        letter-spacing: 0.04em;
-      }
-      h1 span {
-        background-image: linear-gradient(transparent 60%, var(--hl) 60%);
-        padding: 0 6px;
+      .lockup {
+        display: block;
       }
       .sub {
-        margin: 18px 0 0 6px;
-        font-size: 38px;
+        margin: 14px 0 0 6px;
+        font-size: 28px;
         font-weight: 500;
         color: var(--ink-2);
         letter-spacing: 0.14em;
@@ -139,7 +130,7 @@
     <div class="top"><b>開盤前重點講義</b><span>每個台股交易日・開盤前發</span></div>
     <div class="main">
       <div>
-        <h1><span>掐指連總經</span></h1>
+        <img class="lockup" src="lockup.png" alt="" width="640" />
         <p class="sub">賽博半仙・算命不如算力</p>
       </div>
       <div class="frame">
