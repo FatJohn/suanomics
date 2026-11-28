@@ -1,9 +1,8 @@
 ---
 import type { BriefView } from '../lib/present-brief'
-import { annotateHtml, escapeHtml } from '../lib/glossary'
+import { briefHtml } from '../lib/brief-html'
 import { GLOSSARY } from '../lib/glossary-terms'
 import { readingMinutes } from '../lib/handout'
-import { renderMarkdown } from '../lib/markdown'
 import KeyPoints from './KeyPoints.astro'
 import PodcastPlayer from './PodcastPlayer.astro'
 import SourceLinks from './SourceLinks.astro'
@@ -18,25 +17,7 @@ const minutes = readingMinutes([
   narrative ? [narrative.intro, ...sections.flatMap(s => [s.takeaway, s.body]), narrative.outro].join('') : brief.summary,
 ])
 
-// 每個術語整頁只標第一次出現，所以依閱讀順序一次算完，不交給子元件各自標。
-// 小標與結論句不標，它們已有自己的樣式。產業理由收在點開的列裡，排到最後才標，
-// 本文標過的術語就不會只藏在收合的列裡。
-const seen = new Set<string>()
-const glossMarkdown = (text: string) => annotateHtml(renderMarkdown(text), GLOSSARY, seen)
-const glossText = (text: string) => annotateHtml(escapeHtml(text), GLOSSARY, seen)
-const thesisHtml = glossText(brief.dailyThesis || brief.summary)
-const introHtml = narrative ? glossMarkdown(narrative.intro) : ''
-const bodyHtml = sections.map(s => glossMarkdown(s.body))
-const outroHtml = narrative?.outro ? glossMarkdown(narrative.outro) : ''
-const summaryHtml = !narrative && brief.summary && brief.dailyThesis ? glossText(brief.summary) : ''
-// 主軸在頁首已標過術語，這裡只跳脫；文字與頁首相同（主軸被攔下時頁首改顯示摘要）。
-const viewpoints = brief.viewpoints && {
-  thesisHtml: escapeHtml(brief.dailyThesis || brief.summary),
-  support: brief.viewpoints.supportPoints.map(({ text, section }) => ({ html: glossText(text), section })),
-  risk: brief.viewpoints.riskPoints.map(({ text, section }) => ({ html: glossText(text), section })),
-  netReadHtml: brief.viewpoints.netRead ? glossText(brief.viewpoints.netRead) : '',
-}
-const industries = brief.industries.map(({ reasoning, ...rest }) => ({ ...rest, reasoningHtml: reasoning ? glossText(reasoning) : '' }))
+const { thesisHtml, introHtml, bodyHtml, outroHtml, summaryHtml, viewpoints, industries } = briefHtml(brief, GLOSSARY)
 
 const toc = [
   { id: 'key', label: '本日必考重點' },
