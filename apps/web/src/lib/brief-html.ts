@@ -2,6 +2,7 @@ import type { GlossaryEntry } from './glossary'
 import type { BriefView } from './present-brief'
 import { annotateHtml, escapeHtml } from './glossary'
 import { renderMarkdown } from './markdown'
+import { splitThesis } from './thesis'
 
 /**
  * 講義頁各區塊的 HTML：已跳脫並標好術語，給元件用 set:html 輸出。
@@ -15,7 +16,9 @@ export function briefHtml(brief: BriefView, glossary: readonly GlossaryEntry[]) 
   const seen = new Set<string>()
   const glossMarkdown = (text: string) => annotateHtml(renderMarkdown(text), glossary, seen)
   const glossText = (text: string) => annotateHtml(escapeHtml(text), glossary, seen)
-  const thesisHtml = escapeHtml(brief.dailyThesis || brief.summary)
+  const thesis = brief.dailyThesis || brief.summary
+  const thesisHtml = escapeHtml(thesis)
+  const { highlight, rest } = splitThesis(thesis)
   const introHtml = narrative ? glossMarkdown(narrative.intro) : ''
   const bodyHtml = sections.map(s => glossMarkdown(s.body))
   const outroHtml = narrative?.outro ? glossMarkdown(narrative.outro) : ''
@@ -28,5 +31,5 @@ export function briefHtml(brief: BriefView, glossary: readonly GlossaryEntry[]) 
     netReadHtml: brief.viewpoints.netRead ? glossText(brief.viewpoints.netRead) : '',
   }
   const industries = brief.industries.map(({ reasoning, ...rest }) => ({ ...rest, reasoningHtml: reasoning ? glossText(reasoning) : '' }))
-  return { thesisHtml, introHtml, bodyHtml, outroHtml, summaryHtml, viewpoints, industries }
+  return { thesisHighlightHtml: escapeHtml(highlight), thesisRestHtml: escapeHtml(rest), introHtml, bodyHtml, outroHtml, summaryHtml, viewpoints, industries }
 }

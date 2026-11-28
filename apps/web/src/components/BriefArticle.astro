@@ -17,7 +17,7 @@ const minutes = readingMinutes([
   narrative ? [narrative.intro, ...sections.flatMap(s => [s.takeaway, s.body]), narrative.outro].join('') : brief.summary,
 ])
 
-const { thesisHtml, introHtml, bodyHtml, outroHtml, summaryHtml, viewpoints, industries } = briefHtml(brief, GLOSSARY)
+const { thesisHighlightHtml, thesisRestHtml, introHtml, bodyHtml, outroHtml, summaryHtml, viewpoints, industries } = briefHtml(brief, GLOSSARY)
 
 const toc = [
   { id: 'key', label: '本日必考重點' },
@@ -38,7 +38,7 @@ const toc = [
     </p>
     <h1>{brief.headline}</h1>
 
-    <KeyPoints thesisHtml={thesisHtml} industries={industries} />
+    <KeyPoints thesisHighlightHtml={thesisHighlightHtml} thesisRestHtml={thesisRestHtml} industries={industries} />
 
     {brief.audioUrl && <PodcastPlayer url={brief.audioUrl} />}
 

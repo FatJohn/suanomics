@@ -27,18 +27,24 @@ function brief(overrides: Partial<BriefView> = {}): BriefView {
 describe('briefHtml', () => {
   it('主軸不標術語，術語改在導讀第一次出現處標', () => {
     const html = briefHtml(brief(), glossary)
-    expect(html.thesisHtml).not.toContain('class="term"')
+    expect(html.thesisHighlightHtml + html.thesisRestHtml).not.toContain('class="term"')
     expect(html.introHtml).toContain('popovertarget="term-real-rate"')
     expect(html.bodyHtml[0]).not.toContain('class="term"')
   })
 
   it('沒有導讀時，術語在詳解本文第一次出現處標', () => {
     const html = briefHtml(brief({ narrative: { intro: '', sections: [{ heading: '小標', takeaway: '', body: '本文提實質利率。', citations: [] }], outro: '' } }), glossary)
-    expect(html.thesisHtml).not.toContain('class="term"')
+    expect(html.thesisHighlightHtml + html.thesisRestHtml).not.toContain('class="term"')
     expect(html.bodyHtml[0]).toContain('popovertarget="term-real-rate"')
   })
 
   it('主軸仍做 HTML 跳脫', () => {
-    expect(briefHtml(brief({ dailyThesis: '<b>實質利率</b>' }), glossary).thesisHtml).toBe('&lt;b&gt;實質利率&lt;/b&gt;')
+    expect(briefHtml(brief({ dailyThesis: '<b>實質利率</b>' }), glossary).thesisHighlightHtml).toBe('&lt;b&gt;實質利率&lt;/b&gt;')
+  })
+
+  it('頁首主軸切成螢光筆段與墨字段，各自跳脫', () => {
+    const html = briefHtml(brief({ dailyThesis: 'A&B 反彈缺確認：<外資>仍賣超。' }), glossary)
+    expect(html.thesisHighlightHtml).toBe('A&amp;B 反彈缺確認')
+    expect(html.thesisRestHtml).toBe('：&lt;外資&gt;仍賣超。')
   })
 })
