@@ -257,7 +257,7 @@ components:
 - **分享縮圖（`apps/web/public/og-image.png`）：** 1200x630 的固定品牌圖，每頁共用。上下各一條墨線夾住版面：左邊是橫式 logo（圖形加「Suanomics」與「掐指連總經」，原稿 `apps/web/brand/lockup.png`），底下是 `ink-2` 的 slogan；右邊是縮小版的「本日必考重點」藍框，列出講義回答的三件事，框底一句紅筆劃線的「每條連動鏈都附出處」。
 - **網站圖示（`favicon.ico`、`apple-touch-icon.png`）：** 刊頭 logo 放在 `paper` 底色上（iOS 會把透明處填黑）；favicon 含 16、32、48px。
 - **刊頭 logo（`logo-mark.png`）：** 墨黑筆刷圓裡一隻掐指的手，手上是紅色長條圖與上漲箭頭，旁邊兩道紅色細弧；透明底，直接放在 `paper` 上。完整版圓外是先天八卦的四正位卦象（上乾、下坤、左離、右坎；原圖的左卦與下卦字形不對、右卦是乾不是坎，依維護者 2026-11-27 決定四個都重畫），刊頭與網站圖示用去掉卦象的版本，因為卦象在 40px 以下糊成雜點；分享縮圖的橫式 logo 保留卦象。放在品牌名左邊，一般 40px，寬 480px 以下 36px，寬 360px 以下不顯示（否則 slogan 會折成兩行）；連結裡已有品牌名，圖片 `alt=""` 當裝飾。改 logo 尺寸或刊頭文字後，要逐 px 重量 320 到 412px 寬、矮與高兩種視窗的刊頭高度，確認和沒有 logo 時相同。
-- **原稿：** 分享縮圖與網站圖示的原稿是 `apps/web/brand/` 裡的 HTML（網站圖示的原稿直接引用 `logo-mark.png`，logo 改了也要重產），改完跑 `apps/web/brand/render.sh`（本機 Chrome headless 截圖，macOS 限定）重產，產出的圖檔進版控，build 不重產。logo 本身的高解析原稿是 `apps/web/brand/mark-master.png`（去掉卦象的圖形）與 `lockup-master.png`（橫式，卦象已重畫），都是透明底；`logo-mark.png` 與 `lockup.png` 由 `apps/web/brand/logo.py outputs` 從這兩張縮出來。原稿本身由同一支腳本的 `masters` 從維護者手上的原圖（不進 repo）去白底、重畫卦象、裁切產生。腳本用 Pillow，因為 Node 沒有原生的 PNG 編解碼與縮放；venv 建法寫在腳本開頭，build 與 CI 不跑。改了 `logo-mark.png` 後要再跑 `render.sh` 重產網站圖示。
+- **原稿：** 分享縮圖與網站圖示的原稿是 `apps/web/brand/` 裡的 HTML（網站圖示的原稿直接引用 `logo-mark.png`，logo 改了也要重產），改完跑 `apps/web/brand/render.sh`（本機 Chrome headless 截圖，macOS 限定）重產，產出的圖檔進版控，build 不重產。logo 本身的高解析原稿是 `apps/web/brand/mark-master.png`（去掉卦象的圖形）與 `lockup-master.png`（橫式，卦象已重畫），都是透明底；`logo-mark.png` 與 `lockup.png` 由 `apps/web/brand/logo.py outputs` 從這兩張縮出來。原稿本身由同一支腳本的 `masters` 從維護者手上的原圖（不進 repo）去白底、重畫卦象、裁切產生。腳本用 Pillow，因為 Node 沒有原生的 PNG 編解碼與縮放；venv 建法寫在腳本開頭，build 與 CI 不跑。改了 `logo-mark.png` 或 `lockup.png` 後要再跑 `render.sh` 重產網站圖示與分享縮圖。
 
 ### 動態
 
