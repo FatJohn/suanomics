@@ -1,4 +1,5 @@
 ---
+import DirectionMark from '../components/DirectionMark.astro'
 import Headline from '../components/Headline.astro'
 import Base from '../layouts/Base.astro'
 import { groupByMonth, lectureNumbers, weekdayLabel } from '../lib/handout'
@@ -23,8 +24,21 @@ const months = groupByMonth(briefs)
       <ol>
         {m.items.map(b => (
           <li>
-            <span class="when">第 {numbers.get(b.date)} 回・{b.date.slice(5).replace('-', '/')}（{weekdayLabel(b.date)}）</span>
+            <span class="when">
+              第 {numbers.get(b.date)} 回・{b.date.slice(5).replace('-', '/')}（{weekdayLabel(b.date)}）
+              {b.audioUrl && (
+                <span class="audio">
+                  <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M2 7V6a4 4 0 0 1 8 0v1M2 7h1.6v3.4H2zM8.4 7H10v3.4H8.4z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>
+                  <span class="sr">有語音版</span>
+                </span>
+              )}
+            </span>
             <a href={`/d/${b.date}`}><Headline text={b.headline} /></a>
+            {b.industries.length > 0 && (
+              <ul class="ind" aria-label="牽動產業">
+                {b.industries.map(i => <li>{i.name}<DirectionMark direction={i.direction} /></li>)}
+              </ul>
+            )}
           </li>
         ))}
       </ol>
@@ -59,7 +73,7 @@ const months = groupByMonth(briefs)
     padding: 0;
     list-style: none;
   }
-  li {
+  ol > li {
     padding: 10px 0;
     border-bottom: 1px dashed var(--rule);
     line-height: 1.6;
@@ -68,6 +82,37 @@ const months = groupByMonth(briefs)
     display: block;
     font-size: 12.5px;
     color: var(--ink-2);
+  }
+  .audio {
+    display: inline-flex;
+    vertical-align: -1px;
+    margin-left: 0.4em;
+    color: var(--blue);
+  }
+  .sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  /* 和首頁重點框同一份產業方向，只是逐回排開；形狀加文字，不靠顏色單獨表意。 */
+  .ind {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px 14px;
+    margin: 4px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .ind li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    white-space: nowrap;
   }
   li a {
     font-weight: 500;
