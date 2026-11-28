@@ -152,11 +152,11 @@ function presentSources(citations: CitationLink[], news: readonly BriefNews[]): 
       byUrl.set(n.url, n)
   }
   const fromNews = (n: BriefNews) => ({ sourceName: n.sourceName, date: n.publishedAt ? formatTaipeiDate(n.publishedAt) : null, newsId: n.selected ? n.id : null })
-  const cited = citations.map((c) => {
+  const listed = new Set<string>()
+  const cited = citations.filter(c => !listed.has(c.url) && listed.add(c.url)).map((c) => {
     const n = byUrl.get(c.url)
     return { title: c.title, url: c.url, ...(n ? fromNews(n) : { sourceName: new URL(c.url).hostname.replace(/^www\./, ''), date: null, newsId: null }) }
   })
-  const listed = new Set(citations.map(c => c.url))
   const selectedOnly = news.filter(n => n.selected && !listed.has(n.url) && listed.add(n.url)).map(n => ({
     title: redactBlockedSentences(n.title) || WITHHELD_NEWS_TITLE,
     url: safeHttpUrl(n.url),

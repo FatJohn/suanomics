@@ -136,8 +136,8 @@ const toc = [
     border: 1px solid var(--blue);
     color: var(--blue);
     font-weight: 700;
-    /* 上下各 1px 框線，比其他格的 1px 底線多 1px；行高少 1px 讓整列和沒有音檔時一樣高（#96 首屏）。 */
-    line-height: 19px;
+    /* 上下各 1px 框線，其他格沒有線；行高少 2px 讓整列和沒有音檔時一樣高（#96 首屏）。 */
+    line-height: 18px;
     text-decoration: none;
   }
   .fields .listen:hover,
@@ -226,13 +226,14 @@ const toc = [
     margin-left: 0.4em;
     padding: 0 4px;
     font-size: 12.5px;
-    line-height: 1.6;
+    line-height: 1.9;
     white-space: nowrap;
     color: var(--blue);
     text-decoration: none;
     border: 1px solid var(--blue);
   }
-  .pick:hover {
+  .pick:hover,
+  .pick:focus-visible {
     background: var(--blue);
     color: var(--paper);
   }

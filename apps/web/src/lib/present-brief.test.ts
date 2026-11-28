@@ -194,6 +194,11 @@ describe('presentBrief 出處', () => {
     ])
   })
 
+  it('引用清單裡重複的網址只列一次', () => {
+    const view = presentBrief('2095-01-01', { ...BASE, citations: [CITE_A, { ...CITE_A, title: '同網址' }] }, [])
+    expect(view.sources.map(s => s.url)).toEqual([CITE_A.url])
+  })
+
   it('引用對不到新聞時來源名用網域、沒有日期', () => {
     const view = presentBrief('2095-01-01', { ...BASE, citations: [CITE_B] }, [])
     expect(view.sources).toEqual([{ title: '來源 B', url: CITE_B.url, sourceName: 'b.example', date: null, newsId: null }])
