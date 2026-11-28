@@ -4,7 +4,7 @@ import { confidenceLabel } from '../lib/handout'
 import DirectionMark from './DirectionMark.astro'
 import SourceLinks from './SourceLinks.astro'
 
-// *Html 欄位已跳脫（產業理由另標好術語，BriefArticle 依整頁閱讀順序標），會用 set:html 輸出；
+// *Html 欄位已跳脫（產業理由另標好術語，lib/brief-html.ts 依整頁閱讀順序標），會用 set:html 輸出；
 // 型別和 IndustryView 的純文字 reasoning 分開，未跳脫的文字傳不進來。
 type IndustryRow = Omit<IndustryView, 'reasoning'> & { reasoningHtml: string }
 interface Props { thesisHighlightHtml: string, thesisRestHtml: string, industries: IndustryRow[] }
