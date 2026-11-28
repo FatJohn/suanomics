@@ -3,6 +3,7 @@ import type { BriefView } from '../lib/present-brief'
 import { briefHtml } from '../lib/brief-html'
 import { GLOSSARY } from '../lib/glossary-terms'
 import { readingMinutes } from '../lib/handout'
+import BackToKey from './BackToKey.astro'
 import Headline from './Headline.astro'
 import KeyPoints from './KeyPoints.astro'
 import PodcastPlayer from './PodcastPlayer.astro'
@@ -26,20 +27,24 @@ const toc = [
   ...(narrative ? [{ id: 'intro', label: '導讀' }] : []),
   ...sections.map((s, i) => ({ id: `sec-${i + 1}`, label: `詳解 ${i + 1}：${s.heading}` })),
   ...(brief.viewpoints ? [{ id: 'views', label: '正反觀點' }] : []),
-  ...(brief.selectedNews.length > 0 ? [{ id: 'news', label: '本日選稿' }] : []),
-  { id: 'sources', label: '引用來源' },
+  { id: 'sources', label: '出處' },
 ]
 ---
 
 <div class="layout">
   <article class="brief">
     <p class="fields">
-      <span>第 {lectureNo} 回</span><span>閱讀 {minutes} 分鐘</span><span>來源 {brief.citations.length} 則</span>
+      <span>第 {lectureNo} 回</span><span>閱讀 {minutes} 分鐘</span><a href="#sources">來源 {brief.sources.length} 則</a>
       {brief.audioUrl && <a class="listen" href="#podcast"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 2v8l7-4z" fill="currentColor" /></svg><span class="label">收聽語音版</span></a>}
     </p>
     <h1><Headline text={brief.headline} /></h1>
 
     <KeyPoints thesisHighlightHtml={thesisHighlightHtml} thesisRestHtml={thesisRestHtml} industries={industries} />
+
+    <details class="toc-m">
+      <summary>本講義目錄</summary>
+      <ol>{toc.map(t => <li><a href={`#${t.id}`}>{t.label}</a></li>)}</ol>
+    </details>
 
     {brief.audioUrl && <PodcastPlayer url={brief.audioUrl} />}
 
@@ -49,6 +54,7 @@ const toc = [
             <section id="intro" aria-labelledby="intro-title">
               <h2 id="intro-title">導讀</h2>
               <div class="prose-handout" set:html={introHtml} />
+              <BackToKey />
             </section>
             {sections.map((s, i) => (
               <section id={`sec-${i + 1}`} aria-labelledby={`sec-${i + 1}-title`}>
@@ -56,6 +62,7 @@ const toc = [
                 {s.takeaway && <p class="take">{s.takeaway}</p>}
                 <div class="prose-handout" set:html={bodyHtml[i]} />
                 <SourceLinks label="出處" links={s.citations} />
+                <BackToKey />
               </section>
             ))}
             {outroHtml && <div class="prose-handout outro" set:html={outroHtml} />}
@@ -65,18 +72,22 @@ const toc = [
 
     {viewpoints && <Viewpoints viewpoints={viewpoints} />}
 
-    {brief.selectedNews.length > 0 && (
-      <section id="news" aria-labelledby="news-title">
-        <h2 id="news-title">本日選稿</h2>
-        <ul class="list">{brief.selectedNews.map(n => <li><a href={`/brief/news/${n.id}`}>{n.title}</a></li>)}</ul>
-      </section>
-    )}
-
     <section id="sources" aria-labelledby="sources-title">
-      <h2 id="sources-title">引用來源</h2>
-      {brief.citations.length > 0
-        ? <ol class="list">{brief.citations.map(c => <li><a href={c.url} rel="noopener">{c.title}</a></li>)}</ol>
+      <h2 id="sources-title">出處</h2>
+      {brief.sources.length > 0
+        ? (
+            <ul class="sources">
+              {brief.sources.map(s => (
+                <li>
+                  <span class="src-meta">{s.sourceName}{s.date && `・${s.date}`}</span>
+                  {s.url ? <a href={s.url} rel="noopener">{s.title}</a> : s.title}
+                  {s.newsId !== null && <a class="pick" href={`/brief/news/${s.newsId}`}>選稿</a>}
+                </li>
+              ))}
+            </ul>
+          )
         : <p>資料不足</p>}
+      <BackToKey />
     </section>
 
     <p class="disclaimer">{brief.disclaimer}</p>
@@ -112,8 +123,8 @@ const toc = [
     font-size: 12.5px;
     color: var(--ink-2);
   }
-  .fields > span {
-    border-bottom: 1px solid var(--ink-2);
+  .fields > span,
+  .fields > a:not(.listen) {
     padding: 0 4px;
     line-height: 1.6;
   }
@@ -125,8 +136,8 @@ const toc = [
     border: 1px solid var(--blue);
     color: var(--blue);
     font-weight: 700;
-    /* 上下各 1px 框線，比其他格的 1px 底線多 1px；行高少 1px 讓整列和沒有音檔時一樣高（#96 首屏）。 */
-    line-height: 19px;
+    /* 上下各 1px 框線，其他格沒有線；行高少 2px 讓整列和沒有音檔時一樣高（#96 首屏）。 */
+    line-height: 18px;
     text-decoration: none;
   }
   .fields .listen:hover,
@@ -146,7 +157,14 @@ const toc = [
     .fields {
       padding: 2px 0;
     }
-    /* 窄螢幕上入口帶文字會讓欄位列折成兩行、把最後一個產業列擠出首屏；只留圖示，文字留給讀屏器。 */
+    h1 {
+      margin-top: 8px;
+      font-size: 20px;
+      line-height: 1.4;
+    }
+  }
+  /* 窄螢幕上入口帶文字會讓欄位列折成兩行；只留圖示，文字留給讀屏器。 */
+  @media (max-width: 360px), (max-width: 480px) and (max-height: 740px) {
     .fields:has(.listen) {
       column-gap: 8px;
     }
@@ -160,11 +178,6 @@ const toc = [
       overflow: hidden;
       clip-path: inset(50%);
       white-space: nowrap;
-    }
-    h1 {
-      margin-top: 8px;
-      font-size: 20px;
-      line-height: 1.4;
     }
   }
   h2 .no {
@@ -190,21 +203,39 @@ const toc = [
     padding-top: 6px;
     border-top: 1px solid var(--rule);
   }
-  .list {
+  .sources {
     margin: 0;
-    padding-left: 1.5em;
-    list-style: decimal;
+    padding: 0;
+    list-style: none;
   }
-  ul.list {
-    list-style: disc;
-  }
-  .list li {
-    margin: 6px 0;
+  .sources li {
+    padding: 6px 0;
+    border-top: 1px dashed var(--rule);
     font-size: 15px;
     line-height: 1.7;
   }
-  .list li::marker {
+  .src-meta {
+    margin-right: 0.6em;
+    font-size: 13px;
     color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 和正反觀點的「見詳解 N」同一種方框標籤：藍框藍字、hover 反白。 */
+  .pick {
+    display: inline-block;
+    margin-left: 0.4em;
+    padding: 0 4px;
+    font-size: 12.5px;
+    line-height: 1.9;
+    white-space: nowrap;
+    color: var(--blue);
+    text-decoration: none;
+    border: 1px solid var(--blue);
+  }
+  .pick:hover,
+  .pick:focus-visible {
+    background: var(--blue);
+    color: var(--paper);
   }
   .disclaimer {
     margin: 40px 0 0;
@@ -226,25 +257,51 @@ const toc = [
       line-height: 1.6;
     }
   }
+  /* 手機與平板沒有右欄目錄，改在重點框下方放一個預設收合的目錄。 */
+  .toc-m {
+    margin-top: 20px;
+    border-top: 3px solid var(--ink);
+    padding-top: 6px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  @media (min-width: 1024px) {
+    .toc-m {
+      display: none;
+    }
+  }
+  .toc-m summary {
+    padding: 4px 0;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+  }
+  .toc-m[open] summary {
+    margin-bottom: 4px;
+  }
   .toc-title {
     margin: 0 0 6px;
     font-weight: 900;
     letter-spacing: 0.12em;
   }
-  .toc ol {
+  .toc ol,
+  .toc-m ol {
     margin: 0;
     padding: 0;
     list-style: none;
   }
-  .toc li {
+  .toc li,
+  .toc-m li {
     padding: 5px 0;
     border-top: 1px dashed var(--rule);
   }
-  .toc a {
+  .toc a,
+  .toc-m a {
     color: var(--ink);
     text-decoration-color: var(--rule);
   }
-  .toc a:hover {
+  .toc a:hover,
+  .toc-m a:hover {
     color: var(--blue);
     text-decoration-color: var(--blue);
   }

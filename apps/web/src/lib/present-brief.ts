@@ -1,10 +1,14 @@
 import type { MarketBrief } from '@suanomics/shared'
 import { MarketBriefSchema } from '@suanomics/shared'
 import { redactBlockedMarkdown, redactBlockedSentences } from './compliance'
+import { formatTaipeiDate } from './date'
 import { isPlaceholderText } from './placeholder-text'
 
 export interface CitationLink { title: string, url: string }
-export interface NewsLink { id: number, title: string }
+// selected：當天的選稿，有站內新聞頁；其餘是引用到的新聞，只用來對來源名與日期。
+export interface BriefNews { id: number, title: string, url: string, publishedAt: Date | null, sourceName: string, selected: boolean }
+// newsId 只有選稿才有，出處區用它連到新聞頁；url 不是 http(s) 時為 null，只顯示標題。
+export interface SourceView { title: string, url: string | null, sourceName: string, date: string | null, newsId: number | null }
 export type IndustryView = Pick<MarketBrief['affectedIndustries'][number], 'name' | 'direction' | 'confidence' | 'reasoning'> & { citations: CitationLink[] }
 
 // section：讀者看到的「詳解 N」序號；'overall'＝整體性論點；null＝舊報告沒有參照，不標。
@@ -22,8 +26,7 @@ export interface BriefView {
   } | null
   viewpoints: { supportPoints: ViewpointView[], riskPoints: ViewpointView[], netRead: string } | null
   industries: IndustryView[]
-  selectedNews: NewsLink[]
-  citations: CitationLink[]
+  sources: SourceView[]
   disclaimer: string
   audioUrl: string | null
 }
@@ -140,7 +143,29 @@ function httpsUrl(url: string | null): string | null {
   return url !== null && safeHttpUrl(url)?.startsWith('https:') ? url : null
 }
 
-export function presentBrief(date: string, brief: MarketBrief, selectedNews: readonly NewsLink[], audioUrl: string | null = null): BriefView {
+// 引用依報告順序在前，沒被引用的選稿接在後面；同網址只列一次（#146 項目 4）。
+// 引用對不到新聞表時（非新聞資料源）來源名退回網域，沒有日期。
+function presentSources(citations: CitationLink[], news: readonly BriefNews[]): SourceView[] {
+  const byUrl = new Map<string, BriefNews>()
+  for (const n of news) {
+    if (!byUrl.get(n.url)?.selected)
+      byUrl.set(n.url, n)
+  }
+  const fromNews = (n: BriefNews) => ({ sourceName: n.sourceName, date: n.publishedAt ? formatTaipeiDate(n.publishedAt) : null, newsId: n.selected ? n.id : null })
+  const listed = new Set<string>()
+  const cited = citations.filter(c => !listed.has(c.url) && listed.add(c.url)).map((c) => {
+    const n = byUrl.get(c.url)
+    return { title: c.title, url: c.url, ...(n ? fromNews(n) : { sourceName: new URL(c.url).hostname.replace(/^www\./, ''), date: null, newsId: null }) }
+  })
+  const selectedOnly = news.filter(n => n.selected && !listed.has(n.url) && listed.add(n.url)).map(n => ({
+    title: redactBlockedSentences(n.title) || WITHHELD_NEWS_TITLE,
+    url: safeHttpUrl(n.url),
+    ...fromNews(n),
+  }))
+  return [...cited, ...selectedOnly]
+}
+
+export function presentBrief(date: string, brief: MarketBrief, news: readonly BriefNews[], audioUrl: string | null = null): BriefView {
   const citations = citationLinks(brief)
   return {
     date,
@@ -150,8 +175,7 @@ export function presentBrief(date: string, brief: MarketBrief, selectedNews: rea
     narrative: presentNarrative(brief, citations),
     viewpoints: presentViewpoints(brief),
     industries: presentIndustries(brief, citations),
-    selectedNews: selectedNews.map(n => ({ id: n.id, title: redactBlockedSentences(n.title) || WITHHELD_NEWS_TITLE })),
-    citations,
+    sources: presentSources(citations, news),
     disclaimer: brief.disclaimer,
     audioUrl: httpsUrl(audioUrl),
   }

@@ -1,5 +1,6 @@
 ---
 import type { ViewpointView } from '../lib/present-brief'
+import BackToKey from './BackToKey.astro'
 
 // 各 *Html 欄是已跳脫並標好術語的 HTML（BriefArticle 依整頁閱讀順序標），會用 set:html 輸出；
 // 欄位名和 BriefView 的純文字欄位不同，未跳脫的文字傳不進來。
@@ -44,6 +45,7 @@ const columns = [
       <p set:html={viewpoints.netReadHtml} />
     </div>
   )}
+  <BackToKey />
 </section>
 
 <style>
