@@ -119,7 +119,8 @@ describe('annotateHtml', () => {
   it('把術語換成點開按鈕與解釋 popover', () => {
     expect(annotateHtml('<p>實質利率上行</p>', entries, new Set())).toBe(
       '<p><button type="button" class="term" popovertarget="term-real-rate" style="anchor-name: --term-real-rate">實質利率</button>'
-      + '<span class="gloss" id="term-real-rate" popover style="position-anchor: --term-real-rate"><strong>實質利率</strong>扣掉通膨後的利率。</span>上行</p>',
+      + '<span class="gloss" id="term-real-rate" popover style="position-anchor: --term-real-rate"><strong>實質利率</strong>扣掉通膨後的利率。'
+      + '<button type="button" class="gloss-close" popovertarget="term-real-rate" popovertargetaction="hide">關閉</button></span>上行</p>',
     )
   })
 
@@ -130,7 +131,7 @@ describe('annotateHtml', () => {
 
   it('跨段落共用 seen：後面的段落不重複標', () => {
     const out = annotateHtml('<p>CPI</p><p><em>CPI</em></p>', entries, new Set())
-    expect(out.match(/<button/g)).toHaveLength(1)
+    expect(out.match(/class="term"/g)).toHaveLength(1)
     expect(out.endsWith('<p><em>CPI</em></p>')).toBe(true)
   })
 
@@ -144,8 +145,13 @@ describe('annotateHtml', () => {
     expect(out).toContain('<span class="gloss" id="term-cpi" popover style="position-anchor: --term-cpi">')
   })
 
+  it('解釋卡裡有收起同一張卡的「關閉」按鈕，不需要 script', () => {
+    const out = annotateHtml('CPI', entries, new Set())
+    expect(out).toContain('<button type="button" class="gloss-close" popovertarget="term-cpi" popovertargetaction="hide">關閉</button></span>')
+  })
+
   it('解釋文字做 HTML 跳脫', () => {
     const risky: GlossaryEntry[] = [{ id: 'x', term: '利差', aliases: [], definition: 'a<b>&' }]
-    expect(annotateHtml('利差', risky, new Set())).toContain('利差</strong>a&lt;b&gt;&amp;</span>')
+    expect(annotateHtml('利差', risky, new Set())).toContain('利差</strong>a&lt;b&gt;&amp;<button')
   })
 })

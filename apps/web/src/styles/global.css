@@ -69,6 +69,14 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+/* 講義標題的片語（components/Headline.astro）：整個片語放不下就整個換行，片語內只在 <wbr> 斷，
+   收尾標點黏在片語裡，WebKit 也不會把「、」推到行首。inline-block 不會繼承連結底線，要明寫 inherit。 */
+.phrase {
+  display: inline-block;
+  max-width: 100%;
+  text-decoration: inherit;
+}
+
 p,
 li {
   text-wrap: pretty;
@@ -177,7 +185,27 @@ li {
 .gloss strong {
   display: block;
   margin-bottom: 2px;
+  padding-right: 4.5em;
   font-weight: 900;
+}
+
+.gloss-close {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--blue);
+  background: var(--sheet);
+  color: var(--blue);
+  font: 700 13px/1.6 var(--font-body);
+  cursor: pointer;
+}
+
+.gloss-close:hover,
+.gloss-close:focus-visible {
+  background: var(--blue);
+  color: #fff;
 }
 
 /* 寬螢幕且支援 anchor positioning 時改成貼在術語下方的藍框小卡；不支援就維持貼底，不會被丟到左上角。 */
@@ -196,6 +224,10 @@ li {
         flip-block,
         flip-inline,
         flip-block flip-inline;
+    }
+    .gloss-close {
+      top: 6px;
+      right: 12px;
     }
   }
 }

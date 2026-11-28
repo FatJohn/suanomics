@@ -1,0 +1,8 @@
+---
+import { headlinePhrases } from '../lib/headline'
+
+interface Props { text: string }
+const { text } = Astro.props
+---
+
+{headlinePhrases(text).map((chunks, p) => <>{p > 0 && <wbr />}<span class="phrase">{chunks.map((c, i) => <>{i > 0 && <wbr />}{c}</>)}</span></>)}

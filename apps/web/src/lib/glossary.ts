@@ -92,11 +92,13 @@ export function escapeHtml(text: string): string {
 }
 
 // popover 緊接在按鈕後面：螢幕閱讀器依 DOM 順序讀，展開後下一段就是解釋；不需要任何 script。
+// 卡上的「關閉」也是 popovertarget，手機貼底的紙條才有看得到的收起方式，不只靠點外面或 Esc。
 // anchor 名稱明寫：有些瀏覽器支援 position-area，卻還不會把 popovertarget 的按鈕當成隱含錨點。
 function termMarkup(text: string, entry: GlossaryEntry): string {
   const id = `term-${entry.id}`
   return `<button type="button" class="term" popovertarget="${id}" style="anchor-name: --${id}">${text}</button>`
-    + `<span class="gloss" id="${id}" popover style="position-anchor: --${id}"><strong>${escapeHtml(entry.term)}</strong>${escapeHtml(entry.definition)}</span>`
+    + `<span class="gloss" id="${id}" popover style="position-anchor: --${id}"><strong>${escapeHtml(entry.term)}</strong>${escapeHtml(entry.definition)}`
+    + `<button type="button" class="gloss-close" popovertarget="${id}" popovertargetaction="hide">關閉</button></span>`
 }
 
 // 段落與列表項是句子的邊界，前後文不跨過它們。
