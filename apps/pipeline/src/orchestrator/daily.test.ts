@@ -85,10 +85,18 @@ describe('runDaily', () => {
     expect(deps.ingest).not.toHaveBeenCalled()
   })
 
-  it('已有 incomplete brief 且未帶 force 也不跑，避免備援排程把當日花費翻倍', async () => {
-    const deps = fakeDeps({ findExistingBrief: vi.fn(async () => ({ status: 'incomplete' })) })
-    expect((await runDaily({ date: DATE, force: false }, deps)).status).toBe('skipped')
+  // incomplete 表示已花到上限，備援剩下的額度補不出完整報告（#135）。
+  it('已有 incomplete brief 且未帶 force 時備援不跑，回 incomplete-exists 並帶停下的 stage', async () => {
+    const deps = fakeDeps({ findExistingBrief: vi.fn(async () => ({ status: 'incomplete', progress: { completedStages: ['ingest'], failedStage: 'analyst' } })) })
+    expect(await runDaily({ date: DATE, force: false }, deps)).toEqual({ status: 'skipped', reason: 'incomplete-exists', date: DATE, failedStage: 'analyst' })
     expect(deps.ingest).not.toHaveBeenCalled()
+    expect(deps.saveIncompleteBrief).not.toHaveBeenCalled()
+  })
+
+  // failedStage 會進 workflow command，不是已知 stage 名的字串不能原樣帶出去。
+  it.each([null, {}, { failedStage: 3 }, { failedStage: 'renamed-stage' }, { failedStage: 'analyst\n::error::x' }])('incomplete 的 progress 讀不出已知 stage（%j）時 failedStage 為 null', async (progress) => {
+    const deps = fakeDeps({ findExistingBrief: vi.fn(async () => ({ status: 'incomplete', progress })) })
+    expect(await runDaily({ date: DATE, force: false }, deps)).toEqual({ status: 'skipped', reason: 'incomplete-exists', date: DATE, failedStage: null })
   })
 
   it('帶 force 時略過已存在檢查並重跑', async () => {

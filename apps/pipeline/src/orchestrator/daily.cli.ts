@@ -4,6 +4,7 @@ import { currentRunId } from '../agents/cost-gate.js'
 import { installSharedDailyCostGate } from '../agents/daily-budget.js'
 import { closeDb } from '../db/client.js'
 import { getRunUsage } from '../db/repos/llm-calls-repo.js'
+import { appendDailySummary, dailyWarning, renderDailySummary } from './daily-summary.js'
 import { exitCodeFor, parseDailyArgs } from './daily.cli-args.js'
 import { createDailyDeps } from './daily.deps.js'
 import { runDaily } from './daily.js'
@@ -14,6 +15,11 @@ async function main(): Promise<void> {
   await installSharedDailyCostGate()
   const result = await runDaily(args, createDailyDeps())
   console.warn(JSON.stringify({ event: 'result', ...result }))
+  const warning = dailyWarning(result)
+  // workflow command 要寫到 stdout，runner 才會轉成 annotation。
+  if (warning)
+    process.stdout.write(`${warning}\n`)
+  await appendDailySummary(process.env.GITHUB_STEP_SUMMARY, renderDailySummary(result))
   process.exitCode = exitCodeFor(result)
 }
 

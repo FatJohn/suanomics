@@ -7,7 +7,9 @@ import type { EditorStageResult } from './editor-stage.js'
 import type { GenerateBriefParams } from './run-brief.js'
 import { DailyCostLimitExceededError } from '../agents/cost-gate.js'
 
-export type StageName = 'ingest' | 'market-context' | 'editor' | 'decompose' | 'retrieve' | 'analyst' | 'synthesize' | 'finalize' | 'persist'
+const STAGE_NAMES = ['ingest', 'market-context', 'editor', 'decompose', 'retrieve', 'analyst', 'synthesize', 'finalize', 'persist'] as const
+
+export type StageName = typeof STAGE_NAMES[number]
 
 export type RunStage = <T>(name: StageName, run: () => Promise<T>) => Promise<T>
 
@@ -41,6 +43,7 @@ export interface DailyProgress {
 
 export type DailyResult
   = | { status: 'skipped', reason: 'non-trading-day' | 'already-exists', date: string }
+    | { status: 'skipped', reason: 'incomplete-exists', date: string, failedStage: StageName | null }
     | { status: 'complete', date: string, briefId: number }
     | { status: 'incomplete', date: string, failedStage: StageName }
 
@@ -48,7 +51,7 @@ export interface DailyDeps {
   gate: Pick<DailyCostGate, 'totalUsd' | 'callCount' | 'setReportDate'>
   log: (event: DailyLogEvent) => void
   isTradingDay: (date: string) => boolean
-  findExistingBrief: (date: string) => Promise<{ status: string } | null>
+  findExistingBrief: (date: string) => Promise<{ status: string, progress?: unknown } | null>
   // 只抓新聞進候選池，回傳新增則數。
   refreshNews: () => Promise<number>
   // 台北今天的日期；補跑舊日期時用來判斷 feed 是否還代表那一天。
@@ -124,6 +127,16 @@ async function runStages(date: string, isRerun: boolean, deps: DailyDeps, progre
   return briefId
 }
 
+function isStageName(value: unknown): value is StageName {
+  return (STAGE_NAMES as readonly unknown[]).includes(value)
+}
+
+function failedStageOf(progress: unknown): StageName | null {
+  if (typeof progress !== 'object' || progress === null || !('failedStage' in progress))
+    return null
+  return isStageName(progress.failedStage) ? progress.failedStage : null
+}
+
 export async function runDaily(options: { date: string, force: boolean }, deps: DailyDeps): Promise<DailyResult> {
   const { date, force } = options
   if (!deps.isTradingDay(date)) {
@@ -136,9 +149,14 @@ export async function runDaily(options: { date: string, force: boolean }, deps: 
     deps.log({ event: 'non_trading_refresh', date, inserted, calls: deps.gate.callCount, usd: roundUsd(deps.gate.totalUsd) })
     return { status: 'skipped', reason: 'non-trading-day', date }
   }
-  // incomplete 也算已存在：備援排程再跑一次會讓當日花費上限實質翻倍，重跑要明確帶 --force。
-  if (!force && await deps.findExistingBrief(date))
-    return { status: 'skipped', reason: 'already-exists', date }
+  if (!force) {
+    const existing = await deps.findExistingBrief(date)
+    // incomplete 表示已花到上限，當日總額剩下的不夠從頭跑完一份（#135），補跑要維護者看過後帶 --force。
+    if (existing?.status === 'incomplete')
+      return { status: 'skipped', reason: 'incomplete-exists', date, failedStage: failedStageOf(existing.progress) }
+    if (existing)
+      return { status: 'skipped', reason: 'already-exists', date }
+  }
 
   deps.gate.setReportDate(date)
   // 要在寫入 brief 之前判定，否則每次都會看到自己剛寫的那份。
