@@ -1,4 +1,5 @@
 ---
+import Headline from '../components/Headline.astro'
 import Base from '../layouts/Base.astro'
 import { groupByMonth, lectureNumbers, weekdayLabel } from '../lib/handout'
 import { getSiteData } from '../lib/site-data'
@@ -23,7 +24,7 @@ const months = groupByMonth(briefs)
         {m.items.map(b => (
           <li>
             <span class="when">第 {numbers.get(b.date)} 回・{b.date.slice(5).replace('-', '/')}（{weekdayLabel(b.date)}）</span>
-            <a href={`/d/${b.date}`}>{b.headline}</a>
+            <a href={`/d/${b.date}`}><Headline text={b.headline} /></a>
           </li>
         ))}
       </ol>

@@ -176,7 +176,7 @@ components:
 
 ### Named Rules
 
-**The Keep-All Rule.** H1 與 H2 只在標點與空白處換行（`word-break: keep-all`，放不下才 `overflow-wrap: anywhere`），避免「納指」這類詞被拆成兩行；標題另加 `text-wrap: balance`，段落與列表加 `text-wrap: pretty`。
+**The Keep-All Rule.** H1 與 H2 只在標點與空白處換行（`word-break: keep-all`，放不下才 `overflow-wrap: anywhere`），避免「納指」這類詞被拆成兩行；標題另加 `text-wrap: balance`，段落與列表加 `text-wrap: pretty`。講義標題（首頁與單日頁的大標題、歷史講義列表的每回標題）另在 build 時依全形標點切成片語（`apps/web/src/lib/headline.ts`）：收尾標點黏在前一個片語、開括號黏在後一個，每個片語是一個 `inline-block`，放不下就整個換到下一行，所以行首不會出現標點，WebKit 也一樣。片語比一行長時，只在前後都是兩字以上詞的地方（`<wbr>`）斷；Node 的分詞詞典對繁體常切成單字，單字邊界不當斷點，寧可少斷也不拆詞。片語裡完全沒有可用斷點又比一行長時，才退回 `overflow-wrap: anywhere`。
 
 **The Tabular Figures Rule.** 全站數字用等寬數字，讓百分比與金額在列表裡對齊。
 

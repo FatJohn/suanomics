@@ -69,6 +69,14 @@ h2 {
   overflow-wrap: anywhere;
 }
 
+/* 講義標題的片語（components/Headline.astro）：整個片語放不下就整個換行，片語內只在 <wbr> 斷，
+   收尾標點黏在片語裡，WebKit 也不會把「、」推到行首。inline-block 不會繼承連結底線，要明寫 inherit。 */
+.phrase {
+  display: inline-block;
+  max-width: 100%;
+  text-decoration: inherit;
+}
+
 p,
 li {
   text-wrap: pretty;

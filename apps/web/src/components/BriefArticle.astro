@@ -3,6 +3,7 @@ import type { BriefView } from '../lib/present-brief'
 import { briefHtml } from '../lib/brief-html'
 import { GLOSSARY } from '../lib/glossary-terms'
 import { readingMinutes } from '../lib/handout'
+import Headline from './Headline.astro'
 import KeyPoints from './KeyPoints.astro'
 import PodcastPlayer from './PodcastPlayer.astro'
 import SourceLinks from './SourceLinks.astro'
@@ -36,7 +37,7 @@ const toc = [
       <span>第 {lectureNo} 回</span><span>閱讀 {minutes} 分鐘</span><span>來源 {brief.citations.length} 則</span>
       {brief.audioUrl && <a class="listen" href="#podcast"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 2v8l7-4z" fill="currentColor" /></svg><span class="label">收聽語音版</span></a>}
     </p>
-    <h1>{brief.headline}</h1>
+    <h1><Headline text={brief.headline} /></h1>
 
     <KeyPoints thesisHighlightHtml={thesisHighlightHtml} thesisRestHtml={thesisRestHtml} industries={industries} />
 
