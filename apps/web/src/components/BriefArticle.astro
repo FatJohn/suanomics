@@ -3,6 +3,7 @@ import type { BriefView } from '../lib/present-brief'
 import { briefHtml } from '../lib/brief-html'
 import { GLOSSARY } from '../lib/glossary-terms'
 import { readingMinutes } from '../lib/handout'
+import BackToKey from './BackToKey.astro'
 import Headline from './Headline.astro'
 import KeyPoints from './KeyPoints.astro'
 import PodcastPlayer from './PodcastPlayer.astro'
@@ -40,6 +41,11 @@ const toc = [
 
     <KeyPoints thesisHighlightHtml={thesisHighlightHtml} thesisRestHtml={thesisRestHtml} industries={industries} />
 
+    <details class="toc-m">
+      <summary>本講義目錄</summary>
+      <ol>{toc.map(t => <li><a href={`#${t.id}`}>{t.label}</a></li>)}</ol>
+    </details>
+
     {brief.audioUrl && <PodcastPlayer url={brief.audioUrl} />}
 
     {narrative
@@ -48,6 +54,7 @@ const toc = [
             <section id="intro" aria-labelledby="intro-title">
               <h2 id="intro-title">導讀</h2>
               <div class="prose-handout" set:html={introHtml} />
+              <BackToKey />
             </section>
             {sections.map((s, i) => (
               <section id={`sec-${i + 1}`} aria-labelledby={`sec-${i + 1}-title`}>
@@ -55,6 +62,7 @@ const toc = [
                 {s.takeaway && <p class="take">{s.takeaway}</p>}
                 <div class="prose-handout" set:html={bodyHtml[i]} />
                 <SourceLinks label="出處" links={s.citations} />
+                <BackToKey />
               </section>
             ))}
             {outroHtml && <div class="prose-handout outro" set:html={outroHtml} />}
@@ -79,6 +87,7 @@ const toc = [
             </ul>
           )
         : <p>資料不足</p>}
+      <BackToKey />
     </section>
 
     <p class="disclaimer">{brief.disclaimer}</p>
@@ -247,25 +256,51 @@ const toc = [
       line-height: 1.6;
     }
   }
+  /* 手機與平板沒有右欄目錄，改在重點框下方放一個預設收合的目錄。 */
+  .toc-m {
+    margin-top: 20px;
+    border-top: 3px solid var(--ink);
+    padding-top: 6px;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  @media (min-width: 1024px) {
+    .toc-m {
+      display: none;
+    }
+  }
+  .toc-m summary {
+    padding: 4px 0;
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    cursor: pointer;
+  }
+  .toc-m[open] summary {
+    margin-bottom: 4px;
+  }
   .toc-title {
     margin: 0 0 6px;
     font-weight: 900;
     letter-spacing: 0.12em;
   }
-  .toc ol {
+  .toc ol,
+  .toc-m ol {
     margin: 0;
     padding: 0;
     list-style: none;
   }
-  .toc li {
+  .toc li,
+  .toc-m li {
     padding: 5px 0;
     border-top: 1px dashed var(--rule);
   }
-  .toc a {
+  .toc a,
+  .toc-m a {
     color: var(--ink);
     text-decoration-color: var(--rule);
   }
-  .toc a:hover {
+  .toc a:hover,
+  .toc-m a:hover {
     color: var(--blue);
     text-decoration-color: var(--blue);
   }
