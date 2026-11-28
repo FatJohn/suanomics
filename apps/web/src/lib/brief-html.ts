@@ -10,19 +10,19 @@ import { renderMarkdown } from './markdown'
 export function briefHtml(brief: BriefView, glossary: readonly GlossaryEntry[]) {
   const narrative = brief.narrative
   const sections = narrative?.sections ?? []
-  // 小標與結論句不標，它們已有自己的樣式。產業理由收在點開的列裡，排到最後才標，
-  // 本文標過的術語就不會只藏在收合的列裡。
+  // 主軸、小標與結論句不標：主軸已有螢光筆，再疊點線最難讀；小標與結論句有自己的樣式。
+  // 產業理由收在點開的列裡，排到最後才標，本文標過的術語就不會只藏在收合的列裡。
   const seen = new Set<string>()
   const glossMarkdown = (text: string) => annotateHtml(renderMarkdown(text), glossary, seen)
   const glossText = (text: string) => annotateHtml(escapeHtml(text), glossary, seen)
-  const thesisHtml = glossText(brief.dailyThesis || brief.summary)
+  const thesisHtml = escapeHtml(brief.dailyThesis || brief.summary)
   const introHtml = narrative ? glossMarkdown(narrative.intro) : ''
   const bodyHtml = sections.map(s => glossMarkdown(s.body))
   const outroHtml = narrative?.outro ? glossMarkdown(narrative.outro) : ''
   const summaryHtml = !narrative && brief.summary && brief.dailyThesis ? glossText(brief.summary) : ''
-  // 主軸在頁首已標過術語，這裡只跳脫；文字與頁首相同（主軸被攔下時頁首改顯示摘要）。
+  // 引用的主軸與頁首文字相同（主軸被攔下時頁首改顯示摘要），同樣不標術語。
   const viewpoints = brief.viewpoints && {
-    thesisHtml: escapeHtml(brief.dailyThesis || brief.summary),
+    thesisHtml,
     support: brief.viewpoints.supportPoints.map(({ text, section }) => ({ html: glossText(text), section })),
     risk: brief.viewpoints.riskPoints.map(({ text, section }) => ({ html: glossText(text), section })),
     netReadHtml: brief.viewpoints.netRead ? glossText(brief.viewpoints.netRead) : '',

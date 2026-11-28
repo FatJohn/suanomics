@@ -177,7 +177,27 @@ li {
 .gloss strong {
   display: block;
   margin-bottom: 2px;
+  padding-right: 4.5em;
   font-weight: 900;
+}
+
+.gloss-close {
+  position: absolute;
+  top: 8px;
+  right: 16px;
+  margin: 0;
+  padding: 0 8px;
+  border: 1px solid var(--blue);
+  background: var(--sheet);
+  color: var(--blue);
+  font: 700 13px/1.6 var(--font-body);
+  cursor: pointer;
+}
+
+.gloss-close:hover,
+.gloss-close:focus-visible {
+  background: var(--blue);
+  color: #fff;
 }
 
 /* 寬螢幕且支援 anchor positioning 時改成貼在術語下方的藍框小卡；不支援就維持貼底，不會被丟到左上角。 */
