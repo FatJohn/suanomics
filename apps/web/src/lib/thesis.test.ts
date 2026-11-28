@@ -29,6 +29,11 @@ describe('splitThesis', () => {
     expect(splitThesis('：外資流出')).toEqual({ highlight: '：外資流出', rest: '' })
   })
 
+  it('引號或括號裡的冒號句號不算分句', () => {
+    expect(splitThesis('「降息：延後」壓住估值：外資仍賣超')).toEqual({ highlight: '「降息：延後」壓住估值', rest: '：外資仍賣超' })
+    expect(splitThesis('利率（年增。前值）偏高')).toEqual({ highlight: '利率（年增。前值）偏高', rest: '' })
+  })
+
   it('主軸為空時兩段都是空字串', () => {
     expect(splitThesis('')).toEqual({ highlight: '', rest: '' })
   })

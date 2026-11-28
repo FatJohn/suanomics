@@ -225,5 +225,9 @@ li {
         flip-inline,
         flip-block flip-inline;
     }
+    .gloss-close {
+      top: 6px;
+      right: 12px;
+    }
   }
 }
