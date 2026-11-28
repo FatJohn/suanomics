@@ -26,15 +26,14 @@ const toc = [
   ...(narrative ? [{ id: 'intro', label: '導讀' }] : []),
   ...sections.map((s, i) => ({ id: `sec-${i + 1}`, label: `詳解 ${i + 1}：${s.heading}` })),
   ...(brief.viewpoints ? [{ id: 'views', label: '正反觀點' }] : []),
-  ...(brief.selectedNews.length > 0 ? [{ id: 'news', label: '本日選稿' }] : []),
-  { id: 'sources', label: '引用來源' },
+  { id: 'sources', label: '出處' },
 ]
 ---
 
 <div class="layout">
   <article class="brief">
     <p class="fields">
-      <span>第 {lectureNo} 回</span><span>閱讀 {minutes} 分鐘</span><span>來源 {brief.citations.length} 則</span>
+      <span>第 {lectureNo} 回</span><span>閱讀 {minutes} 分鐘</span><span>來源 {brief.sources.length} 則</span>
       {brief.audioUrl && <a class="listen" href="#podcast"><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 2v8l7-4z" fill="currentColor" /></svg><span class="label">收聽語音版</span></a>}
     </p>
     <h1><Headline text={brief.headline} /></h1>
@@ -65,17 +64,20 @@ const toc = [
 
     {viewpoints && <Viewpoints viewpoints={viewpoints} />}
 
-    {brief.selectedNews.length > 0 && (
-      <section id="news" aria-labelledby="news-title">
-        <h2 id="news-title">本日選稿</h2>
-        <ul class="list">{brief.selectedNews.map(n => <li><a href={`/brief/news/${n.id}`}>{n.title}</a></li>)}</ul>
-      </section>
-    )}
-
     <section id="sources" aria-labelledby="sources-title">
-      <h2 id="sources-title">引用來源</h2>
-      {brief.citations.length > 0
-        ? <ol class="list">{brief.citations.map(c => <li><a href={c.url} rel="noopener">{c.title}</a></li>)}</ol>
+      <h2 id="sources-title">出處</h2>
+      {brief.sources.length > 0
+        ? (
+            <ul class="sources">
+              {brief.sources.map(s => (
+                <li>
+                  <span class="src-meta">{s.sourceName}{s.date && `・${s.date}`}</span>
+                  {s.url ? <a href={s.url} rel="noopener">{s.title}</a> : s.title}
+                  {s.newsId !== null && <a class="pick" href={`/brief/news/${s.newsId}`}>選稿</a>}
+                </li>
+              ))}
+            </ul>
+          )
         : <p>資料不足</p>}
     </section>
 
@@ -190,21 +192,38 @@ const toc = [
     padding-top: 6px;
     border-top: 1px solid var(--rule);
   }
-  .list {
+  .sources {
     margin: 0;
-    padding-left: 1.5em;
-    list-style: decimal;
+    padding: 0;
+    list-style: none;
   }
-  ul.list {
-    list-style: disc;
-  }
-  .list li {
-    margin: 6px 0;
+  .sources li {
+    padding: 6px 0;
+    border-top: 1px dashed var(--rule);
     font-size: 15px;
     line-height: 1.7;
   }
-  .list li::marker {
+  .src-meta {
+    margin-right: 0.6em;
+    font-size: 13px;
     color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 和正反觀點的「見詳解 N」同一種方框標籤：藍框藍字、hover 反白。 */
+  .pick {
+    display: inline-block;
+    margin-left: 0.4em;
+    padding: 0 4px;
+    font-size: 12.5px;
+    line-height: 1.6;
+    white-space: nowrap;
+    color: var(--blue);
+    text-decoration: none;
+    border: 1px solid var(--blue);
+  }
+  .pick:hover {
+    background: var(--blue);
+    color: var(--paper);
   }
   .disclaimer {
     margin: 40px 0 0;

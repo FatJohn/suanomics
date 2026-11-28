@@ -1,5 +1,5 @@
 import type { NewsRow, SiteRows } from './db/site-repo'
-import type { BriefView } from './present-brief'
+import type { BriefNews, BriefView } from './present-brief'
 import process from 'node:process'
 import { readSiteRows } from './db/site-repo'
 import { parseBriefJson, presentBrief } from './present-brief'
@@ -21,22 +21,25 @@ async function readRows(): Promise<SiteRows> {
   if (url)
     return readSiteRows(url)
   console.warn('[web] WEB_DATABASE_URL 未設定：產出沒有 brief 的空站')
-  return { briefs: [], news: [] }
+  return { briefs: [], news: [], citedNews: [] }
 }
 
 async function load(): Promise<SiteData> {
-  const { briefs, news } = await readRows()
+  const { briefs, news, citedNews } = await readRows()
   const newsById = new Map(news.map(n => [n.id, n]))
+  const citedByUrl = Map.groupBy(citedNews, n => n.url)
   return {
-    briefs: briefs.map(b => presentBrief(
-      b.briefDate,
-      parseBriefJson(b.briefDate, b.briefJson),
-      b.selectedNewsIds.flatMap((id) => {
-        const item = newsById.get(id)
-        return item ? [{ id, title: item.title }] : []
-      }),
-      b.audioUrl,
-    )),
+    briefs: briefs.map((b) => {
+      const brief = parseBriefJson(b.briefDate, b.briefJson)
+      const briefNews: BriefNews[] = [
+        ...b.selectedNewsIds.flatMap((id) => {
+          const item = newsById.get(id)
+          return item ? [{ ...item, selected: true }] : []
+        }),
+        ...brief.citations.flatMap(c => (citedByUrl.get(c.url) ?? []).slice(0, 1).map(n => ({ ...n, selected: false }))),
+      ]
+      return presentBrief(b.briefDate, brief, briefNews, b.audioUrl)
+    }),
     news,
   }
 }

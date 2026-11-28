@@ -1,7 +1,7 @@
 import type { MarketBrief } from '@suanomics/shared'
 import { MarketBriefDisclaimer } from '@suanomics/shared'
 import { describe, expect, it } from 'vitest'
-import { parseBriefJson, presentBrief, safeHttpUrl } from './present-brief'
+import { parseBriefJson, presentBrief, safeHttpUrl, WITHHELD_NEWS_TITLE } from './present-brief'
 
 const CITE_A = { title: '來源 A', url: 'https://a.example/1', quote: '原文引用不上站' }
 const BASE: MarketBrief = {
@@ -46,7 +46,7 @@ describe('presentBrief', () => {
 
   it('非 http(s) 的 citation 不輸出連結', () => {
     const view = presentBrief('2095-01-01', { ...BASE, citations: [CITE_A, { ...CITE_A, url: 'javascript:alert(1)' }] }, [])
-    expect(view.citations.map(c => c.url)).toEqual([CITE_A.url])
+    expect(view.sources.map(c => c.url)).toEqual([CITE_A.url])
   })
 
   it('viewpoints 逐點過濾，被攔截的點不顯示', () => {
@@ -160,6 +160,43 @@ describe('presentBrief 產業理由的出處', () => {
   it('最多列 3 個出處', () => {
     const view = presentBrief('2095-01-01', brief([chain('半導體業', [CITE_A.url, CITE_B.url, CITE_C.url, CITE_D.url])]), [])
     expect(view.industries[0]?.citations.map(c => c.url)).toEqual([CITE_A.url, CITE_B.url, CITE_C.url])
+  })
+})
+
+// 出處區：引用來源與選稿合成一份，同一則新聞只出現一次（#146 項目 4）
+describe('presentBrief 出處', () => {
+  const CITE_B = { title: '來源 B', url: 'https://www.b.example/1', quote: 'q' }
+  const news = (id: number, url: string, selected: boolean, title = `新聞 ${id}`) => ({
+    id,
+    title,
+    url,
+    publishedAt: new Date('2095-01-01T18:00:00Z'),
+    sourceName: `來源站 ${id}`,
+    selected,
+  })
+
+  it('引用對到新聞時帶來源名與台北日期，沒選稿的不帶新聞頁', () => {
+    const view = presentBrief('2095-01-01', BASE, [news(7, CITE_A.url, false)])
+    expect(view.sources).toEqual([{ title: '來源 A', url: CITE_A.url, sourceName: '來源站 7', date: '2095-01-02', newsId: null }])
+  })
+
+  it('選稿也被引用時只列一次，帶新聞頁', () => {
+    const view = presentBrief('2095-01-01', BASE, [news(7, CITE_A.url, true)])
+    expect(view.sources).toEqual([{ title: '來源 A', url: CITE_A.url, sourceName: '來源站 7', date: '2095-01-02', newsId: 7 }])
+  })
+
+  it('沒被引用的選稿接在引用之後，標題被攔截時用替代標題', () => {
+    const view = presentBrief('2095-01-01', BASE, [news(8, 'https://c.example/2', true, '建議買進台積電'), news(9, 'javascript:alert(1)', true)])
+    expect(view.sources.map(s => [s.title, s.url, s.newsId])).toEqual([
+      ['來源 A', CITE_A.url, null],
+      [WITHHELD_NEWS_TITLE, 'https://c.example/2', 8],
+      ['新聞 9', null, 9],
+    ])
+  })
+
+  it('引用對不到新聞時來源名用網域、沒有日期', () => {
+    const view = presentBrief('2095-01-01', { ...BASE, citations: [CITE_B] }, [])
+    expect(view.sources).toEqual([{ title: '來源 B', url: CITE_B.url, sourceName: 'b.example', date: null, newsId: null }])
   })
 })
 
