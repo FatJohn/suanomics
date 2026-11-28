@@ -84,6 +84,7 @@ const months = groupByMonth(briefs)
     color: var(--ink-2);
   }
   .audio {
+    position: relative;
     display: inline-flex;
     vertical-align: -1px;
     margin-left: 0.4em;
@@ -93,11 +94,14 @@ const months = groupByMonth(briefs)
     position: absolute;
     width: 1px;
     height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  /* 和首頁重點框同一份產業方向，只是逐回排開；形狀加文字，不靠顏色單獨表意。 */
+  /* 形狀加文字，不靠顏色單獨表意（紅漲綠跌對色弱讀者不可靠）。 */
   .ind {
     display: flex;
     flex-wrap: wrap;
